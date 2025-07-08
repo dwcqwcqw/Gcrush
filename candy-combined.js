@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initLogoLoading();
     initImageLoading();
     initBannerCarousel();
+    initBannerImageLoading();
     
     // Sidebar toggle functionality
     function initSidebar() {
@@ -536,26 +537,46 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
         
-        // Video hover play functionality
+        // Video autoplay functionality for banner 3
         if (bannerVideo) {
-            const videoContainer = bannerVideo.parentElement;
-            
-            videoContainer.addEventListener('mouseenter', () => {
+            // Try to ensure autoplay works
+            bannerVideo.addEventListener('loadeddata', () => {
+                console.log('Banner video loaded');
                 bannerVideo.play().catch(error => {
-                    console.log('Video playback failed:', error);
+                    console.log('Video autoplay failed:', error);
+                    // Try again with user interaction
+                    bannerVideo.muted = true;
+                    bannerVideo.play();
                 });
             });
             
-            videoContainer.addEventListener('mouseleave', () => {
-                bannerVideo.pause();
+            // Keep video looping
+            bannerVideo.addEventListener('ended', () => {
                 bannerVideo.currentTime = 0;
-            });
-            
-            // Preload video
-            bannerVideo.addEventListener('loadedmetadata', () => {
-                console.log('Banner video loaded');
+                bannerVideo.play();
             });
         }
+    }
+    
+    // Banner image loading functionality
+    function initBannerImageLoading() {
+        const bannerImages = document.querySelectorAll('.banner-full-img');
+        
+        bannerImages.forEach(img => {
+            // Remove skeleton animation when image loads
+            if (img.complete) {
+                img.style.animation = 'none';
+            } else {
+                img.addEventListener('load', function() {
+                    this.style.animation = 'none';
+                });
+                
+                img.addEventListener('error', function() {
+                    console.error('Failed to load banner image:', this.src);
+                    // Keep skeleton animation on error
+                });
+            }
+        });
     }
     
     // Add loading state handling
