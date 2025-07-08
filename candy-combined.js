@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCountdownTimer();
     initCharacterVideoHover();
     initLogoLoading();
+    initImageLoading();
     
     // Sidebar toggle functionality
     function initSidebar() {
@@ -71,9 +72,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     preloadVideo();
                     
                     video.currentTime = 0; // Reset video to start
-                    video.play().catch(error => {
-                        console.log('Video playback failed:', error);
-                    });
+                    
+                    // Try to play video, fallback to mp4 if mov fails
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log('Video playback failed:', error);
+                            // If MOV fails, try to switch to MP4
+                            const sources = video.querySelectorAll('source');
+                            if (sources.length > 1) {
+                                // Remove MOV source if it exists
+                                sources.forEach(source => {
+                                    if (source.type === 'video/quicktime') {
+                                        source.remove();
+                                    }
+                                });
+                                video.load();
+                                video.play().catch(err => {
+                                    console.log('MP4 playback also failed:', err);
+                                });
+                            }
+                        });
+                    }
                 });
                 
                 // Mouse leave - pause video and show image
@@ -136,6 +156,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 logoImg.classList.add('loaded');
             }
         }
+    }
+
+    // Image loading functionality to remove skeleton screen
+    function initImageLoading() {
+        const characterImages = document.querySelectorAll('.character-image img');
+        
+        characterImages.forEach(img => {
+            // Add loading class initially
+            img.classList.add('loading');
+            
+            // Remove skeleton effect when image loads
+            if (img.complete) {
+                img.classList.remove('loading');
+                img.classList.add('loaded');
+                if (img.parentElement) {
+                    img.parentElement.style.animation = 'none';
+                }
+            } else {
+                img.addEventListener('load', function() {
+                    this.classList.remove('loading');
+                    this.classList.add('loaded');
+                    if (this.parentElement) {
+                        this.parentElement.style.animation = 'none';
+                    }
+                });
+                
+                img.addEventListener('error', function() {
+                    console.error('Failed to load image:', this.src);
+                    this.classList.remove('loading');
+                    // Keep skeleton animation on error
+                });
+            }
+        });
     }
 
     // Accordion functionality for FAQ section
