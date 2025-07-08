@@ -72,28 +72,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     preloadVideo();
                     
                     video.currentTime = 0; // Reset video to start
-                    
-                    // Try to play video, fallback to mp4 if mov fails
-                    const playPromise = video.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log('Video playback failed:', error);
-                            // If MOV fails, try to switch to MP4
-                            const sources = video.querySelectorAll('source');
-                            if (sources.length > 1) {
-                                // Remove MOV source if it exists
-                                sources.forEach(source => {
-                                    if (source.type === 'video/quicktime') {
-                                        source.remove();
-                                    }
-                                });
-                                video.load();
-                                video.play().catch(err => {
-                                    console.log('MP4 playback also failed:', err);
-                                });
-                            }
-                        });
-                    }
+                    video.play().catch(error => {
+                        console.log('Video playback failed:', error);
+                    });
                 });
                 
                 // Mouse leave - pause video and show image
