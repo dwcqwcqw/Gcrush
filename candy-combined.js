@@ -72,9 +72,45 @@ document.addEventListener('DOMContentLoaded', () => {
                     preloadVideo();
                     
                     video.currentTime = 0; // Reset video to start
-                    video.play().catch(error => {
-                        console.log('Video playback failed:', error);
-                    });
+                    
+                    // Enhanced video playback with MOV support
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(error => {
+                            console.log('Initial video playback failed:', error);
+                            
+                            // Try to reload the video and play again
+                            video.load();
+                            setTimeout(() => {
+                                video.play().catch(secondError => {
+                                    console.log('Second attempt failed:', secondError);
+                                    
+                                    // Check if we can use different MIME types for MOV
+                                    const sources = video.querySelectorAll('source');
+                                    sources.forEach(source => {
+                                        if (source.src.includes('.mov')) {
+                                            // Add alternative MIME types for MOV files
+                                            const newSource1 = document.createElement('source');
+                                            newSource1.src = source.src;
+                                            newSource1.type = 'video/mp4'; // Some MOV files are compatible with mp4 codec
+                                            
+                                            const newSource2 = document.createElement('source');
+                                            newSource2.src = source.src;
+                                            newSource2.type = 'video/x-quicktime';
+                                            
+                                            video.appendChild(newSource1);
+                                            video.appendChild(newSource2);
+                                        }
+                                    });
+                                    
+                                    video.load();
+                                    video.play().catch(finalError => {
+                                        console.log('All playback attempts failed:', finalError);
+                                    });
+                                });
+                            }, 100);
+                        });
+                    }
                 });
                 
                 // Mouse leave - pause video and show image
