@@ -5,10 +5,7 @@
     margin-bottom: 60px;
     position: relative;
     width: 100%;
-    max-width: 1200px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0 20px;
+    padding: 0 40px;
 }
 
 .banner-carousel {
@@ -28,12 +25,29 @@
     opacity: 0;
     transform: translateX(100%);
     transition: all 0.8s cubic-bezier(0.25, 0.1, 0.25, 1);
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--glass-shadow);
+    background: rgba(25, 25, 30, 0.5);
+    backdrop-filter: blur(30px) saturate(150%);
+    -webkit-backdrop-filter: blur(30px) saturate(150%);
+    border: 1px solid rgba(80, 80, 90, 0.5);
+    box-shadow: 
+        0 8px 32px 0 rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 0 rgba(255, 255, 255, 0.1);
     overflow: visible;
     border-radius: 20px;
+}
+
+.banner-slide::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+        radial-gradient(circle at 20% 50%, rgba(162, 89, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 50%, rgba(248, 163, 255, 0.1) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
 }
 
 .banner-slide.active {
@@ -51,6 +65,7 @@
     height: 100%;
     padding: 30px;
     position: relative;
+    z-index: 2;
 }
 
 /* Banner 1 - Horizontal Layout */
@@ -82,7 +97,9 @@
 
 .vertical-layout .banner-image-left,
 .vertical-layout .banner-image-right {
-    flex: 0 0 250px;
+    flex: 0 0 auto;
+    width: 200px;
+    height: 220px;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -111,8 +128,10 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    color: var(--accent-purple); /* Fallback */
     margin-bottom: 10px;
     line-height: 1.2;
+    text-shadow: 0 2px 10px rgba(162, 89, 255, 0.3);
 }
 
 .banner-subtitle {
@@ -142,11 +161,12 @@
 }
 
 .banner-img {
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: cover;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
     border-radius: 15px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    display: block;
 }
 
 .banner-img.vertical {
