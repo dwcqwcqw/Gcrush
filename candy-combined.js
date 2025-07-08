@@ -427,6 +427,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const slides = document.querySelectorAll('.banner-slide');
         const navDots = document.querySelectorAll('.nav-dot');
         const carousel = document.querySelector('.banner-carousel');
+        const bannerVideo = document.querySelector('.banner-video');
         
         if (!slides.length || !navDots.length || !carousel) return;
         
@@ -534,6 +535,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 startAutoplay();
             }
         });
+        
+        // Video hover play functionality
+        if (bannerVideo) {
+            const videoContainer = bannerVideo.parentElement;
+            
+            videoContainer.addEventListener('mouseenter', () => {
+                bannerVideo.play().catch(error => {
+                    console.log('Video playback failed:', error);
+                });
+            });
+            
+            videoContainer.addEventListener('mouseleave', () => {
+                bannerVideo.pause();
+                bannerVideo.currentTime = 0;
+            });
+            
+            // Preload video
+            bannerVideo.addEventListener('loadedmetadata', () => {
+                console.log('Banner video loaded');
+            });
+        }
     }
     
     // Add loading state handling
