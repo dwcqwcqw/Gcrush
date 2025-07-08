@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCharacterVideoHover();
     initLogoLoading();
     initImageLoading();
+    initBannerCarousel();
     
     // Sidebar toggle functionality
     function initSidebar() {
@@ -420,6 +421,120 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize enhanced effects
     enhanceGlassmorphism();
+    
+    // Banner Carousel functionality
+    function initBannerCarousel() {
+        const slides = document.querySelectorAll('.banner-slide');
+        const navDots = document.querySelectorAll('.nav-dot');
+        const carousel = document.querySelector('.banner-carousel');
+        
+        if (!slides.length || !navDots.length || !carousel) return;
+        
+        let currentSlide = 0;
+        let autoplayInterval;
+        let isPaused = false;
+        
+        function showSlide(index) {
+            // Remove active classes
+            slides.forEach(slide => {
+                slide.classList.remove('active', 'prev');
+            });
+            navDots.forEach(dot => {
+                dot.classList.remove('active');
+            });
+            
+            // Add active classes
+            slides[index].classList.add('active');
+            navDots[index].classList.add('active');
+            
+            // Add prev class to previous slide
+            const prevIndex = index === 0 ? slides.length - 1 : index - 1;
+            slides[prevIndex].classList.add('prev');
+            
+            currentSlide = index;
+        }
+        
+        function nextSlide() {
+            const next = (currentSlide + 1) % slides.length;
+            showSlide(next);
+        }
+        
+        function startAutoplay() {
+            if (autoplayInterval) clearInterval(autoplayInterval);
+            autoplayInterval = setInterval(() => {
+                if (!isPaused) {
+                    nextSlide();
+                }
+            }, 3000); // 3 seconds
+        }
+        
+        function stopAutoplay() {
+            if (autoplayInterval) {
+                clearInterval(autoplayInterval);
+                autoplayInterval = null;
+            }
+        }
+        
+        // Navigation dots click handlers
+        navDots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                showSlide(index);
+                stopAutoplay();
+                startAutoplay(); // Restart autoplay
+            });
+        });
+        
+        // Pause on hover
+        carousel.addEventListener('mouseenter', () => {
+            isPaused = true;
+        });
+        
+        carousel.addEventListener('mouseleave', () => {
+            isPaused = false;
+        });
+        
+        // Touch/swipe support for mobile
+        let startX = 0;
+        let endX = 0;
+        
+        carousel.addEventListener('touchstart', (e) => {
+            startX = e.touches[0].clientX;
+            isPaused = true;
+        });
+        
+        carousel.addEventListener('touchend', (e) => {
+            endX = e.changedTouches[0].clientX;
+            const difference = startX - endX;
+            
+            if (Math.abs(difference) > 50) { // Minimum swipe distance
+                if (difference > 0) {
+                    // Swipe left - next slide
+                    nextSlide();
+                } else {
+                    // Swipe right - previous slide
+                    const prev = currentSlide === 0 ? slides.length - 1 : currentSlide - 1;
+                    showSlide(prev);
+                }
+                stopAutoplay();
+                startAutoplay();
+            }
+            
+            isPaused = false;
+        });
+        
+        // Initialize first slide and start autoplay
+        showSlide(0);
+        startAutoplay();
+        
+        // Pause autoplay when page is not visible
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                stopAutoplay();
+            } else {
+                startAutoplay();
+            }
+        });
+    }
     
     // Add loading state handling
     window.addEventListener('load', () => {
