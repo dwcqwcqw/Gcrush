@@ -467,7 +467,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!isPaused) {
                     nextSlide();
                 }
-            }, 5000); // 5 seconds
+            }, 8000); // 8 seconds
         }
         
         function stopAutoplay() {
