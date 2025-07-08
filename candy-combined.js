@@ -61,22 +61,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Preload video in background
                 const preloadVideo = () => {
                     try {
+                        // Set preload attribute
+                        video.preload = 'metadata';
+                        
+                        // Manually trigger load
                         video.load();
-                        console.log('Started loading video for:', card.querySelector('.character-name').textContent);
+                        
+                        const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
+                        console.log('Started loading video for:', characterName);
+                        
+                        // Test video sources
+                        const sources = video.querySelectorAll('source');
+                        sources.forEach((source, index) => {
+                            console.log(`Source ${index + 1} for ${characterName}:`, source.src, source.type);
+                        });
+                        
                     } catch (error) {
                         console.error('Error loading video:', error);
                     }
                 };
                 
-                // Start preloading after page loads with staggered delays
+                // Start preloading immediately after DOM is ready, with small delays
                 const cardIndex = Array.from(characterCards).indexOf(card);
                 setTimeout(() => {
                     preloadVideo();
-                }, 1000 + (cardIndex * 500)); // Stagger loading by 500ms each
+                }, 100 + (cardIndex * 200)); // Reduced delay to 200ms each
                 
-                // Video loaded successfully
+                // Video loading events
+                video.addEventListener('loadstart', () => {
+                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
+                    console.log(`Video loading started for ${characterName}`);
+                });
+                
+                video.addEventListener('canplay', () => {
+                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
+                    console.log(`Video can play for ${characterName}`);
+                    videoReady = true;
+                    video.classList.add('loaded');
+                });
+                
                 video.addEventListener('loadeddata', () => {
-                    console.log('Video loaded successfully for card:', card);
+                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
+                    console.log(`Video data loaded for ${characterName}`);
                     videoReady = true;
                     video.classList.add('loaded');
                 });

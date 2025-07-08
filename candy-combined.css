@@ -563,41 +563,49 @@ ul {
     cursor: pointer;
     position: relative;
     aspect-ratio: 3/4;
-    transition: transform 0.3s ease;
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    overflow: hidden;
 }
 
 .character-card:hover {
     transform: translateY(-5px);
+    box-shadow: 
+        0 0 20px rgba(162, 89, 255, 0.6),
+        0 0 40px rgba(162, 89, 255, 0.4),
+        0 0 60px rgba(162, 89, 255, 0.2);
 }
 
-.character-card::after {
+/* Animated border using box-shadow */
+.character-card::before {
     content: '';
     position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    border-radius: 15px;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
     background: linear-gradient(45deg, 
         var(--accent-purple), 
         var(--accent-pink), 
         var(--accent-blue), 
         var(--accent-purple));
-    background-size: 300% 300%;
-    animation: gradientShift 3s ease infinite;
+    background-size: 200% 200%;
+    border-radius: 14px;
+    z-index: -1;
     opacity: 0;
     transition: opacity 0.3s ease;
-    pointer-events: none;
-    z-index: -1;
+    animation: neonRotate 2s linear infinite;
 }
 
-@keyframes gradientShift {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+@keyframes neonRotate {
+    0% { background-position: 0% 0%; }
+    25% { background-position: 100% 0%; }
+    50% { background-position: 100% 100%; }
+    75% { background-position: 0% 100%; }
+    100% { background-position: 0% 0%; }
 }
 
-.character-card:hover::after {
+.character-card:hover::before {
     opacity: 1;
 }
 
