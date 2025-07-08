@@ -60,15 +60,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 // Preload video in background
                 const preloadVideo = () => {
-                    if (!video.src && video.querySelector('source')) {
+                    try {
                         video.load();
+                        console.log('Started loading video for:', card.querySelector('.character-name').textContent);
+                    } catch (error) {
+                        console.error('Error loading video:', error);
                     }
                 };
                 
-                // Start preloading after page loads
+                // Start preloading after page loads with staggered delays
+                const cardIndex = Array.from(characterCards).indexOf(card);
                 setTimeout(() => {
                     preloadVideo();
-                }, 1000);
+                }, 1000 + (cardIndex * 500)); // Stagger loading by 500ms each
                 
                 // Video loaded successfully
                 video.addEventListener('loadeddata', () => {

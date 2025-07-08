@@ -291,6 +291,9 @@ ul {
 .sidebar-item i {
     font-size: 20px;
     min-width: 20px;
+    width: 20px;
+    text-align: center;
+    display: inline-block;
 }
 
 .sidebar.collapsed .sidebar-item span {
@@ -570,12 +573,11 @@ ul {
 .character-card::after {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    border-radius: 12px;
-    padding: 3px;
+    top: -3px;
+    left: -3px;
+    right: -3px;
+    bottom: -3px;
+    border-radius: 15px;
     background: linear-gradient(45deg, 
         var(--accent-purple), 
         var(--accent-pink), 
@@ -583,14 +585,10 @@ ul {
         var(--accent-purple));
     background-size: 300% 300%;
     animation: gradientShift 3s ease infinite;
-    -webkit-mask: 
-        linear-gradient(#fff 0 0) content-box, 
-        linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
     opacity: 0;
     transition: opacity 0.3s ease;
     pointer-events: none;
+    z-index: -1;
 }
 
 @keyframes gradientShift {
