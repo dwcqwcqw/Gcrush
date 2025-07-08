@@ -13,21 +13,11 @@ document.addEventListener('DOMContentLoaded', () => {
     function initSidebar() {
         const menuToggle = document.querySelector('.menu-toggle');
         const sidebar = document.querySelector('.sidebar');
-        const bottomFooter = document.querySelector('.bottom-footer-section');
         
         if (menuToggle && sidebar) {
             // Toggle sidebar collapsed state
             menuToggle.addEventListener('click', () => {
                 sidebar.classList.toggle('collapsed');
-                
-                // Update bottom footer position
-                if (bottomFooter) {
-                    if (sidebar.classList.contains('collapsed')) {
-                        bottomFooter.style.left = '100px';
-                    } else {
-                        bottomFooter.style.left = '260px';
-                    }
-                }
                 
                 // Store sidebar state in local storage
                 const isCollapsed = sidebar.classList.contains('collapsed');
@@ -38,9 +28,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const savedState = localStorage.getItem('sidebarCollapsed');
             if (savedState === 'true') {
                 sidebar.classList.add('collapsed');
-                if (bottomFooter) {
-                    bottomFooter.style.left = '100px';
-                }
             }
             
             // Auto-collapse on small screens

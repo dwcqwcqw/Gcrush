@@ -294,10 +294,22 @@ ul {
 
 .sidebar-item.premium {
     background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+    color: white !important;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(162, 89, 255, 0.3);
+}
+
+.sidebar-item.premium:hover {
+    transform: translateX(3px);
+    box-shadow: 0 6px 20px rgba(162, 89, 255, 0.5);
 }
 
 .sidebar-item.premium i {
     color: #FFD700;
+}
+
+.sidebar-item.premium span {
+    color: white !important;
 }
 
 .sidebar-footer {
@@ -311,6 +323,50 @@ ul {
 
 .sidebar.collapsed .sidebar-footer {
     padding: 20px 5px;
+}
+
+.sidebar-footer-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    color: var(--text-silver);
+    font-size: 14px;
+}
+
+.sidebar-footer-item:hover {
+    background-color: rgba(162, 89, 255, 0.1);
+    color: white;
+}
+
+.sidebar-footer-item .flag-icon {
+    width: 20px;
+    height: 15px;
+    border-radius: 2px;
+}
+
+.sidebar-footer-item i {
+    font-size: 16px;
+    min-width: 16px;
+}
+
+.sidebar.collapsed .sidebar-footer-item span {
+    display: none;
+}
+
+.footer-legal {
+    margin-top: 10px;
+    padding: 10px 16px;
+    font-size: 11px;
+    text-align: center;
+    color: rgba(196, 196, 196, 0.6);
+}
+
+.sidebar.collapsed .footer-legal {
+    display: none;
 }
 
 .language-selector {
@@ -688,85 +744,9 @@ ul {
     margin-bottom: 0;
 }
 
-/* Bottom Footer Section */
-.bottom-footer-section {
-    position: fixed;
-    bottom: 20px;
-    left: 260px; /* 240px sidebar + 20px margin */
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    transition: left 0.3s ease;
-}
+/* Bottom Footer Section - Removed as it's now in sidebar */
 
-.sidebar.collapsed ~ .page-container .bottom-footer-section {
-    left: 100px; /* 80px collapsed sidebar + 20px margin */
-}
-
-.bottom-footer-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 14px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    box-shadow: var(--glass-shadow);
-    color: var(--text-silver);
-    cursor: pointer;
-    transition: all 0.3s ease;
-    font-size: 13px;
-    font-weight: 500;
-    white-space: nowrap;
-}
-
-.bottom-footer-item:hover {
-    background-color: rgba(162, 89, 255, 0.1);
-    color: white;
-    transform: translateX(3px);
-    box-shadow: 0 0 15px rgba(162, 89, 255, 0.2), var(--glass-shadow);
-}
-
-.bottom-footer-item .flag-icon {
-    width: 18px;
-    height: 14px;
-    border-radius: 2px;
-}
-
-.bottom-footer-item i {
-    font-size: 12px;
-    min-width: 12px;
-    transition: transform 0.3s ease;
-}
-
-.bottom-footer-item:first-child:hover i {
-    transform: rotate(180deg);
-}
-
-.bottom-footer-legal {
-    padding: 8px 14px;
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    border-radius: 8px;
-    box-shadow: var(--glass-shadow);
-    font-size: 11px;
-    color: rgba(196, 196, 196, 0.7);
-    text-align: center;
-}
-
-.bottom-footer-legal a {
-    color: rgba(196, 196, 196, 0.7);
-    transition: color 0.3s ease;
-}
-
-.bottom-footer-legal a:hover {
-    color: var(--accent-purple);
-}
+/* Footer styles moved to sidebar-footer */
 
 .dot-separator {
     margin: 0 5px;

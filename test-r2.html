@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test R2 URLs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #000;
+            color: #fff;
+        }
+        .test-item {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #333;
+        }
+        img {
+            max-width: 200px;
+            display: block;
+            margin: 10px 0;
+        }
+        video {
+            max-width: 300px;
+            display: block;
+            margin: 10px 0;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Testing Cloudflare R2 URLs</h1>
+    
+    <div class="test-item">
+        <h2>Logo Test</h2>
+        <p>URL: https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/asset/logo.png</p>
+        <img src="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/asset/logo.png" 
+             alt="Logo" 
+             onload="this.nextElementSibling.textContent='✓ Logo loaded successfully'; this.nextElementSibling.className='success'"
+             onerror="this.nextElementSibling.textContent='✗ Logo failed to load'; this.nextElementSibling.className='error'">
+        <p class="status">Loading...</p>
+    </div>
+
+    <div class="test-item">
+        <h2>Favicon Test</h2>
+        <p>URL: https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/asset/Favicon.png</p>
+        <img src="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/asset/Favicon.png" 
+             alt="Favicon" 
+             onload="this.nextElementSibling.textContent='✓ Favicon loaded successfully'; this.nextElementSibling.className='success'"
+             onerror="this.nextElementSibling.textContent='✗ Favicon failed to load'; this.nextElementSibling.className='error'">
+        <p class="status">Loading...</p>
+    </div>
+
+    <div class="test-item">
+        <h2>Alex Image Test</h2>
+        <p>URL: https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/image/Alex/Alex1.png</p>
+        <img src="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/image/Alex/Alex1.png" 
+             alt="Alex" 
+             onload="this.nextElementSibling.textContent='✓ Alex image loaded successfully'; this.nextElementSibling.className='success'"
+             onerror="this.nextElementSibling.textContent='✗ Alex image failed to load'; this.nextElementSibling.className='error'">
+        <p class="status">Loading...</p>
+    </div>
+
+    <div class="test-item">
+        <h2>Alex Video Test</h2>
+        <p>URL: https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/video/Alex/Alex1.mov</p>
+        <video controls 
+               onloadeddata="this.nextElementSibling.textContent='✓ Alex video loaded successfully'; this.nextElementSibling.className='success'"
+               onerror="this.nextElementSibling.textContent='✗ Alex video failed to load'; this.nextElementSibling.className='error'">
+            <source src="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/video/Alex/Alex1.mov" type="video/quicktime">
+            <source src="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/video/Alex/Alex1.mp4" type="video/mp4">
+        </video>
+        <p class="status">Loading...</p>
+    </div>
+
+    <script>
+        // Test fetch API
+        fetch('https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/asset/logo.png')
+            .then(response => {
+                console.log('Fetch response:', response);
+                console.log('Status:', response.status);
+                console.log('Headers:', response.headers);
+            })
+            .catch(error => {
+                console.error('Fetch error:', error);
+            });
+    </script>
+</body>
+</html>
