@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video URL Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0E0E10;
+            color: white;
+            padding: 20px;
+        }
+        .test-item {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+        }
+        .success { background: rgba(0, 255, 0, 0.1); }
+        .error { background: rgba(255, 0, 0, 0.1); }
+        .loading { background: rgba(255, 255, 0, 0.1); }
+        video {
+            width: 200px;
+            height: 150px;
+            margin: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Video URL Accessibility Test</h1>
+    <div id="results"></div>
+
+    <script>
+        const characters = [
+            'Alex', 'Bruno', 'Clayton', 'Cruz', 'Ethan', 'Gabriel',
+            'Hunter', 'James', 'Luca', 'Mason', 'Rohan', 'Terrell'
+        ];
+
+        const resultsDiv = document.getElementById('results');
+
+        async function testVideoURL(character) {
+            const mp4URL = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Video/${character}/${character}1.mp4`;
+            const movURL = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Video/${character}/${character}1.mov`;
+            
+            const testItem = document.createElement('div');
+            testItem.className = 'test-item loading';
+            testItem.innerHTML = `
+                <h3>${character}</h3>
+                <p>Testing MP4: ${mp4URL}</p>
+                <p>Testing MOV: ${movURL}</p>
+                <p id="status-${character}">Testing...</p>
+                <video id="video-${character}" controls muted>
+                    <source src="${mp4URL}" type="video/mp4">
+                    <source src="${movURL}" type="video/quicktime">
+                </video>
+            `;
+            resultsDiv.appendChild(testItem);
+
+            const video = document.getElementById(`video-${character}`);
+            const status = document.getElementById(`status-${character}`);
+
+            return new Promise((resolve) => {
+                let loadSuccess = false;
+                
+                video.addEventListener('loadeddata', () => {
+                    loadSuccess = true;
+                    testItem.className = 'test-item success';
+                    status.textContent = `✓ Video loaded successfully! Current source: ${video.currentSrc}`;
+                    resolve({ character, success: true, currentSrc: video.currentSrc });
+                });
+
+                video.addEventListener('error', (e) => {
+                    if (!loadSuccess) {
+                        testItem.className = 'test-item error';
+                        status.textContent = `✗ Video failed to load. Error: ${e.message || 'Unknown error'}`;
+                        resolve({ character, success: false, error: e.message });
+                    }
+                });
+
+                // Test with fetch as well
+                Promise.all([
+                    fetch(mp4URL, { method: 'HEAD' }).then(r => ({ url: mp4URL, ok: r.ok, status: r.status })).catch(e => ({ url: mp4URL, ok: false, error: e.message })),
+                    fetch(movURL, { method: 'HEAD' }).then(r => ({ url: movURL, ok: r.ok, status: r.status })).catch(e => ({ url: movURL, ok: false, error: e.message }))
+                ]).then(results => {
+                    console.log(`${character} fetch results:`, results);
+                    const fetchInfo = results.map(r => `${r.url.split('/').pop()}: ${r.ok ? 'OK' : 'FAIL'} (${r.status || r.error})`).join(', ');
+                    status.innerHTML += `<br>Fetch test: ${fetchInfo}`;
+                });
+
+                video.load();
+
+                // Timeout after 5 seconds
+                setTimeout(() => {
+                    if (!loadSuccess) {
+                        testItem.className = 'test-item error';
+                        status.textContent += ' (Timeout after 5 seconds)';
+                        resolve({ character, success: false, error: 'Timeout' });
+                    }
+                }, 5000);
+            });
+        }
+
+        async function runTests() {
+            console.log('Starting video URL tests...');
+            
+            for (const character of characters) {
+                await testVideoURL(character);
+                await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second between tests
+            }
+            
+            console.log('All tests completed');
+        }
+
+        // Start tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html>

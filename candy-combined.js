@@ -144,10 +144,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
                 
                 // Handle video load errors gracefully
-                video.addEventListener('error', () => {
-                    console.log('Video failed to load for card:', card);
+                video.addEventListener('error', (e) => {
+                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
+                    console.error(`Video failed to load for ${characterName}:`, e);
+                    console.log('Video element:', video);
+                    console.log('Video sources:', Array.from(video.querySelectorAll('source')).map(s => ({ src: s.src, type: s.type })));
                     videoReady = false;
                     video.classList.remove('loaded');
+                    
+                    // Try to test the URLs directly
+                    const sources = video.querySelectorAll('source');
+                    sources.forEach((source, index) => {
+                        fetch(source.src, { method: 'HEAD' })
+                            .then(response => {
+                                console.log(`${characterName} source ${index + 1} (${source.src}): ${response.status} ${response.statusText}`);
+                            })
+                            .catch(error => {
+                                console.error(`${characterName} source ${index + 1} fetch failed:`, error);
+                            });
+                    });
                 });
                 
                 // Pause all videos when page visibility changes
