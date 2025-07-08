@@ -56,59 +56,40 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (video && img) {
                 let isHovered = false;
-                let loadAttempted = false;
+                let videoReady = false;
                 
-                // Preload video on first hover attempt for better performance
+                // Preload video in background
                 const preloadVideo = () => {
-                    if (!loadAttempted) {
+                    if (!video.src && video.querySelector('source')) {
                         video.load();
-                        loadAttempted = true;
                     }
                 };
                 
-                // Mouse enter - start video
+                // Start preloading after page loads
+                setTimeout(() => {
+                    preloadVideo();
+                }, 1000);
+                
+                // Video loaded successfully
+                video.addEventListener('loadeddata', () => {
+                    console.log('Video loaded successfully for card:', card);
+                    videoReady = true;
+                    video.classList.add('loaded');
+                });
+                
+                // Mouse enter - start video only if loaded
                 card.addEventListener('mouseenter', () => {
                     isHovered = true;
-                    preloadVideo();
                     
-                    video.currentTime = 0; // Reset video to start
-                    
-                    // Enhanced video playback with MOV support
-                    const playPromise = video.play();
-                    if (playPromise !== undefined) {
-                        playPromise.catch(error => {
-                            console.log('Initial video playback failed:', error);
-                            
-                            // Try to reload the video and play again
-                            video.load();
-                            setTimeout(() => {
-                                video.play().catch(secondError => {
-                                    console.log('Second attempt failed:', secondError);
-                                    
-                                    // Check if we can use different MIME types for MOV
-                                    const sources = video.querySelectorAll('source');
-                                    sources.forEach(source => {
-                                        if (source.src.includes('.mov')) {
-                                            // Add alternative MIME types for MOV files
-                                            const newSource1 = document.createElement('source');
-                                            newSource1.src = source.src;
-                                            newSource1.type = 'video/mp4'; // Some MOV files are compatible with mp4 codec
-                                            
-                                            const newSource2 = document.createElement('source');
-                                            newSource2.src = source.src;
-                                            newSource2.type = 'video/x-quicktime';
-                                            
-                                            video.appendChild(newSource1);
-                                            video.appendChild(newSource2);
-                                        }
-                                    });
-                                    
-                                    video.load();
-                                    video.play().catch(finalError => {
-                                        console.log('All playback attempts failed:', finalError);
-                                    });
-                                });
-                            }, 100);
+                    if (videoReady) {
+                        img.style.opacity = '0';
+                        video.classList.add('playing');
+                        video.currentTime = 0;
+                        video.play().catch(error => {
+                            console.log('Video playback failed:', error);
+                            // Fallback to image
+                            img.style.opacity = '1';
+                            video.classList.remove('playing');
                         });
                     }
                 });
@@ -117,7 +98,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.addEventListener('mouseleave', () => {
                     isHovered = false;
                     video.pause();
-                    video.currentTime = 0; // Reset to beginning
+                    video.currentTime = 0;
+                    video.classList.remove('playing');
+                    img.style.opacity = '1';
                 });
                 
                 // Ensure video loops properly when hovered
@@ -133,13 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Handle video load errors gracefully
                 video.addEventListener('error', () => {
                     console.log('Video failed to load for card:', card);
-                    // Hide video if it fails to load
-                    video.style.display = 'none';
-                });
-                
-                // Optimize video loading
-                video.addEventListener('loadeddata', () => {
-                    console.log('Video loaded successfully for card:', card);
+                    videoReady = false;
+                    video.classList.remove('loaded');
                 });
                 
                 // Pause all videos when page visibility changes
