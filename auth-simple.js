@@ -595,6 +595,162 @@ if (document.readyState === 'loading') {
     }, 1000);
 }
 
+// Additional aggressive initialization for production issues
+setTimeout(() => {
+    console.log('Aggressive initialization starting...');
+    
+    // Force re-initialize if buttons still don't work
+    const loginBtn = document.querySelector('.login-btn');
+    const createAccountBtn = document.querySelector('.create-account-btn');
+    
+    if (loginBtn && createAccountBtn) {
+        console.log('Forcing button event listeners...');
+        
+        // Remove any existing listeners and add new ones
+        const newLoginBtn = loginBtn.cloneNode(true);
+        const newCreateBtn = createAccountBtn.cloneNode(true);
+        
+        loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
+        createAccountBtn.parentNode.replaceChild(newCreateBtn, createAccountBtn);
+        
+        // Add event listeners directly
+        newLoginBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('FORCED Login button clicked');
+            
+            const modal = document.getElementById('authModal');
+            const container = document.getElementById('auth-container');
+            
+            if (!modal || !container) {
+                console.error('Modal elements not found');
+                return;
+            }
+            
+            // Simple login form
+            container.innerHTML = `
+                <div class="auth-ui-container">
+                    <h2 class="auth-title">Welcome Back</h2>
+                    <form id="simpleLoginForm" class="auth-form">
+                        <div class="form-group">
+                            <input type="email" id="loginEmail" placeholder="Email" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="loginPassword" placeholder="Password" required>
+                        </div>
+                        <button type="submit" class="submit-btn login-style">Sign In</button>
+                    </form>
+                    <div class="auth-divider"><span>or continue with</span></div>
+                    <div class="social-auth">
+                        <button onclick="window.testAuth.google()" class="social-btn">
+                            <i class="fab fa-google"></i><span>Google</span>
+                        </button>
+                        <button onclick="window.testAuth.twitter()" class="social-btn">
+                            <i class="fab fa-twitter"></i><span>Twitter/X</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add form listener
+            document.getElementById('simpleLoginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('loginEmail').value;
+                const password = document.getElementById('loginPassword').value;
+                
+                if (window.supabase) {
+                    try {
+                        const supabase = window.supabase.createClient(
+                            'https://kuflobojizyttadwcbhe.supabase.co',
+                            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
+                        );
+                        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+                        if (error) throw error;
+                        console.log('Login successful:', data);
+                        modal.classList.remove('active');
+                    } catch (error) {
+                        console.error('Login error:', error);
+                        alert('Login failed: ' + error.message);
+                    }
+                }
+            });
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        
+        newCreateBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('FORCED Create account button clicked');
+            
+            const modal = document.getElementById('authModal');
+            const container = document.getElementById('auth-container');
+            
+            if (!modal || !container) {
+                console.error('Modal elements not found');
+                return;
+            }
+            
+            // Simple signup form
+            container.innerHTML = `
+                <div class="auth-ui-container">
+                    <h2 class="auth-title">Create Account</h2>
+                    <form id="simpleSignupForm" class="auth-form">
+                        <div class="form-group">
+                            <input type="email" id="signupEmail" placeholder="Email" required>
+                        </div>
+                        <div class="form-group">
+                            <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" required>
+                        </div>
+                        <button type="submit" class="submit-btn">Sign Up</button>
+                    </form>
+                    <div class="auth-divider"><span>or continue with</span></div>
+                    <div class="social-auth">
+                        <button onclick="window.testAuth.google()" class="social-btn">
+                            <i class="fab fa-google"></i><span>Google</span>
+                        </button>
+                        <button onclick="window.testAuth.twitter()" class="social-btn">
+                            <i class="fab fa-twitter"></i><span>Twitter/X</span>
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            // Add form listener
+            document.getElementById('simpleSignupForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const email = document.getElementById('signupEmail').value;
+                const password = document.getElementById('signupPassword').value;
+                
+                if (window.supabase) {
+                    try {
+                        const supabase = window.supabase.createClient(
+                            'https://kuflobojizyttadwcbhe.supabase.co',
+                            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
+                        );
+                        const { data, error } = await supabase.auth.signUp({ email, password });
+                        if (error) throw error;
+                        console.log('Signup successful:', data);
+                        alert('Registration successful! Please check your email to confirm your account.');
+                        modal.classList.remove('active');
+                    } catch (error) {
+                        console.error('Signup error:', error);
+                        alert('Registration failed: ' + error.message);
+                    }
+                }
+            });
+            
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        });
+        
+        console.log('Forced button listeners added');
+    } else {
+        console.log('Buttons not found for forced initialization');
+    }
+}, 2000);
+
 // Handle logout
 async function logout() {
     try {
