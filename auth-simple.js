@@ -947,27 +947,12 @@ async function logout() {
 // Make logout available globally
 window.logout = logout;
 
-// Check if email is already registered
+// Check if email is already registered - DISABLED FOR NOW
 async function checkEmailExists(email) {
-    try {
-        // Try to sign in with a dummy password to check if email exists
-        const { error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: 'dummy_check_12345678'
-        });
-        
-        // If we get invalid credentials, the email exists
-        if (error && error.message.includes('Invalid login credentials')) {
-            return true;
-        }
-        
-        // Any other error means email doesn't exist
-        return false;
-        
-    } catch (error) {
-        console.error('Error checking email:', error);
-        return false; // On error, assume email doesn't exist
-    }
+    // Temporarily disable email checking to avoid issues
+    // This function was causing problems by always returning true
+    console.log('Email check disabled - allowing registration for:', email);
+    return false;
 }
 
 // Show inline error or success message
