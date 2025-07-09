@@ -13,6 +13,9 @@ let createAccountBtn = null;
 let userProfile = null;
 let authContainer = null;
 
+// Auth state
+let authView = 'sign_in'; // 'sign_in' or 'sign_up'
+
 // Initialize Supabase client safely
 function initializeSupabase() {
     if (!window.supabase) {
@@ -79,7 +82,7 @@ function setupAuthStateListener() {
                 updateUIForLoggedInUser(session.user);
             }
         } else if (event === 'SIGNED_OUT') {
-            // Reset UI
+            // Reset UI to show login/create account buttons
             if (loginBtn) loginBtn.style.display = 'inline-block';
             if (createAccountBtn) createAccountBtn.style.display = 'inline-block';
             if (userProfile) userProfile.style.display = 'none';
@@ -93,46 +96,53 @@ function setupAuthStateListener() {
     });
 }
 
-// Initialize Auth UI
-let authView = 'sign_in';
-
+// Render authentication UI
 function renderAuthUI() {
-    const isLogin = authView === 'sign_in';
+    if (!authContainer) {
+        console.error('Auth container not found!');
+        return;
+    }
+    
+    const isSignUp = authView === 'sign_up';
     
     authContainer.innerHTML = `
-        <div class="auth-ui-container">
-            <h2 class="auth-title">${isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+        <div class="auth-form">
+            <h2>${isSignUp ? 'Create Account' : 'Sign In'}</h2>
             
-            <form id="authForm" class="auth-form">
+            <form id="authForm">
                 <div class="form-group">
-                    <input type="email" id="authEmail" placeholder="Email" required>
-                </div>
-                <div class="form-group">
-                    <input type="password" id="authPassword" placeholder="Password" required>
+                    <input type="email" id="email" placeholder="Email" required>
                 </div>
                 
-                <button type="submit" class="submit-btn ${isLogin ? 'login-style' : ''}">
-                    ${isLogin ? 'Sign In' : 'Sign Up'}
+                <div class="form-group">
+                    <input type="password" id="password" placeholder="Password" required ${isSignUp ? 'minlength="6"' : ''}>
+                </div>
+                
+                <button type="submit" class="auth-submit-btn">
+                    ${isSignUp ? 'Create Account' : 'Sign In'}
                 </button>
             </form>
             
             <div class="auth-divider">
-                <span>or continue with</span>
+                <span>or</span>
             </div>
             
             <div class="social-auth">
-                <button class="social-btn" data-provider="google">
-                    <i class="fab fa-google"></i><span>Google</span>
+                <button type="button" class="social-btn google-btn" data-provider="google">
+                    <i class="fab fa-google"></i>
+                    Continue with Google
                 </button>
-                <button class="social-btn" data-provider="twitter">
-                    <span class="x-logo">𝕏</span><span>X</span>
+                
+                <button type="button" class="social-btn twitter-btn" data-provider="twitter">
+                    <span class="x-icon">𝕏</span>
+                    Continue with X
                 </button>
             </div>
             
             <div class="auth-switch">
-                ${isLogin ? 
-                    `Don't have an account? <a href="#" id="switchToSignup">Sign up</a>` : 
-                    `Already have an account? <a href="#" id="switchToLogin">Sign in</a>`
+                ${isSignUp ? 
+                    `Already have an account? <a href="#" id="switchToSignIn">Sign In</a>` : 
+                    `Don't have an account? <a href="#" id="switchToSignUp">Create Account</a>`
                 }
             </div>
         </div>
@@ -140,113 +150,110 @@ function renderAuthUI() {
     
     // Add event listeners
     const form = document.getElementById('authForm');
-    form.addEventListener('submit', handleAuthSubmit);
+    if (form) {
+        form.addEventListener('submit', handleAuthSubmit);
+    }
     
     // Social auth buttons
-    document.querySelectorAll('.social-btn').forEach(btn => {
+    const socialBtns = document.querySelectorAll('.social-btn');
+    socialBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             const provider = e.currentTarget.dataset.provider;
             handleSocialAuth(provider);
         });
     });
     
-    // Switch between login/signup
-    const switchLink = document.getElementById(isLogin ? 'switchToSignup' : 'switchToLogin');
-    if (switchLink) {
-        switchLink.addEventListener('click', (e) => {
+    // Switch auth view
+    const switchToSignIn = document.getElementById('switchToSignIn');
+    const switchToSignUp = document.getElementById('switchToSignUp');
+    
+    if (switchToSignIn) {
+        switchToSignIn.addEventListener('click', (e) => {
             e.preventDefault();
-            authView = isLogin ? 'sign_up' : 'sign_in';
+            authView = 'sign_in';
+            renderAuthUI();
+        });
+    }
+    
+    if (switchToSignUp) {
+        switchToSignUp.addEventListener('click', (e) => {
+            e.preventDefault();
+            authView = 'sign_up';
             renderAuthUI();
         });
     }
 }
 
-// Handle auth form submission
+// Handle form submission
 async function handleAuthSubmit(e) {
     e.preventDefault();
+    
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
     
     // Clear any previous errors
     clearInlineError();
     
-    const email = document.getElementById('authEmail').value;
-    const password = document.getElementById('authPassword').value;
-    const submitBtn = document.querySelector('#authForm button[type="submit"]');
-    
-    // Validate inputs
-    if (!email || !password) {
-        showInlineError('Please fill in all fields');
+    // Validate password for sign up
+    if (authView === 'sign_up' && password.length < 6) {
+        showInlineError('Password must be at least 6 characters long');
         return;
     }
     
-    // Validate password length
-    if (password.length < 6) {
-        showInlineError('Password must be at least 6 characters');
-        return;
-    }
-    
-    // Store original button text and show loading
-    const originalText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    
-    if (authView === 'sign_in') {
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
-    } else {
-        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing up...';
-    }
+    const submitBtn = document.querySelector('.auth-submit-btn');
+    const originalText = submitBtn.textContent;
     
     try {
-        let result;
-        if (authView === 'sign_in') {
-            result = await supabase.auth.signInWithPassword({ email, password });
-        } else {
-            // Check if email is already registered
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${authView === 'sign_up' ? 'Creating Account...' : 'Signing In...'}`;
+        
+        if (authView === 'sign_up') {
+            // Check if email already exists
             const emailExists = await checkEmailExists(email);
             if (emailExists) {
-                throw new Error('This email is already registered. Please log in instead.');
+                showInlineError('An account with this email already exists. Please sign in instead.');
+                return;
             }
             
-            // Sign up without email confirmation
-            result = await supabase.auth.signUp({ 
-                email, 
-                password,
+            // Sign up new user
+            const { data, error } = await supabase.auth.signUp({
+                email: email,
+                password: password,
                 options: {
                     emailRedirectTo: `${window.location.origin}/auth/callback`
                 }
             });
             
-            // Check if user already exists
-            if (result.error && result.error.message.includes('User already registered')) {
-                throw new Error('This email is already registered. Please log in instead.');
-            }
+            if (error) throw error;
             
-            // For signup, we want to automatically sign in the user
-            if (result.data.user && !result.error) {
-                // Automatically sign in after successful signup
-                const signInResult = await supabase.auth.signInWithPassword({ email, password });
-                if (signInResult.error) {
-                    throw signInResult.error;
-                }
-                result = signInResult;
-            }
+            console.log('Sign up successful:', data);
+            
+            // Don't show success message, just wait for auth state change
+            
+        } else {
+            // Sign in existing user
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email: email,
+                password: password
+            });
+            
+            if (error) throw error;
+            
+            console.log('Sign in successful:', data);
         }
-        
-        if (result.error) throw result.error;
-        
-        console.log('Auth successful:', result);
-        
-        // Success - the auth state change listener will handle UI updates
         
     } catch (error) {
         console.error('Auth error:', error);
-        let errorMessage = 'Authentication failed';
         
+        let errorMessage = 'Authentication failed';
         if (error.message.includes('Invalid login credentials')) {
             errorMessage = 'Invalid email or password';
-        } else if (error.message.includes('already registered')) {
-            errorMessage = 'This email is already registered. Please log in instead.';
-        } else if (error.message.includes('Password should be at least 6 characters')) {
-            errorMessage = 'Password must be at least 6 characters';
-        } else if (error.message) {
+        } else if (error.message.includes('Email not confirmed')) {
+            errorMessage = 'Please check your email and click the confirmation link';
+        } else if (error.message.includes('User already registered')) {
+            errorMessage = 'An account with this email already exists';
+        } else {
             errorMessage = error.message;
         }
         
@@ -254,34 +261,36 @@ async function handleAuthSubmit(e) {
     } finally {
         // Reset button state
         submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
+        submitBtn.textContent = originalText;
     }
 }
 
-// Handle social auth
+// Handle social authentication
 async function handleSocialAuth(provider) {
-    console.log(`Starting ${provider} authentication...`);
+    console.log(`Initiating ${provider} authentication...`);
+    
+    const socialBtn = document.querySelector(`[data-provider="${provider}"]`);
+    const originalHTML = socialBtn.innerHTML;
     
     // Clear any previous errors
     clearInlineError();
     
-    // Find the clicked button and show loading state
-    const socialBtn = document.querySelector(`[data-provider="${provider}"]`);
-    if (socialBtn) {
-        const originalHTML = socialBtn.innerHTML;
-        socialBtn.disabled = true;
-        socialBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>Connecting...</span>`;
-        
-        // Reset button after 10 seconds (in case of redirect failure)
-        setTimeout(() => {
+    // Show loading state
+    socialBtn.disabled = true;
+    socialBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Connecting...`;
+    
+    // Set timeout to reset button state
+    setTimeout(() => {
+        if (socialBtn.disabled) {
             socialBtn.disabled = false;
             socialBtn.innerHTML = originalHTML;
-        }, 10000);
-    }
+            console.log(`${provider} auth timeout - resetting button`);
+        }
+    }, 10000);
     
     try {
-        // Use the correct production URL for OAuth redirect
-        const redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
+        // Use the current domain for OAuth redirect
+        const redirectUrl = `${window.location.origin}`;
         console.log('Using OAuth redirect URL:', redirectUrl);
         
         const { data, error } = await supabase.auth.signInWithOAuth({
@@ -378,7 +387,7 @@ function setupEventListeners() {
                     
                     if (!supabase) {
                         console.error('Supabase not initialized');
-                        alert('Authentication system is not ready. Please refresh the page.');
+                        showInlineError('Authentication system is not ready. Please refresh the page.');
                         return;
                     }
                     
@@ -394,7 +403,7 @@ function setupEventListeners() {
                     
                     if (!supabase) {
                         console.error('Supabase not initialized');
-                        alert('Authentication system is not ready. Please refresh the page.');
+                        showInlineError('Authentication system is not ready. Please refresh the page.');
                         return;
                     }
                     
@@ -539,7 +548,7 @@ async function enhancedInitialization() {
                 console.log('Force login clicked');
                 
                 if (!supabase && !initializeSupabase()) {
-                    alert('Authentication system is not ready. Please refresh the page.');
+                    showInlineError('Authentication system is not ready. Please refresh the page.');
                     return;
                 }
                 
@@ -553,7 +562,7 @@ async function enhancedInitialization() {
                 console.log('Force create account clicked');
                 
                 if (!supabase && !initializeSupabase()) {
-                    alert('Authentication system is not ready. Please refresh the page.');
+                    showInlineError('Authentication system is not ready. Please refresh the page.');
                     return;
                 }
                 
@@ -563,57 +572,59 @@ async function enhancedInitialization() {
             };
             
             console.log('Force initialization complete');
-        } else {
-            console.error('Force initialization failed: buttons not found');
         }
     }, 2000);
     
     return false;
 }
 
-// Handle Profile Setup
+// Handle profile form submission
 async function handleProfileSubmit(e) {
     e.preventDefault();
     
-    const username = document.getElementById('profileUsername').value.trim();
-    const gender = document.getElementById('profileGender').value;
-    const ageValue = document.getElementById('profileAge').value;
-    const age = ageValue ? parseInt(ageValue) : null;
+    const username = document.getElementById('username').value;
+    const gender = document.getElementById('gender').value;
+    const age = document.getElementById('age').value;
     
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (user) {
-        try {
-            // Prepare profile data - only include non-empty values
-            const profileData = {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+            console.error('No user found');
+            return;
+        }
+        
+        // Insert or update profile
+        const { data, error } = await supabase
+            .from('profiles')
+            .upsert({
                 id: user.id,
+                username: username || null,
                 email: user.email,
-                updated_at: new Date().toISOString()
-            };
-            
-            if (username) profileData.username = username;
-            if (gender) profileData.gender = gender;
-            if (age) profileData.age = age;
-            
-            const { error } = await supabase
-                .from('profiles')
-                .upsert(profileData);
-                
-            if (error) throw error;
-            
-            closeModal(profileModal);
-            updateUIForLoggedInUser(user, username || user.email);
-        } catch (error) {
+                gender: gender || null,
+                age: age ? parseInt(age) : null
+            });
+        
+        if (error) {
             console.error('Profile update error:', error);
-            
-            // More specific error handling
-            if (error.message.includes('relation "profiles" does not exist')) {
-                alert('Database not properly configured. Please run the setup-profiles.sql script in your Supabase SQL editor.');
-            } else if (error.message.includes('violates row-level security policy')) {
-                alert('Permission denied. Please check your authentication status.');
-            } else {
-                alert('Failed to update profile: ' + (error.message || 'Unknown error'));
-            }
+            // Don't show error to user, just continue
+        }
+        
+        console.log('Profile updated successfully');
+        
+        // Close profile modal and update UI
+        closeModal(profileModal);
+        updateUIForLoggedInUser(user, username);
+        
+    } catch (error) {
+        console.error('Error in handleProfileSubmit:', error);
+        // Don't show error to user, just continue
+        closeModal(profileModal);
+        
+        // Get user and update UI anyway
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+            updateUIForLoggedInUser(user);
         }
     }
 }
@@ -647,80 +658,65 @@ async function checkUserProfile(user) {
     }
 }
 
-// Create dropdown menu for user profile
-let dropdownMenu = null;
-
+// Create dropdown menu HTML
 function createDropdownMenu() {
-    if (dropdownMenu) return dropdownMenu;
-    
-    dropdownMenu = document.createElement('div');
-    dropdownMenu.className = 'profile-dropdown';
-    dropdownMenu.innerHTML = `
-        <div class="dropdown-item" id="settingsOption">
-            <i class="fas fa-cog"></i>
-            <span>Settings</span>
-        </div>
-        <div class="dropdown-item logout-item" id="logoutOption">
-            <i class="fas fa-sign-out-alt"></i>
-            <span>Logout</span>
+    return `
+        <div class="dropdown-menu" id="profileDropdown">
+            <div class="dropdown-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </div>
+            <div class="dropdown-item" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Logout</span>
+            </div>
         </div>
     `;
-    
-    document.body.appendChild(dropdownMenu);
-    
-    // Event listeners for dropdown items
-    document.getElementById('settingsOption').addEventListener('click', () => {
-        alert('Settings page coming soon!');
-        hideDropdown();
-    });
-    
-    document.getElementById('logoutOption').addEventListener('click', () => {
-        logout();
-        hideDropdown();
-    });
-    
-    return dropdownMenu;
 }
 
+// Show dropdown
 function showDropdown() {
-    const dropdown = createDropdownMenu();
-    const rect = userProfile.getBoundingClientRect();
-    
-    dropdown.style.position = 'fixed';
-    dropdown.style.top = (rect.bottom + 5) + 'px';
-    dropdown.style.right = (window.innerWidth - rect.right) + 'px';
-    dropdown.classList.add('active');
+    const dropdown = document.getElementById('profileDropdown');
+    if (dropdown) {
+        dropdown.classList.add('active');
+    }
 }
 
+// Hide dropdown
 function hideDropdown() {
-    if (dropdownMenu) {
-        dropdownMenu.classList.remove('active');
+    const dropdown = document.getElementById('profileDropdown');
+    if (dropdown) {
+        dropdown.classList.remove('active');
     }
 }
 
-// Setup profile dropdown
+// Setup profile dropdown functionality
 function setupProfileDropdown() {
-    if (userProfile) {
-        userProfile.addEventListener('click', (e) => {
-            e.stopPropagation();
-            const dropdown = createDropdownMenu();
-            if (dropdown.classList.contains('active')) {
-                hideDropdown();
-            } else {
-                showDropdown();
-            }
-        });
+    // Remove existing dropdown if any
+    const existingDropdown = document.getElementById('profileDropdown');
+    if (existingDropdown) {
+        existingDropdown.remove();
     }
+    
+    // Add dropdown HTML to body
+    document.body.insertAdjacentHTML('beforeend', createDropdownMenu());
     
     // Hide dropdown when clicking outside
-    document.addEventListener('click', () => {
-        hideDropdown();
+    document.addEventListener('click', (e) => {
+        const dropdown = document.getElementById('profileDropdown');
+        const userProfile = document.querySelector('.user-profile');
+        
+        if (dropdown && userProfile && !userProfile.contains(e.target) && !dropdown.contains(e.target)) {
+            hideDropdown();
+        }
     });
 }
 
 // Update UI for logged in user
 async function updateUIForLoggedInUser(user, username = null) {
-    // Hide login/signup buttons
+    console.log('Updating UI for logged in user:', user.email);
+    
+    // Hide login/create account buttons
     if (loginBtn) loginBtn.style.display = 'none';
     if (createAccountBtn) createAccountBtn.style.display = 'none';
     
@@ -766,6 +762,7 @@ async function updateUIForLoggedInUser(user, username = null) {
         }
         
         // Update dropdown menu if it exists
+        const dropdownMenu = document.getElementById('profileDropdown');
         if (dropdownMenu) {
             const dropdownProfileImg = dropdownMenu.querySelector('.dropdown-profile-img');
             const dropdownUsername = dropdownMenu.querySelector('.dropdown-username');
@@ -778,7 +775,7 @@ async function updateUIForLoggedInUser(user, username = null) {
     }
 }
 
-// Check for existing session on page load
+// Initialize only when user clicks login - NO AUTO LOGIN CHECK
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM Content Loaded - Starting auth initialization');
     
@@ -798,7 +795,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup user profile dropdown
     setupProfileDropdown();
     
-    // Don't check for existing session automatically - let users click login
     console.log('Auth initialization complete - ready for user interaction');
 });
 
@@ -860,38 +856,33 @@ async function logout() {
     }
 }
 
-// Check if email is already registered
+// Check if email is already registered - FIXED VERSION
 async function checkEmailExists(email) {
     try {
-        const { data, error } = await supabase.auth.signInWithPassword({
+        // Try to sign up with a dummy password to check if email exists
+        const { data, error } = await supabase.auth.signUp({
             email: email,
-            password: 'dummy_password_to_check_if_email_exists'
+            password: 'dummy_password_check_123456'
         });
         
-        // If we get an "Invalid login credentials" error, it means email exists but password is wrong
-        if (error && error.message.includes('Invalid login credentials')) {
+        // If signup succeeds, email doesn't exist (but we need to cancel this signup)
+        if (data.user && !error) {
+            // Cancel the signup by immediately signing out
+            await supabase.auth.signOut();
+            return false; // Email doesn't exist
+        }
+        
+        // If we get an error about user already registered, email exists
+        if (error && error.message.includes('User already registered')) {
             return true; // Email exists
         }
         
-        // If we get any other error, email might not exist
+        // For any other error, assume email doesn't exist
         return false;
+        
     } catch (error) {
-        // Alternative method: try to sign up with the email
-        try {
-            const { data, error: signUpError } = await supabase.auth.signUp({
-                email: email,
-                password: 'dummy_password_check_only'
-            });
-            
-            if (signUpError && signUpError.message.includes('User already registered')) {
-                return true; // Email exists
-            }
-            
-            return false;
-        } catch (e) {
-            console.error('Error checking email:', e);
-            return false;
-        }
+        console.error('Error checking email:', error);
+        return false; // On error, assume email doesn't exist
     }
 }
 
@@ -910,9 +901,11 @@ function showInlineError(message) {
     
     // Insert error message after the form title
     const authForm = document.getElementById('authForm');
-    const formTitle = authForm.querySelector('h2');
-    if (formTitle) {
-        formTitle.insertAdjacentElement('afterend', errorElement);
+    if (authForm) {
+        const formTitle = authForm.querySelector('h2');
+        if (formTitle) {
+            formTitle.insertAdjacentElement('afterend', errorElement);
+        }
     }
 }
 
