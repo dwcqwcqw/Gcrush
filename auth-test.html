@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        input {
+            width: 300px;
+            padding: 10px;
+            margin-right: 10px;
+            border: 1px solid #333;
+            background: #2a2a2a;
+            color: white;
+        }
+        button {
+            padding: 10px 20px;
+            background: #7C3AED;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #6D28D9;
+        }
+        .login-btn {
+            background: transparent;
+            border: 2px solid #7C3AED;
+            color: #7C3AED;
+        }
+        .login-btn:hover {
+            background: rgba(124, 58, 237, 0.1);
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #2a2a2a;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Supabase Authentication Test</h1>
+    
+    <div class="form-group">
+        <input type="email" id="email" placeholder="Email" value="test@example.com">
+        <input type="password" id="password" placeholder="Password" value="password123">
+    </div>
+    
+    <div class="form-group">
+        <button onclick="signUp()">Sign Up</button>
+        <button onclick="signIn()" class="login-btn">Sign In</button>
+        <button onclick="signOut()">Sign Out</button>
+    </div>
+    
+    <div class="form-group">
+        <button onclick="socialAuth('google')">Google Auth</button>
+        <button onclick="socialAuth('twitter')">Twitter Auth</button>
+    </div>
+    
+    <div id="result"></div>
+    
+    <script>
+        const SUPABASE_URL = 'https://kuflobojizyttadwcbhe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        function log(message) {
+            const result = document.getElementById('result');
+            result.innerHTML = `<p>${new Date().toLocaleTimeString()}: ${message}</p>` + result.innerHTML;
+        }
+        
+        async function signUp() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                log(`Sign up successful: ${JSON.stringify(data)}`);
+            } catch (error) {
+                log(`Sign up error: ${error.message}`);
+            }
+        }
+        
+        async function signIn() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                log(`Sign in successful: ${JSON.stringify(data)}`);
+            } catch (error) {
+                log(`Sign in error: ${error.message}`);
+            }
+        }
+        
+        async function signOut() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+                log('Sign out successful');
+            } catch (error) {
+                log(`Sign out error: ${error.message}`);
+            }
+        }
+        
+        async function socialAuth(provider) {
+            try {
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: provider,
+                    options: {
+                        redirectTo: window.location.origin + '/auth-test.html'
+                    }
+                });
+                
+                if (error) throw error;
+                
+                log(`${provider} auth initiated`);
+            } catch (error) {
+                log(`${provider} auth error: ${error.message}`);
+            }
+        }
+        
+        // Listen for auth changes
+        supabase.auth.onAuthStateChange((event, session) => {
+            log(`Auth state changed: ${event} - ${session ? 'Logged in' : 'Logged out'}`);
+            if (session) {
+                log(`User: ${session.user.email}`);
+            }
+        });
+        
+        // Check existing session
+        (async () => {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                log(`Existing session found: ${session.user.email}`);
+            } else {
+                log('No existing session');
+            }
+        })();
+    </script>
+</body>
+</html>

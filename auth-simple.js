@@ -198,21 +198,66 @@ async function handleAuthSubmit(e) {
 
 // Handle social auth
 async function handleSocialAuth(provider) {
+    console.log(`Starting ${provider} authentication...`);
+    
     try {
-        const { error } = await supabase.auth.signInWithOAuth({
+        const redirectUrl = window.location.origin + window.location.pathname;
+        console.log('Redirect URL:', redirectUrl);
+        
+        const { data, error } = await supabase.auth.signInWithOAuth({
             provider: provider,
             options: {
-                redirectTo: window.location.origin
+                redirectTo: redirectUrl
             }
         });
         
         if (error) throw error;
         
+        console.log(`${provider} auth initiated successfully`, data);
+        
     } catch (error) {
         console.error('Social auth error:', error);
-        alert('Social authentication failed: ' + error.message);
+        alert(`${provider} authentication failed: ${error.message}`);
     }
 }
+
+// Add a test function to manually trigger authentication
+window.testAuth = {
+    signUp: async (email = 'test@example.com', password = 'test123456') => {
+        console.log('Manual sign up test');
+        try {
+            const { data, error } = await supabase.auth.signUp({ email, password });
+            if (error) throw error;
+            console.log('Sign up successful:', data);
+            alert('Sign up successful! Check console for details.');
+        } catch (error) {
+            console.error('Sign up error:', error);
+            alert('Sign up failed: ' + error.message);
+        }
+    },
+    signIn: async (email = 'test@example.com', password = 'test123456') => {
+        console.log('Manual sign in test');
+        try {
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            if (error) throw error;
+            console.log('Sign in successful:', data);
+            alert('Sign in successful! Check console for details.');
+        } catch (error) {
+            console.error('Sign in error:', error);
+            alert('Sign in failed: ' + error.message);
+        }
+    },
+    google: () => handleSocialAuth('google'),
+    twitter: () => handleSocialAuth('twitter'),
+    checkButtons: () => {
+        console.log('Button check:', {
+            loginBtn: !!document.querySelector('.login-btn'),
+            createAccountBtn: !!document.querySelector('.create-account-btn'),
+            authModal: !!document.getElementById('authModal'),
+            authContainer: !!document.getElementById('auth-container')
+        });
+    }
+};
 
 // Modal Controls
 function openModal(modal) {
@@ -470,11 +515,16 @@ function setupProfileDropdown() {
 
 // Check for existing session on page load
 document.addEventListener('DOMContentLoaded', async () => {
-    // Wait for DOM to be fully loaded
-    await new Promise(resolve => setTimeout(resolve, 100));
+    console.log('DOM Content Loaded - Starting auth initialization');
+    
+    // Wait for DOM to be fully loaded and scripts to initialize
+    await new Promise(resolve => setTimeout(resolve, 500));
     
     // Initialize auth system
     initializeAuth();
+    
+    // Wait a bit more for Supabase to fully initialize
+    await new Promise(resolve => setTimeout(resolve, 200));
     
     // Setup event listeners
     setupEventListeners();
@@ -483,6 +533,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     const profileForm = document.getElementById('profileForm');
     if (profileForm) {
         profileForm.addEventListener('submit', handleProfileSubmit);
+        console.log('Profile form listener added');
     }
     
     // Setup user profile dropdown
@@ -490,16 +541,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Check for existing session
     if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-            const profileComplete = await checkUserProfile(session.user);
-            if (profileComplete) {
-                updateUIForLoggedInUser(session.user);
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            console.log('Existing session:', session);
+            
+            if (session) {
+                const profileComplete = await checkUserProfile(session.user);
+                if (profileComplete) {
+                    updateUIForLoggedInUser(session.user);
+                }
             }
+        } catch (error) {
+            console.error('Error checking session:', error);
         }
     }
+    
+    console.log('Auth initialization complete');
 });
+
+// Backup initialization in case DOMContentLoaded already fired
+if (document.readyState === 'loading') {
+    // Document is still loading, event listener will work
+    console.log('Document still loading, waiting for DOMContentLoaded');
+} else {
+    // Document has already loaded, run initialization immediately
+    console.log('Document already loaded, running immediate initialization');
+    setTimeout(async () => {
+        console.log('Backup initialization starting');
+        initializeAuth();
+        await new Promise(resolve => setTimeout(resolve, 200));
+        setupEventListeners();
+        setupProfileDropdown();
+        
+        const profileForm = document.getElementById('profileForm');
+        if (profileForm) {
+            profileForm.addEventListener('submit', handleProfileSubmit);
+        }
+        
+        if (supabase) {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    const profileComplete = await checkUserProfile(session.user);
+                    if (profileComplete) {
+                        updateUIForLoggedInUser(session.user);
+                    }
+                }
+            } catch (error) {
+                console.error('Error in backup initialization:', error);
+            }
+        }
+        console.log('Backup initialization complete');
+    }, 1000);
+}
 
 // Handle logout
 async function logout() {
