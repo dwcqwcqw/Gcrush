@@ -90,173 +90,70 @@ document.addEventListener('DOMContentLoaded', () => {
             if (video && img) {
                 let isHovered = false;
                 let videoReady = false;
-                let loadAttempts = 0;
-                const maxAttempts = 3;
+                let isLoading = false;
                 
-                // Enhanced preload video function
-                const preloadVideo = () => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    loadAttempts++;
-                    
-                    try {
-                        // Check video format support
-                        console.log(`${characterName} - Browser video format support:`);
-                        console.log('MP4:', video.canPlayType('video/mp4'));
-                        console.log('MOV:', video.canPlayType('video/quicktime'));
+                // Set video to not preload initially
+                video.preload = 'none';
+                video.removeAttribute('autoplay');
+                
+                // Load video on first hover
+                const loadVideo = () => {
+                    if (!videoReady && !isLoading) {
+                        isLoading = true;
+                        const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
+                        console.log(`Loading video for ${characterName} on hover`);
                         
-                        // Set preload attribute
-                        video.preload = 'metadata';
-                        
-                        // Test video sources
-                        const sources = video.querySelectorAll('source');
-                        sources.forEach((source, index) => {
-                            console.log(`Source ${index + 1} for ${characterName}:`, source.src, source.type);
-                            console.log(`Can play this type: ${video.canPlayType(source.type)}`);
-                        });
-                        
-                        // Force reload to try again
+                        // Set preload to auto and load
+                        video.preload = 'auto';
                         video.load();
-                        
-                        console.log(`Started loading video for: ${characterName} (attempt ${loadAttempts})`);
-                        
-                    } catch (error) {
-                        console.error(`Error loading video for ${characterName}:`, error);
-                        if (loadAttempts < maxAttempts) {
-                            setTimeout(() => preloadVideo(), 1000);
-                        }
                     }
                 };
                 
-                // Start preloading with staggered delays
-                const cardIndex = Array.from(characterCards).indexOf(card);
-                setTimeout(() => {
-                    preloadVideo();
-                }, 100 + (cardIndex * 150));
-                
-                // Enhanced video loading events
-                video.addEventListener('loadstart', () => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.log(`${characterName}: loadstart - Loading started`);
-                });
-                
-                video.addEventListener('loadedmetadata', () => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.log(`${characterName}: loadedmetadata - Metadata loaded`);
-                    // Mark as ready once metadata is loaded
-                    videoReady = true;
-                    video.classList.add('loaded');
-                });
-                
+                // Simplified video loading events
                 video.addEventListener('loadeddata', () => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.log(`${characterName}: loadeddata - Data loaded`);
                     videoReady = true;
+                    isLoading = false;
                     video.classList.add('loaded');
-                });
-                
-                video.addEventListener('canplay', () => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.log(`${characterName}: canplay - Can start playing`);
-                    videoReady = true;
-                    video.classList.add('loaded');
-                });
-                
-                video.addEventListener('canplaythrough', () => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.log(`${characterName}: canplaythrough - Can play through`);
-                    videoReady = true;
-                    video.classList.add('loaded');
-                });
-                
-                video.addEventListener('suspend', () => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.log(`${characterName}: suspend - Loading suspended`);
-                    // Try to resume loading if suspended
-                    if (!videoReady && loadAttempts < maxAttempts) {
-                        setTimeout(() => {
-                            console.log(`${characterName}: Retrying after suspend...`);
-                            preloadVideo();
-                        }, 2000);
-                    }
-                });
-                
-                video.addEventListener('abort', () => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.log(`${characterName}: abort - Loading aborted`);
-                    // Retry loading
-                    if (loadAttempts < maxAttempts) {
-                        setTimeout(() => preloadVideo(), 1000);
-                    }
-                });
-                
-                video.addEventListener('stalled', () => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.log(`${characterName}: stalled - Loading stalled`);
-                    // Try to resume loading
-                    if (!videoReady && loadAttempts < maxAttempts) {
-                        setTimeout(() => {
-                            console.log(`${characterName}: Retrying after stall...`);
-                            video.load();
-                        }, 1500);
-                    }
-                });
-                
-                // Enhanced error handling
-                video.addEventListener('error', (e) => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.error(`Video failed to load for ${characterName}:`, e);
+                    console.log(`Video ready for ${card.querySelector('.character-name')?.textContent}`);
                     
-                    // Log detailed error information
-                    if (video.error) {
-                        console.error(`Video error code: ${video.error.code}`);
-                        console.error(`Video error message: ${video.error.message}`);
-                    }
-                    
-                    videoReady = false;
-                    video.classList.remove('loaded');
-                    
-                    // Test the URLs directly
-                    const sources = video.querySelectorAll('source');
-                    sources.forEach((source, index) => {
-                        fetch(source.src, { method: 'HEAD' })
-                            .then(response => {
-                                console.log(`${characterName} source ${index + 1} (${source.src}): ${response.status} ${response.statusText}`);
-                                if (!response.ok) {
-                                    console.error(`${characterName} source ${index + 1} is not accessible`);
-                                }
-                            })
-                            .catch(error => {
-                                console.error(`${characterName} source ${index + 1} fetch failed:`, error);
-                            });
-                    });
-                    
-                    // Retry loading with different approach
-                    if (loadAttempts < maxAttempts) {
-                        setTimeout(() => {
-                            console.log(`${characterName}: Retrying after error...`);
-                            preloadVideo();
-                        }, 2000);
-                    }
-                });
-                
-                // Mouse enter - start video only if loaded
-                card.addEventListener('mouseenter', () => {
-                    isHovered = true;
-                    
-                    if (videoReady) {
+                    // If hovering, start playing immediately
+                    if (isHovered) {
                         img.style.opacity = '0';
                         video.classList.add('playing');
                         video.currentTime = 0;
                         video.play().catch(error => {
                             console.log('Video playback failed:', error);
-                            // Fallback to image
+                            img.style.opacity = '1';
+                            video.classList.remove('playing');
+                        });
+                    }
+                });
+                
+                // Handle video errors
+                video.addEventListener('error', (e) => {
+                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
+                    console.error(`Video failed to load for ${characterName}`);
+                    videoReady = false;
+                    isLoading = false;
+                });
+                
+                // Mouse enter - load and play video
+                card.addEventListener('mouseenter', () => {
+                    isHovered = true;
+                    
+                    if (videoReady) {
+                        // Video is ready, play it
+                        img.style.opacity = '0';
+                        video.classList.add('playing');
+                        video.currentTime = 0;
+                        video.play().catch(error => {
+                            console.log('Video playback failed:', error);
                             img.style.opacity = '1';
                             video.classList.remove('playing');
                         });
                     } else {
-                        // Try to load video if not ready
-                        console.log(`Video not ready for ${card.querySelector('.character-name')?.textContent}, attempting to load...`);
-                        preloadVideo();
+                        // Load video on first hover
+                        loadVideo();
                     }
                 });
                 
@@ -278,10 +175,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         });
                     }
                 });
-                
-                // Pause all videos when page visibility changes
-                document.addEventListener('visibilitychange', () => {
-                    if (document.hidden) {
+            }
+        });
+        
+        // Pause all videos when page visibility changes
+        document.addEventListener('visibilitychange', () => {
+            if (document.hidden) {
+                characterCards.forEach(card => {
+                    const video = card.querySelector('.character-video');
+                    if (video) {
                         video.pause();
                     }
                 });
