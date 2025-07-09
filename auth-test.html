@@ -130,10 +130,18 @@
         
         async function socialAuth(provider) {
             try {
+                let redirectUrl;
+                if (provider === 'twitter') {
+                    redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
+                } else {
+                    redirectUrl = window.location.origin + '/auth-test.html';
+                }
+                log(`Using ${provider} redirect URL: ${redirectUrl}`);
+                
                 const { data, error } = await supabase.auth.signInWithOAuth({
                     provider: provider,
                     options: {
-                        redirectTo: window.location.origin + '/auth-test.html'
+                        redirectTo: redirectUrl
                     }
                 });
                 

@@ -334,9 +334,19 @@ async function handleSocialAuth(provider) {
     }, 10000);
     
     try {
-        // Use the current page URL for OAuth redirect
-        const redirectUrl = window.location.href.split('#')[0];
-        console.log('Using OAuth redirect URL:', redirectUrl);
+        // Use proper OAuth redirect URLs
+        let redirectUrl;
+        if (provider === 'twitter') {
+            // Twitter requires the Supabase callback URL
+            redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
+        } else {
+            // For Google and other providers, use the current domain with proper callback
+            const currentDomain = window.location.hostname.includes('gcrush.pages.dev') || window.location.hostname.includes('pages.dev') 
+                ? window.location.origin 
+                : window.location.origin;
+            redirectUrl = currentDomain;
+        }
+        console.log(`Using OAuth redirect URL for ${provider}:`, redirectUrl);
         
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: provider,

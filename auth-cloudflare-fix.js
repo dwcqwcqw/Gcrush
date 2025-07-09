@@ -132,10 +132,21 @@ async function performSocialAuth(provider) {
     console.log(`🔐 Starting ${provider} authentication...`);
     
     try {
+        // Use proper OAuth redirect URLs
+        let redirectUrl;
+        if (provider === 'twitter') {
+            // Twitter requires the Supabase callback URL
+            redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
+        } else {
+            // For Google and other providers, use the current domain
+            redirectUrl = window.location.origin;
+        }
+        console.log(`Using OAuth redirect URL for ${provider}:`, redirectUrl);
+        
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider,
             options: {
-                redirectTo: window.location.origin
+                redirectTo: redirectUrl
             }
         });
         
