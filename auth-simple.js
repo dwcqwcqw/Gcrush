@@ -134,14 +134,7 @@ function renderAuthUI() {
                     ${!isSignUp ? '<a href="#" class="forgot-password">Forgot password?</a>' : ''}
                 </div>
                 
-                ${isSignUp ? `
-                <div class="form-group">
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="terms" required>
-                        <span>I agree to the <a href="#" class="auth-link">Terms of Service</a> and <a href="#" class="auth-link">Privacy Policy</a></span>
-                    </label>
-                </div>
-                ` : ''}
+
                 
                 <button type="submit" class="submit-btn primary-btn">
                     <span class="btn-text">${isSignUp ? 'Create Account' : 'Sign In'}</span>
@@ -603,9 +596,7 @@ async function enhancedInitialization() {
                         <div class="modal-content auth-modal">
                             <button class="modal-close">&times;</button>
                             <div id="auth-container"></div>
-                            <p class="auth-disclaimer">
-                                By signing up you confirm that you are over 18 years old and agree to the <a href="#">Terms and Conditions</a>.
-                            </p>
+
                         </div>
                     </div>
                 `;

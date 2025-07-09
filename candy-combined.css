@@ -2500,22 +2500,7 @@ ul {
     color: var(--accent-pink);
 }
 
-.checkbox-label {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    font-size: 0.9rem;
-    color: var(--text-silver);
-    cursor: pointer;
-}
 
-.checkbox-label input[type="checkbox"] {
-    margin-top: 2px;
-    width: 18px;
-    height: 18px;
-    accent-color: var(--accent-purple);
-    cursor: pointer;
-}
 
 .auth-link {
     color: var(--accent-purple);
