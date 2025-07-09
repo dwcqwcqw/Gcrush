@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test - Gcrush</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #333;
+            border-radius: 8px;
+            background: #222;
+        }
+        .test-btn {
+            padding: 10px 20px;
+            margin: 5px;
+            background: #A259FF;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .test-btn:hover {
+            background: #8a3fe6;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #333;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .success {
+            color: #4ade80;
+        }
+        .error {
+            color: #f87171;
+        }
+        .info {
+            color: #60a5fa;
+        }
+    </style>
+</head>
+<body>
+    <h1>Gcrush Auth System Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Environment Check</h2>
+        <button class="test-btn" onclick="checkEnvironment()">Check Environment</button>
+        <div id="env-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Supabase Connection</h2>
+        <button class="test-btn" onclick="testSupabase()">Test Supabase</button>
+        <div id="supabase-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Email Validation</h2>
+        <input type="email" id="test-email" placeholder="Enter email to check" style="padding: 8px; margin-right: 10px;">
+        <button class="test-btn" onclick="testEmailCheck()">Check Email</button>
+        <div id="email-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. OAuth Redirect URLs</h2>
+        <button class="test-btn" onclick="testOAuthRedirects()">Test OAuth URLs</button>
+        <div id="oauth-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>5. Registration Flow</h2>
+        <input type="email" id="reg-email" placeholder="Email" style="padding: 8px; margin: 5px;">
+        <input type="password" id="reg-password" placeholder="Password (min 6)" style="padding: 8px; margin: 5px;">
+        <button class="test-btn" onclick="testRegistration()">Test Registration</button>
+        <div id="reg-result" class="result"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://kuflobojizyttadwcbhe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+        
+        let supabase = null;
+        
+        // Initialize Supabase
+        if (window.supabase) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        }
+        
+        function showResult(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.className = `result ${type}`;
+            element.textContent = message;
+        }
+        
+        function checkEnvironment() {
+            const info = {
+                'Current URL': window.location.href,
+                'Hostname': window.location.hostname,
+                'Protocol': window.location.protocol,
+                'Is Production': window.location.hostname === 'gcrush.org',
+                'Is Localhost': window.location.hostname === 'localhost',
+                'Supabase SDK': !!window.supabase ? 'Loaded' : 'Not Loaded'
+            };
+            
+            let result = 'Environment Information:\n';
+            for (const [key, value] of Object.entries(info)) {
+                result += `${key}: ${value}\n`;
+            }
+            
+            showResult('env-result', result, 'info');
+        }
+        
+        async function testSupabase() {
+            if (!supabase) {
+                showResult('supabase-result', 'Supabase SDK not loaded!', 'error');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabase.auth.getSession();
+                if (error) {
+                    showResult('supabase-result', `Error: ${error.message}`, 'error');
+                } else {
+                    const session = data.session;
+                    showResult('supabase-result', 
+                        `Supabase Connected!\nSession: ${session ? 'Active (User: ' + session.user.email + ')' : 'No active session'}`, 
+                        'success'
+                    );
+                }
+            } catch (error) {
+                showResult('supabase-result', `Connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testEmailCheck() {
+            const email = document.getElementById('test-email').value;
+            if (!email) {
+                showResult('email-result', 'Please enter an email address', 'error');
+                return;
+            }
+            
+            if (!supabase) {
+                showResult('email-result', 'Supabase not initialized', 'error');
+                return;
+            }
+            
+            try {
+                // Test email check logic
+                const { error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: 'dummy_check_12345678'
+                });
+                
+                if (error && error.message.includes('Invalid login credentials')) {
+                    showResult('email-result', `Email "${email}" is already registered`, 'info');
+                } else {
+                    showResult('email-result', `Email "${email}" is not registered`, 'success');
+                }
+            } catch (error) {
+                showResult('email-result', `Error checking email: ${error.message}`, 'error');
+            }
+        }
+        
+        function testOAuthRedirects() {
+            const currentUrl = window.location.href.split('#')[0];
+            const providers = ['google', 'twitter'];
+            
+            let result = 'OAuth Redirect URLs:\n';
+            result += `Current Page URL: ${currentUrl}\n\n`;
+            
+            providers.forEach(provider => {
+                result += `${provider.charAt(0).toUpperCase() + provider.slice(1)} OAuth URL:\n`;
+                result += `Provider: ${provider}\n`;
+                result += `Redirect To: ${currentUrl}\n`;
+                result += `Note: This is the URL that will be used for OAuth redirect\n\n`;
+            });
+            
+            showResult('oauth-result', result, 'info');
+        }
+        
+        async function testRegistration() {
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            
+            if (!email || !password) {
+                showResult('reg-result', 'Please enter email and password', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showResult('reg-result', 'Password must be at least 6 characters', 'error');
+                return;
+            }
+            
+            if (!supabase) {
+                showResult('reg-result', 'Supabase not initialized', 'error');
+                return;
+            }
+            
+            try {
+                // First check if email exists
+                const { error: checkError } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: 'dummy_check_12345678'
+                });
+                
+                if (checkError && checkError.message.includes('Invalid login credentials')) {
+                    showResult('reg-result', 'Email already exists! Please use a different email.', 'error');
+                    return;
+                }
+                
+                // Try to sign up
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            email_confirm: false
+                        }
+                    }
+                });
+                
+                if (error) {
+                    showResult('reg-result', `Signup error: ${error.message}`, 'error');
+                    return;
+                }
+                
+                let result = `Signup successful!\n`;
+                result += `User ID: ${data.user?.id || 'N/A'}\n`;
+                result += `Email: ${data.user?.email || 'N/A'}\n`;
+                result += `Session: ${data.session ? 'Created' : 'Not created'}\n`;
+                
+                // Try auto sign-in if no session
+                if (!data.session) {
+                    result += '\nAttempting auto sign-in...\n';
+                    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+                    
+                    if (signInError) {
+                        result += `Auto sign-in failed: ${signInError.message}`;
+                    } else {
+                        result += `Auto sign-in successful! Session created.`;
+                    }
+                }
+                
+                showResult('reg-result', result, 'success');
+                
+            } catch (error) {
+                showResult('reg-result', `Error: ${error.message}`, 'error');
+            }
+        }
+        
+        // Run environment check on load
+        window.onload = () => {
+            checkEnvironment();
+        };
+    </script>
+</body>
+</html>

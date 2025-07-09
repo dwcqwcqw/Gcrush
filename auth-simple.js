@@ -116,22 +116,6 @@ function renderAuthUI() {
                 <p class="auth-subtitle">${isSignUp ? 'Join thousands of users exploring AI companions' : 'Sign in to continue your conversations'}</p>
             </div>
             
-            <div class="social-auth">
-                <button type="button" class="social-btn google-btn" data-provider="google">
-                    <i class="fab fa-google"></i>
-                    <span>Continue with Google</span>
-                </button>
-                
-                <button type="button" class="social-btn twitter-btn" data-provider="twitter">
-                    <span class="x-icon">𝕏</span>
-                    <span>Continue with X</span>
-                </button>
-            </div>
-            
-            <div class="auth-divider">
-                <span>or continue with email</span>
-            </div>
-            
             <form id="authForm" class="email-auth-form">
                 <div class="form-group">
                     <label for="email" class="form-label">Email Address</label>
@@ -158,6 +142,22 @@ function renderAuthUI() {
                     <i class="fas fa-arrow-right"></i>
                 </button>
             </form>
+            
+            <div class="auth-divider">
+                <span>or continue with</span>
+            </div>
+            
+            <div class="social-auth">
+                <button type="button" class="social-btn google-btn" data-provider="google">
+                    <i class="fab fa-google"></i>
+                    <span>Continue with Google</span>
+                </button>
+                
+                <button type="button" class="social-btn twitter-btn" data-provider="twitter">
+                    <span class="x-icon">𝕏</span>
+                    <span>Continue with X</span>
+                </button>
+            </div>
             
             <div class="auth-footer">
                 <p>${isSignUp ? 'Already have an account?' : "Don't have an account?"} 
@@ -239,12 +239,14 @@ async function handleAuthSubmit(e) {
                 return;
             }
             
-            // Sign up new user
+            // Sign up new user with email confirmation disabled
             const { data, error } = await supabase.auth.signUp({
                 email: email,
                 password: password,
                 options: {
-                    emailRedirectTo: `${window.location.origin}/auth/callback`
+                    data: {
+                        email_confirm: false
+                    }
                 }
             });
             
@@ -252,9 +254,19 @@ async function handleAuthSubmit(e) {
             
             console.log('Sign up successful:', data);
             
+            // Immediately sign in the user after signup
             if (data.user && !data.session) {
-                // Email confirmation required
-                showInlineError('Please check your email to confirm your account before signing in.', 'success');
+                const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (signInError) {
+                    console.error('Auto sign-in after signup failed:', signInError);
+                    showInlineError('Account created successfully. Please sign in.');
+                } else {
+                    console.log('Auto sign-in successful:', signInData);
+                }
             }
             // If session exists, auth state change will handle the rest
             
@@ -316,10 +328,8 @@ async function handleSocialAuth(provider) {
     }, 10000);
     
     try {
-        // Use the production domain for OAuth redirect
-        const redirectUrl = window.location.hostname === 'localhost' 
-            ? 'http://localhost:3000' 
-            : 'https://gcrush.org';
+        // Use the current page URL for OAuth redirect
+        const redirectUrl = window.location.href.split('#')[0];
         console.log('Using OAuth redirect URL:', redirectUrl);
         
         const { data, error } = await supabase.auth.signInWithOAuth({
@@ -662,7 +672,7 @@ async function handleProfileSubmit(e) {
     }
 }
 
-// Check if user needs to complete profile - now optional
+// Check if user needs to complete profile - REMOVED AUTO POPUP
 async function checkUserProfile(user) {
     try {
         const { data: profile, error } = await supabase
@@ -672,8 +682,8 @@ async function checkUserProfile(user) {
             .single();
             
         if (error && error.code === 'PGRST116') {
-            // No profile found, show profile setup modal
-            openModal(profileModal);
+            // No profile found, but don't show modal automatically
+            console.log('No profile found for user');
             return false;
         }
         
@@ -915,31 +925,25 @@ async function logout() {
 // Make logout available globally
 window.logout = logout;
 
-// Check if email is already registered against the database
+// Check if email is already registered
 async function checkEmailExists(email) {
     try {
-        // Query the profiles table to check if email exists
-        const { data, error } = await supabase
-            .from('profiles')
-            .select('id')
-            .eq('email', email)
-            .single();
+        // Try to sign in with a dummy password to check if email exists
+        const { error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: 'dummy_check_12345678'
+        });
         
-        if (error && error.code === 'PGRST116') {
-            // No profile found - email doesn't exist
-            return false;
-        }
-        
-        if (data) {
-            // Profile found - email exists
+        // If we get invalid credentials, the email exists
+        if (error && error.message.includes('Invalid login credentials')) {
             return true;
         }
         
-        // For any other case, assume email doesn't exist
+        // Any other error means email doesn't exist
         return false;
         
     } catch (error) {
-        console.error('Error checking email in database:', error);
+        console.error('Error checking email:', error);
         return false; // On error, assume email doesn't exist
     }
 }
