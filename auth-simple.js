@@ -13,17 +13,34 @@ let createAccountBtn = null;
 let userProfile = null;
 let authContainer = null;
 
+// Initialize Supabase client safely
+function initializeSupabase() {
+    if (!window.supabase) {
+        console.error('Supabase SDK not loaded!');
+        return false;
+    }
+    
+    try {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('Supabase client initialized successfully');
+        return true;
+    } catch (error) {
+        console.error('Failed to initialize Supabase client:', error);
+        return false;
+    }
+}
+
 // Initialize after DOM is loaded
 function initializeAuth() {
     console.log('Initializing auth system...');
-    console.log('window.supabase:', window.supabase);
     
-    if (!window.supabase) {
-        console.error('Supabase not loaded!');
+    // First, initialize Supabase client
+    if (!initializeSupabase()) {
+        console.error('Cannot initialize auth system without Supabase');
         return;
     }
     
-    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // Get DOM elements
     authModal = document.getElementById('authModal');
     profileModal = document.getElementById('profileModal');
     loginBtn = document.querySelector('.login-btn');
@@ -39,6 +56,34 @@ function initializeAuth() {
         createAccountBtn: !!createAccountBtn, 
         userProfile: !!userProfile, 
         authContainer: !!authContainer 
+    });
+    
+    // Setup auth state change listener only after supabase is initialized
+    if (supabase) {
+        setupAuthStateListener();
+    }
+}
+
+// Setup auth state change listener separately
+function setupAuthStateListener() {
+    supabase.auth.onAuthStateChange(async (event, session) => {
+        console.log('Auth state changed:', event, session);
+        
+        if (event === 'SIGNED_IN' && session) {
+            console.log('User signed in successfully');
+            closeModal(authModal);
+            
+            // Check if profile is complete
+            const profileComplete = await checkUserProfile(session.user);
+            if (profileComplete) {
+                updateUIForLoggedInUser(session.user);
+            }
+        } else if (event === 'SIGNED_OUT') {
+            // Reset UI
+            if (loginBtn) loginBtn.style.display = 'inline-block';
+            if (createAccountBtn) createAccountBtn.style.display = 'inline-block';
+            if (userProfile) userProfile.style.display = 'none';
+        }
     });
 }
 
@@ -259,15 +304,114 @@ window.testAuth = {
     }
 };
 
-// Modal Controls
+// Setup event listeners for auth buttons
+function setupEventListeners() {
+    console.log('Setting up event listeners...');
+    
+    // Wait for elements to be available
+    const waitForElements = async () => {
+        let attempts = 0;
+        const maxAttempts = 10;
+        
+        while (attempts < maxAttempts) {
+            const loginBtn = document.querySelector('.login-btn');
+            const createAccountBtn = document.querySelector('.create-account-btn');
+            
+            if (loginBtn && createAccountBtn) {
+                console.log('Auth buttons found, setting up listeners');
+                
+                // Remove any existing listeners
+                const newLoginBtn = loginBtn.cloneNode(true);
+                const newCreateBtn = createAccountBtn.cloneNode(true);
+                
+                loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
+                createAccountBtn.parentNode.replaceChild(newCreateBtn, createAccountBtn);
+                
+                // Add event listeners
+                newLoginBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Login button clicked');
+                    
+                    if (!supabase) {
+                        console.error('Supabase not initialized');
+                        alert('Authentication system is not ready. Please refresh the page.');
+                        return;
+                    }
+                    
+                    authView = 'sign_in';
+                    renderAuthUI();
+                    openModal(authModal);
+                });
+                
+                newCreateBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Create account button clicked');
+                    
+                    if (!supabase) {
+                        console.error('Supabase not initialized');
+                        alert('Authentication system is not ready. Please refresh the page.');
+                        return;
+                    }
+                    
+                    authView = 'sign_up';
+                    renderAuthUI();
+                    openModal(authModal);
+                });
+                
+                console.log('Event listeners set up successfully');
+                return true;
+            }
+            
+            attempts++;
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+        
+        console.error('Failed to find auth buttons after', maxAttempts, 'attempts');
+        return false;
+    };
+    
+    return waitForElements();
+}
+
+// Enhanced modal controls with better error handling
 function openModal(modal) {
     console.log('Opening modal:', modal);
     if (!modal) {
         console.error('Modal not found!');
         return;
     }
-    modal.classList.add('active');
-    document.body.style.overflow = 'hidden';
+    
+    try {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden';
+        
+        // Setup modal close handlers
+        const closeBtn = modal.querySelector('.modal-close');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => closeModal(modal));
+        }
+        
+        // Close on overlay click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal(modal);
+            }
+        });
+        
+        // Close on escape key
+        const escapeHandler = (e) => {
+            if (e.key === 'Escape') {
+                closeModal(modal);
+                document.removeEventListener('keydown', escapeHandler);
+            }
+        };
+        document.addEventListener('keydown', escapeHandler);
+        
+    } catch (error) {
+        console.error('Error opening modal:', error);
+    }
 }
 
 function closeModal(modal) {
@@ -276,65 +420,113 @@ function closeModal(modal) {
         console.error('Modal not found!');
         return;
     }
-    modal.classList.remove('active');
-    document.body.style.overflow = 'auto';
+    
+    try {
+        modal.classList.remove('active');
+        document.body.style.overflow = '';
+    } catch (error) {
+        console.error('Error closing modal:', error);
+    }
 }
 
-// Event Listeners for opening modals
-function setupEventListeners() {
-    console.log('Setting up event listeners...');
+// Enhanced initialization with multiple fallback strategies
+async function enhancedInitialization() {
+    console.log('Starting enhanced initialization...');
     
-    if (loginBtn) {
-        console.log('Adding login button listener');
-        loginBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            console.log('Login button clicked');
-            if (!authModal || !authContainer) {
-                console.error('Auth modal or container not found');
-                return;
-            }
-            authView = 'sign_in';
-            renderAuthUI();
-            openModal(authModal);
-        });
-    } else {
-        console.log('Login button not found');
+    // Strategy 1: Normal initialization
+    try {
+        initializeAuth();
+        const success = await setupEventListeners();
+        if (success) {
+            console.log('Normal initialization successful');
+            return true;
+        }
+    } catch (error) {
+        console.error('Normal initialization failed:', error);
     }
     
-    if (createAccountBtn) {
-        console.log('Adding create account button listener');
-        createAccountBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            console.log('Create account button clicked');
-            if (!authModal || !authContainer) {
-                console.error('Auth modal or container not found');
-                return;
-            }
-            authView = 'sign_up';
-            renderAuthUI();
-            openModal(authModal);
-        });
-    } else {
-        console.log('Create account button not found');
+    // Strategy 2: Delayed initialization
+    console.log('Trying delayed initialization...');
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    try {
+        initializeAuth();
+        const success = await setupEventListeners();
+        if (success) {
+            console.log('Delayed initialization successful');
+            return true;
+        }
+    } catch (error) {
+        console.error('Delayed initialization failed:', error);
     }
     
-    // Close modal on clicking X or outside
-    document.querySelectorAll('.modal-close').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const modal = e.target.closest('.modal-overlay');
-            closeModal(modal);
-        });
-    });
-    
-    document.querySelectorAll('.modal-overlay').forEach(modal => {
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal(modal);
+    // Strategy 3: Force initialization with direct DOM manipulation
+    console.log('Trying force initialization...');
+    setTimeout(() => {
+        const loginBtn = document.querySelector('.login-btn');
+        const createAccountBtn = document.querySelector('.create-account-btn');
+        
+        if (loginBtn && createAccountBtn) {
+            console.log('Force initialization: buttons found');
+            
+            // Create modal if it doesn't exist
+            if (!document.getElementById('authModal')) {
+                console.log('Creating auth modal...');
+                const modalHTML = `
+                    <div class="modal-overlay" id="authModal">
+                        <div class="modal-content auth-modal">
+                            <button class="modal-close">&times;</button>
+                            <div id="auth-container"></div>
+                            <p class="auth-disclaimer">
+                                By signing up you confirm that you are over 18 years old and agree to the <a href="#">Terms and Conditions</a>.
+                            </p>
+                        </div>
+                    </div>
+                `;
+                document.body.insertAdjacentHTML('beforeend', modalHTML);
             }
-        });
-    });
+            
+            // Force setup
+            authModal = document.getElementById('authModal');
+            authContainer = document.getElementById('auth-container');
+            
+            // Add direct event listeners
+            loginBtn.onclick = (e) => {
+                e.preventDefault();
+                console.log('Force login clicked');
+                
+                if (!supabase && !initializeSupabase()) {
+                    alert('Authentication system is not ready. Please refresh the page.');
+                    return;
+                }
+                
+                authView = 'sign_in';
+                renderAuthUI();
+                openModal(authModal);
+            };
+            
+            createAccountBtn.onclick = (e) => {
+                e.preventDefault();
+                console.log('Force create account clicked');
+                
+                if (!supabase && !initializeSupabase()) {
+                    alert('Authentication system is not ready. Please refresh the page.');
+                    return;
+                }
+                
+                authView = 'sign_up';
+                renderAuthUI();
+                openModal(authModal);
+            };
+            
+            console.log('Force initialization complete');
+        } else {
+            console.error('Force initialization failed: buttons not found');
+        }
+    }, 2000);
+    
+    return false;
 }
-
 
 // Handle Profile Setup
 async function handleProfileSubmit(e) {
@@ -421,27 +613,6 @@ async function checkUserProfile(user) {
     return true;
 }
 
-// Auth State Change Listener
-supabase.auth.onAuthStateChange(async (event, session) => {
-    console.log('Auth state changed:', event, session);
-    
-    if (event === 'SIGNED_IN' && session) {
-        console.log('User signed in successfully');
-        closeModal(authModal);
-        
-        // Check if profile is complete
-        const profileComplete = await checkUserProfile(session.user);
-        if (profileComplete) {
-            updateUIForLoggedInUser(session.user);
-        }
-    } else if (event === 'SIGNED_OUT') {
-        // Reset UI
-        if (loginBtn) loginBtn.style.display = 'inline-block';
-        if (createAccountBtn) createAccountBtn.style.display = 'inline-block';
-        if (userProfile) userProfile.style.display = 'none';
-    }
-});
-
 // Create dropdown menu for user profile
 let dropdownMenu = null;
 
@@ -520,14 +691,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Wait for DOM to be fully loaded and scripts to initialize
     await new Promise(resolve => setTimeout(resolve, 500));
     
-    // Initialize auth system
-    initializeAuth();
-    
-    // Wait a bit more for Supabase to fully initialize
-    await new Promise(resolve => setTimeout(resolve, 200));
-    
-    // Setup event listeners
-    setupEventListeners();
+    // Use enhanced initialization
+    await enhancedInitialization();
     
     // Setup profile form if it exists
     const profileForm = document.getElementById('profileForm');
@@ -568,9 +733,7 @@ if (document.readyState === 'loading') {
     console.log('Document already loaded, running immediate initialization');
     setTimeout(async () => {
         console.log('Backup initialization starting');
-        initializeAuth();
-        await new Promise(resolve => setTimeout(resolve, 200));
-        setupEventListeners();
+        await enhancedInitialization();
         setupProfileDropdown();
         
         const profileForm = document.getElementById('profileForm');
@@ -595,161 +758,29 @@ if (document.readyState === 'loading') {
     }, 1000);
 }
 
-// Additional aggressive initialization for production issues
+// Final fallback initialization
 setTimeout(() => {
-    console.log('Aggressive initialization starting...');
+    console.log('Final fallback initialization check...');
     
-    // Force re-initialize if buttons still don't work
+    // Check if buttons are working
     const loginBtn = document.querySelector('.login-btn');
     const createAccountBtn = document.querySelector('.create-account-btn');
     
     if (loginBtn && createAccountBtn) {
-        console.log('Forcing button event listeners...');
+        // Test if buttons have click handlers
+        const hasLoginHandler = loginBtn.onclick || loginBtn.getAttribute('onclick');
+        const hasCreateHandler = createAccountBtn.onclick || createAccountBtn.getAttribute('onclick');
         
-        // Remove any existing listeners and add new ones
-        const newLoginBtn = loginBtn.cloneNode(true);
-        const newCreateBtn = createAccountBtn.cloneNode(true);
-        
-        loginBtn.parentNode.replaceChild(newLoginBtn, loginBtn);
-        createAccountBtn.parentNode.replaceChild(newCreateBtn, createAccountBtn);
-        
-        // Add event listeners directly
-        newLoginBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('FORCED Login button clicked');
-            
-            const modal = document.getElementById('authModal');
-            const container = document.getElementById('auth-container');
-            
-            if (!modal || !container) {
-                console.error('Modal elements not found');
-                return;
-            }
-            
-            // Simple login form
-            container.innerHTML = `
-                <div class="auth-ui-container">
-                    <h2 class="auth-title">Welcome Back</h2>
-                    <form id="simpleLoginForm" class="auth-form">
-                        <div class="form-group">
-                            <input type="email" id="loginEmail" placeholder="Email" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="loginPassword" placeholder="Password" required>
-                        </div>
-                        <button type="submit" class="submit-btn login-style">Sign In</button>
-                    </form>
-                    <div class="auth-divider"><span>or continue with</span></div>
-                    <div class="social-auth">
-                        <button onclick="window.testAuth.google()" class="social-btn">
-                            <i class="fab fa-google"></i><span>Google</span>
-                        </button>
-                        <button onclick="window.testAuth.twitter()" class="social-btn">
-                            <i class="fab fa-twitter"></i><span>Twitter/X</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            // Add form listener
-            document.getElementById('simpleLoginForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('loginEmail').value;
-                const password = document.getElementById('loginPassword').value;
-                
-                if (window.supabase) {
-                    try {
-                        const supabase = window.supabase.createClient(
-                            'https://kuflobojizyttadwcbhe.supabase.co',
-                            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
-                        );
-                        const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-                        if (error) throw error;
-                        console.log('Login successful:', data);
-                        modal.classList.remove('active');
-                    } catch (error) {
-                        console.error('Login error:', error);
-                        alert('Login failed: ' + error.message);
-                    }
-                }
-            });
-            
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
-        
-        newCreateBtn.addEventListener('click', (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('FORCED Create account button clicked');
-            
-            const modal = document.getElementById('authModal');
-            const container = document.getElementById('auth-container');
-            
-            if (!modal || !container) {
-                console.error('Modal elements not found');
-                return;
-            }
-            
-            // Simple signup form
-            container.innerHTML = `
-                <div class="auth-ui-container">
-                    <h2 class="auth-title">Create Account</h2>
-                    <form id="simpleSignupForm" class="auth-form">
-                        <div class="form-group">
-                            <input type="email" id="signupEmail" placeholder="Email" required>
-                        </div>
-                        <div class="form-group">
-                            <input type="password" id="signupPassword" placeholder="Password (min 6 chars)" required>
-                        </div>
-                        <button type="submit" class="submit-btn">Sign Up</button>
-                    </form>
-                    <div class="auth-divider"><span>or continue with</span></div>
-                    <div class="social-auth">
-                        <button onclick="window.testAuth.google()" class="social-btn">
-                            <i class="fab fa-google"></i><span>Google</span>
-                        </button>
-                        <button onclick="window.testAuth.twitter()" class="social-btn">
-                            <i class="fab fa-twitter"></i><span>Twitter/X</span>
-                        </button>
-                    </div>
-                </div>
-            `;
-            
-            // Add form listener
-            document.getElementById('simpleSignupForm').addEventListener('submit', async (e) => {
-                e.preventDefault();
-                const email = document.getElementById('signupEmail').value;
-                const password = document.getElementById('signupPassword').value;
-                
-                if (window.supabase) {
-                    try {
-                        const supabase = window.supabase.createClient(
-                            'https://kuflobojizyttadwcbhe.supabase.co',
-                            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
-                        );
-                        const { data, error } = await supabase.auth.signUp({ email, password });
-                        if (error) throw error;
-                        console.log('Signup successful:', data);
-                        alert('Registration successful! Please check your email to confirm your account.');
-                        modal.classList.remove('active');
-                    } catch (error) {
-                        console.error('Signup error:', error);
-                        alert('Registration failed: ' + error.message);
-                    }
-                }
-            });
-            
-            modal.classList.add('active');
-            document.body.style.overflow = 'hidden';
-        });
-        
-        console.log('Forced button listeners added');
+        if (!hasLoginHandler || !hasCreateHandler) {
+            console.log('Buttons found but no handlers detected, running final setup...');
+            enhancedInitialization();
+        } else {
+            console.log('Buttons appear to be working correctly');
+        }
     } else {
-        console.log('Buttons not found for forced initialization');
+        console.log('Auth buttons not found in final check');
     }
-}, 2000);
+}, 3000);
 
 // Handle logout
 async function logout() {

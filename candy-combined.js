@@ -90,17 +90,19 @@ document.addEventListener('DOMContentLoaded', () => {
             if (video && img) {
                 let isHovered = false;
                 let videoReady = false;
+                let loadAttempts = 0;
+                const maxAttempts = 3;
                 
-                // Preload video in background
+                // Enhanced preload video function
                 const preloadVideo = () => {
                     const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
+                    loadAttempts++;
                     
                     try {
                         // Check video format support
                         console.log(`${characterName} - Browser video format support:`);
                         console.log('MP4:', video.canPlayType('video/mp4'));
                         console.log('MOV:', video.canPlayType('video/quicktime'));
-                        console.log('MOV (mp4):', video.canPlayType('video/mp4; codecs="avc1.42E01E"'));
                         
                         // Set preload attribute
                         video.preload = 'metadata';
@@ -112,36 +114,37 @@ document.addEventListener('DOMContentLoaded', () => {
                             console.log(`Can play this type: ${video.canPlayType(source.type)}`);
                         });
                         
-                        // Manually trigger load
+                        // Force reload to try again
                         video.load();
                         
-                        console.log('Started loading video for:', characterName);
+                        console.log(`Started loading video for: ${characterName} (attempt ${loadAttempts})`);
                         
                     } catch (error) {
-                        console.error('Error loading video:', error);
+                        console.error(`Error loading video for ${characterName}:`, error);
+                        if (loadAttempts < maxAttempts) {
+                            setTimeout(() => preloadVideo(), 1000);
+                        }
                     }
                 };
                 
-                // Start preloading immediately after DOM is ready, with small delays
+                // Start preloading with staggered delays
                 const cardIndex = Array.from(characterCards).indexOf(card);
                 setTimeout(() => {
                     preloadVideo();
-                }, 100 + (cardIndex * 200)); // Reduced delay to 200ms each
+                }, 100 + (cardIndex * 150));
                 
-                // Video loading events with detailed tracking
+                // Enhanced video loading events
                 video.addEventListener('loadstart', () => {
                     const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
                     console.log(`${characterName}: loadstart - Loading started`);
                 });
                 
-                video.addEventListener('progress', () => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.log(`${characterName}: progress - Downloading`);
-                });
-                
                 video.addEventListener('loadedmetadata', () => {
                     const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
                     console.log(`${characterName}: loadedmetadata - Metadata loaded`);
+                    // Mark as ready once metadata is loaded
+                    videoReady = true;
+                    video.classList.add('loaded');
                 });
                 
                 video.addEventListener('loadeddata', () => {
@@ -161,21 +164,79 @@ document.addEventListener('DOMContentLoaded', () => {
                 video.addEventListener('canplaythrough', () => {
                     const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
                     console.log(`${characterName}: canplaythrough - Can play through`);
+                    videoReady = true;
+                    video.classList.add('loaded');
                 });
                 
                 video.addEventListener('suspend', () => {
                     const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
                     console.log(`${characterName}: suspend - Loading suspended`);
+                    // Try to resume loading if suspended
+                    if (!videoReady && loadAttempts < maxAttempts) {
+                        setTimeout(() => {
+                            console.log(`${characterName}: Retrying after suspend...`);
+                            preloadVideo();
+                        }, 2000);
+                    }
                 });
                 
                 video.addEventListener('abort', () => {
                     const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
                     console.log(`${characterName}: abort - Loading aborted`);
+                    // Retry loading
+                    if (loadAttempts < maxAttempts) {
+                        setTimeout(() => preloadVideo(), 1000);
+                    }
                 });
                 
                 video.addEventListener('stalled', () => {
                     const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
                     console.log(`${characterName}: stalled - Loading stalled`);
+                    // Try to resume loading
+                    if (!videoReady && loadAttempts < maxAttempts) {
+                        setTimeout(() => {
+                            console.log(`${characterName}: Retrying after stall...`);
+                            video.load();
+                        }, 1500);
+                    }
+                });
+                
+                // Enhanced error handling
+                video.addEventListener('error', (e) => {
+                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
+                    console.error(`Video failed to load for ${characterName}:`, e);
+                    
+                    // Log detailed error information
+                    if (video.error) {
+                        console.error(`Video error code: ${video.error.code}`);
+                        console.error(`Video error message: ${video.error.message}`);
+                    }
+                    
+                    videoReady = false;
+                    video.classList.remove('loaded');
+                    
+                    // Test the URLs directly
+                    const sources = video.querySelectorAll('source');
+                    sources.forEach((source, index) => {
+                        fetch(source.src, { method: 'HEAD' })
+                            .then(response => {
+                                console.log(`${characterName} source ${index + 1} (${source.src}): ${response.status} ${response.statusText}`);
+                                if (!response.ok) {
+                                    console.error(`${characterName} source ${index + 1} is not accessible`);
+                                }
+                            })
+                            .catch(error => {
+                                console.error(`${characterName} source ${index + 1} fetch failed:`, error);
+                            });
+                    });
+                    
+                    // Retry loading with different approach
+                    if (loadAttempts < maxAttempts) {
+                        setTimeout(() => {
+                            console.log(`${characterName}: Retrying after error...`);
+                            preloadVideo();
+                        }, 2000);
+                    }
                 });
                 
                 // Mouse enter - start video only if loaded
@@ -192,6 +253,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             img.style.opacity = '1';
                             video.classList.remove('playing');
                         });
+                    } else {
+                        // Try to load video if not ready
+                        console.log(`Video not ready for ${card.querySelector('.character-name')?.textContent}, attempting to load...`);
+                        preloadVideo();
                     }
                 });
                 
@@ -214,28 +279,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 
-                // Handle video load errors gracefully
-                video.addEventListener('error', (e) => {
-                    const characterName = card.querySelector('.character-name')?.textContent || 'Unknown';
-                    console.error(`Video failed to load for ${characterName}:`, e);
-                    console.log('Video element:', video);
-                    console.log('Video sources:', Array.from(video.querySelectorAll('source')).map(s => ({ src: s.src, type: s.type })));
-                    videoReady = false;
-                    video.classList.remove('loaded');
-                    
-                    // Try to test the URLs directly
-                    const sources = video.querySelectorAll('source');
-                    sources.forEach((source, index) => {
-                        fetch(source.src, { method: 'HEAD' })
-                            .then(response => {
-                                console.log(`${characterName} source ${index + 1} (${source.src}): ${response.status} ${response.statusText}`);
-                            })
-                            .catch(error => {
-                                console.error(`${characterName} source ${index + 1} fetch failed:`, error);
-                            });
-                    });
-                });
-                
                 // Pause all videos when page visibility changes
                 document.addEventListener('visibilitychange', () => {
                     if (document.hidden) {
@@ -244,7 +287,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
         });
-        }
+    }
 
     // Logo loading functionality
     function initLogoLoading() {
