@@ -119,7 +119,7 @@ function renderAuthUI() {
                     <i class="fab fa-google"></i><span>Google</span>
                 </button>
                 <button class="social-btn" data-provider="twitter">
-                    <i class="fab fa-x-twitter"></i><span>X</span>
+                    <span class="x-logo">𝕏</span><span>X</span>
                 </button>
             </div>
             
@@ -551,85 +551,76 @@ async function enhancedInitialization() {
 async function handleProfileSubmit(e) {
     e.preventDefault();
     
-    const username = document.getElementById('profileUsername').value;
+    const username = document.getElementById('profileUsername').value.trim();
     const gender = document.getElementById('profileGender').value;
-    const age = parseInt(document.getElementById('profileAge').value);
+    const ageValue = document.getElementById('profileAge').value;
+    const age = ageValue ? parseInt(ageValue) : null;
     
     const { data: { user } } = await supabase.auth.getUser();
     
     if (user) {
         try {
+            // Prepare profile data - only include non-empty values
+            const profileData = {
+                id: user.id,
+                email: user.email,
+                updated_at: new Date().toISOString()
+            };
+            
+            if (username) profileData.username = username;
+            if (gender) profileData.gender = gender;
+            if (age) profileData.age = age;
+            
             const { error } = await supabase
                 .from('profiles')
-                .upsert({
-                    id: user.id,
-                    username: username,
-                    email: user.email,
-                    gender: gender,
-                    age: age,
-                    updated_at: new Date().toISOString()
-                });
+                .upsert(profileData);
                 
             if (error) throw error;
             
             closeModal(profileModal);
-            updateUIForLoggedInUser(user, username);
+            updateUIForLoggedInUser(user, username || user.email);
         } catch (error) {
             console.error('Profile update error:', error);
-            alert('Failed to update profile: ' + error.message);
+            
+            // More specific error handling
+            if (error.message.includes('relation "profiles" does not exist')) {
+                alert('Database not properly configured. Please run the setup-profiles.sql script in your Supabase SQL editor.');
+            } else if (error.message.includes('violates row-level security policy')) {
+                alert('Permission denied. Please check your authentication status.');
+            } else {
+                alert('Failed to update profile: ' + (error.message || 'Unknown error'));
+            }
         }
     }
 }
 
-// Update UI for logged in user
-async function updateUIForLoggedInUser(user, username = null) {
-    // Hide login/signup buttons
-    if (loginBtn) loginBtn.style.display = 'none';
-    if (createAccountBtn) createAccountBtn.style.display = 'none';
-    
-    // Show user profile
-    if (userProfile) {
-        userProfile.style.display = 'flex';
-        
-        // Set default avatar
-        const profileImg = userProfile.querySelector('.profile-img');
-        if (profileImg) {
-            profileImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(username || user.email)}&background=A259FF&color=fff&size=128`;
-        }
-        
-        // Get username from profile if not provided
-        if (!username) {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('username')
-                .eq('id', user.id)
-                .single();
-                
-            username = profile?.username;
-        }
-        
-        const usernameDisplay = document.querySelector('.username-display');
-        if (usernameDisplay) {
-            usernameDisplay.textContent = 'My Profile';
-        }
-    }
-}
-
-// Check if user needs to complete profile
+// Check if user needs to complete profile - now optional
 async function checkUserProfile(user) {
-    const { data: profile } = await supabase
-        .from('profiles')
-        .select('username, gender, age')
-        .eq('id', user.id)
-        .single();
+    try {
+        const { data: profile, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', user.id)
+            .single();
+            
+        if (error && error.code === 'PGRST116') {
+            // No profile found, show profile setup modal
+            openModal(profileModal);
+            return false;
+        }
         
-    if (!profile || !profile.username || !profile.gender || !profile.age) {
-        // Show profile setup modal
-        openModal(profileModal);
-        return false;
+        if (error) {
+            console.error('Error checking profile:', error);
+            // If there's a database error, just proceed without profile check
+            return true;
+        }
+        
+        // Profile exists, user can continue
+        return true;
+    } catch (error) {
+        console.error('Error in checkUserProfile:', error);
+        return true; // Don't show profile modal if there's an error
     }
-    
-    return true;
 }
 
 // Create dropdown menu for user profile
@@ -641,11 +632,35 @@ function createDropdownMenu() {
     dropdownMenu = document.createElement('div');
     dropdownMenu.className = 'profile-dropdown';
     dropdownMenu.innerHTML = `
+        <div class="dropdown-header">
+            <img src="" alt="User" class="dropdown-profile-img">
+            <div class="dropdown-user-info">
+                <span class="dropdown-username">My Profile</span>
+                <span class="dropdown-email">user@example.com</span>
+            </div>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item premium-item" id="premiumOption">
+            <i class="fas fa-crown"></i>
+            <div class="dropdown-item-content">
+                <span>Premium</span>
+                <span class="discount-badge">75% OFF</span>
+            </div>
+        </div>
+        <div class="dropdown-item" id="profileOption">
+            <i class="fas fa-user"></i>
+            <span>My Profile</span>
+        </div>
+        <div class="dropdown-item" id="subscriptionOption">
+            <i class="fas fa-gem"></i>
+            <span>Subscription</span>
+        </div>
         <div class="dropdown-item" id="settingsOption">
             <i class="fas fa-cog"></i>
             <span>Settings</span>
         </div>
-        <div class="dropdown-item" id="logoutOption">
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item logout-item" id="logoutOption">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
         </div>
@@ -654,6 +669,21 @@ function createDropdownMenu() {
     document.body.appendChild(dropdownMenu);
     
     // Event listeners for dropdown items
+    document.getElementById('premiumOption').addEventListener('click', () => {
+        alert('Premium upgrade coming soon!');
+        hideDropdown();
+    });
+    
+    document.getElementById('profileOption').addEventListener('click', () => {
+        alert('Profile page coming soon!');
+        hideDropdown();
+    });
+    
+    document.getElementById('subscriptionOption').addEventListener('click', () => {
+        alert('Subscription management coming soon!');
+        hideDropdown();
+    });
+    
     document.getElementById('settingsOption').addEventListener('click', () => {
         alert('Settings page coming soon!');
         hideDropdown();
@@ -703,6 +733,60 @@ function setupProfileDropdown() {
     });
 }
 
+// Update UI for logged in user
+async function updateUIForLoggedInUser(user, username = null) {
+    // Hide login/signup buttons
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (createAccountBtn) createAccountBtn.style.display = 'none';
+    
+    // Show user profile
+    if (userProfile) {
+        userProfile.style.display = 'flex';
+        
+        // Get username from profile if not provided
+        if (!username) {
+            try {
+                const { data: profile } = await supabase
+                    .from('profiles')
+                    .select('username')
+                    .eq('id', user.id)
+                    .single();
+                    
+                username = profile?.username || user.email.split('@')[0];
+            } catch (error) {
+                console.error('Error getting username:', error);
+                username = user.email.split('@')[0];
+            }
+        }
+        
+        // Generate avatar URL
+        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(username || user.email)}&background=A259FF&color=fff&size=128`;
+        
+        // Set avatar in header
+        const profileImg = userProfile.querySelector('.profile-img');
+        if (profileImg) {
+            profileImg.src = avatarUrl;
+        }
+        
+        // Set username in header
+        const usernameDisplay = document.querySelector('.username-display');
+        if (usernameDisplay) {
+            usernameDisplay.textContent = username || 'My Profile';
+        }
+        
+        // Update dropdown menu if it exists
+        if (dropdownMenu) {
+            const dropdownProfileImg = dropdownMenu.querySelector('.dropdown-profile-img');
+            const dropdownUsername = dropdownMenu.querySelector('.dropdown-username');
+            const dropdownEmail = dropdownMenu.querySelector('.dropdown-email');
+            
+            if (dropdownProfileImg) dropdownProfileImg.src = avatarUrl;
+            if (dropdownUsername) dropdownUsername.textContent = username || 'My Profile';
+            if (dropdownEmail) dropdownEmail.textContent = user.email;
+        }
+    }
+}
+
 // Check for existing session on page load
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOM Content Loaded - Starting auth initialization');
@@ -723,24 +807,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Setup user profile dropdown
     setupProfileDropdown();
     
-    // Check for existing session
-    if (supabase) {
-        try {
-            const { data: { session } } = await supabase.auth.getSession();
-            console.log('Existing session:', session);
-            
-            if (session) {
-                const profileComplete = await checkUserProfile(session.user);
-                if (profileComplete) {
-                    updateUIForLoggedInUser(session.user);
-                }
-            }
-        } catch (error) {
-            console.error('Error checking session:', error);
-        }
-    }
-    
-    console.log('Auth initialization complete');
+    // Don't check for existing session automatically - let users click login
+    console.log('Auth initialization complete - ready for user interaction');
 });
 
 // Backup initialization in case DOMContentLoaded already fired
@@ -760,20 +828,7 @@ if (document.readyState === 'loading') {
             profileForm.addEventListener('submit', handleProfileSubmit);
         }
         
-        if (supabase) {
-            try {
-                const { data: { session } } = await supabase.auth.getSession();
-                if (session) {
-                    const profileComplete = await checkUserProfile(session.user);
-                    if (profileComplete) {
-                        updateUIForLoggedInUser(session.user);
-                    }
-                }
-            } catch (error) {
-                console.error('Error in backup initialization:', error);
-            }
-        }
-        console.log('Backup initialization complete');
+        console.log('Backup initialization complete - ready for user interaction');
     }, 1000);
 }
 

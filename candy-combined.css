@@ -352,40 +352,66 @@
 }
 
 .modal-content {
-    background: rgba(25, 25, 30, 0.95);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(80, 80, 90, 0.5);
+    background: rgba(26, 26, 26, 0.95);
+    backdrop-filter: blur(10px);
     border-radius: 20px;
-    padding: 40px;
+    padding: 2rem;
+    width: 90%;
+    max-width: 400px;
     position: relative;
-    max-width: 450px;
-    width: 100%;
-    max-height: 90vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(162, 89, 255, 0.3);
 }
 
 .modal-close {
     position: absolute;
-    top: 20px;
+    top: 15px;
     right: 20px;
     background: none;
     border: none;
-    color: var(--text-silver);
-    font-size: 28px;
+    font-size: 24px;
+    color: #ffffff;
     cursor: pointer;
-    transition: all 0.3s ease;
-    width: 40px;
-    height: 40px;
+    padding: 0;
+    width: 30px;
+    height: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     border-radius: 50%;
+    transition: all 0.3s ease;
 }
 
 .modal-close:hover {
-    color: white;
     background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.1);
+}
+
+.modal-subtitle {
+    color: #cccccc;
+    font-size: 0.9rem;
+    margin: -10px 0 20px 0;
+    text-align: center;
+}
+
+.form-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.form-buttons .submit-btn {
+    flex: 1;
+}
+
+.submit-btn.secondary {
+    background: transparent;
+    border: 1px solid rgba(162, 89, 255, 0.5);
+    color: #A259FF;
+}
+
+.submit-btn.secondary:hover {
+    background: rgba(162, 89, 255, 0.1);
+    border-color: #A259FF;
 }
 
 .modal-title {
@@ -586,6 +612,14 @@
 .social-btn i {
     margin-right: 8px;
     font-size: 1.1rem;
+}
+
+.social-btn .x-logo {
+    margin-right: 8px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #ffffff;
+    display: inline-block;
 }
 
 .submit-btn.login-style {
@@ -1466,21 +1500,20 @@ ul {
     color: white;
 }
 
-/* Profile Dropdown Menu */
+/* Profile Dropdown Styles */
 .profile-dropdown {
     position: fixed;
-    background: rgba(25, 25, 30, 0.98);
+    background: rgba(26, 26, 26, 0.95);
     backdrop-filter: blur(20px);
-    border: 1px solid rgba(80, 80, 90, 0.5);
-    border-radius: 10px;
-    padding: 8px 0;
-    min-width: 180px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    border-radius: 12px;
+    border: 1px solid rgba(162, 89, 255, 0.3);
+    min-width: 250px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
     opacity: 0;
     transform: translateY(-10px);
+    transition: all 0.3s ease;
     pointer-events: none;
-    transition: all 0.2s ease;
-    z-index: 1001;
 }
 
 .profile-dropdown.active {
@@ -1489,30 +1522,108 @@ ul {
     pointer-events: all;
 }
 
+.dropdown-header {
+    display: flex;
+    align-items: center;
+    padding: 16px;
+    gap: 12px;
+}
+
+.dropdown-profile-img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid rgba(162, 89, 255, 0.5);
+}
+
+.dropdown-user-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dropdown-username {
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 14px;
+}
+
+.dropdown-email {
+    font-size: 12px;
+    color: #cccccc;
+}
+
+.dropdown-divider {
+    height: 1px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 8px;
+}
+
 .dropdown-item {
     display: flex;
     align-items: center;
+    padding: 12px 16px;
     gap: 12px;
-    padding: 12px 20px;
     cursor: pointer;
     transition: all 0.2s ease;
-    color: var(--text-silver);
+    color: #ffffff;
+    font-size: 14px;
 }
 
 .dropdown-item:hover {
     background: rgba(162, 89, 255, 0.1);
-    color: white;
 }
 
 .dropdown-item i {
-    font-size: 16px;
-    width: 20px;
+    width: 16px;
     text-align: center;
+    color: #cccccc;
 }
 
-.dropdown-item span {
-    font-size: 14px;
-    font-weight: 500;
+.dropdown-item.premium-item {
+    background: linear-gradient(135deg, rgba(162, 89, 255, 0.2), rgba(255, 215, 0, 0.1));
+    border: 1px solid rgba(162, 89, 255, 0.3);
+    border-radius: 8px;
+    margin: 4px 8px;
+}
+
+.dropdown-item.premium-item:hover {
+    background: linear-gradient(135deg, rgba(162, 89, 255, 0.3), rgba(255, 215, 0, 0.2));
+}
+
+.dropdown-item.premium-item i {
+    color: #FFD700;
+}
+
+.dropdown-item-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex: 1;
+}
+
+.discount-badge {
+    background: linear-gradient(135deg, #A259FF, #FF6B6B);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dropdown-item.logout-item {
+    color: #ff6b6b;
+}
+
+.dropdown-item.logout-item:hover {
+    background: rgba(255, 107, 107, 0.1);
+}
+
+.dropdown-item.logout-item i {
+    color: #ff6b6b;
 }
 
 /* Sidebar Styles */
