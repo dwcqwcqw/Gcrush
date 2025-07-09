@@ -116,12 +116,10 @@ function renderAuthUI() {
             
             <div class="social-auth">
                 <button class="social-btn" data-provider="google">
-                    <i class="fab fa-google"></i>
-                    <span>Google</span>
+                    <i class="fab fa-google"></i><span>Google</span>
                 </button>
                 <button class="social-btn" data-provider="twitter">
-                    <i class="fab fa-twitter"></i>
-                    <span>Twitter/X</span>
+                    <i class="fab fa-x-twitter"></i><span>X</span>
                 </button>
             </div>
             
@@ -170,39 +168,25 @@ async function handleAuthSubmit(e) {
         return;
     }
     
-    // Disable button and show loading
+    // Password validation
+    if (password.length < 6) {
+        alert('Password must be at least 6 characters long');
+        return;
+    }
+    
+    // Show loading state
+    const originalText = submitBtn.textContent;
     submitBtn.disabled = true;
-    submitBtn.textContent = authView === 'sign_in' ? 'Signing in...' : 'Signing up...';
+    submitBtn.innerHTML = authView === 'sign_in' ? 
+        '<i class="fas fa-spinner fa-spin"></i> Signing in...' : 
+        '<i class="fas fa-spinner fa-spin"></i> Signing up...';
     
     try {
         let result;
         if (authView === 'sign_in') {
-            // Check if user exists first
-            const { data: userData, error: userError } = await supabase
-                .from('profiles')
-                .select('email')
-                .eq('email', email)
-                .single();
-            
-            if (userError && userError.code === 'PGRST116') {
-                alert('This email is not registered. Please sign up first.');
-                return;
-            }
-            
             result = await supabase.auth.signInWithPassword({ email, password });
         } else {
-            // Check if user already exists
-            const { data: existingUser, error: checkError } = await supabase
-                .from('profiles')
-                .select('email')
-                .eq('email', email)
-                .single();
-            
-            if (existingUser && !checkError) {
-                alert('This email is already registered. Please log in instead.');
-                return;
-            }
-            
+            // Sign up without email confirmation
             result = await supabase.auth.signUp({ 
                 email, 
                 password,
@@ -211,8 +195,19 @@ async function handleAuthSubmit(e) {
                 }
             });
             
+            // Check if user already exists
+            if (result.error && result.error.message.includes('User already registered')) {
+                throw new Error('This email is already registered. Please log in instead.');
+            }
+            
+            // For signup, we want to automatically sign in the user
             if (result.data.user && !result.error) {
-                alert('Registration successful! Please check your email to confirm your account.');
+                // Automatically sign in after successful signup
+                const signInResult = await supabase.auth.signInWithPassword({ email, password });
+                if (signInResult.error) {
+                    throw signInResult.error;
+                }
+                result = signInResult;
             }
         }
         
@@ -220,14 +215,16 @@ async function handleAuthSubmit(e) {
         
         console.log('Auth successful:', result);
         
+        // Success - the auth state change listener will handle UI updates
+        
     } catch (error) {
         console.error('Auth error:', error);
         let errorMessage = 'Authentication failed';
         
         if (error.message.includes('Invalid login credentials')) {
             errorMessage = 'Invalid email or password';
-        } else if (error.message.includes('User already registered')) {
-            errorMessage = 'This email is already registered';
+        } else if (error.message.includes('already registered')) {
+            errorMessage = 'This email is already registered. Please log in instead.';
         } else if (error.message.includes('Password should be at least 6 characters')) {
             errorMessage = 'Password must be at least 6 characters';
         } else if (error.message) {
@@ -236,8 +233,9 @@ async function handleAuthSubmit(e) {
         
         alert(errorMessage);
     } finally {
+        // Reset button state
         submitBtn.disabled = false;
-        submitBtn.textContent = authView === 'sign_in' ? 'Sign In' : 'Sign Up';
+        submitBtn.innerHTML = originalText;
     }
 }
 
@@ -245,8 +243,23 @@ async function handleAuthSubmit(e) {
 async function handleSocialAuth(provider) {
     console.log(`Starting ${provider} authentication...`);
     
+    // Find the clicked button and show loading state
+    const socialBtn = document.querySelector(`[data-provider="${provider}"]`);
+    if (socialBtn) {
+        const originalHTML = socialBtn.innerHTML;
+        socialBtn.disabled = true;
+        socialBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i><span>Connecting...</span>`;
+        
+        // Reset button after 10 seconds (in case of redirect failure)
+        setTimeout(() => {
+            socialBtn.disabled = false;
+            socialBtn.innerHTML = originalHTML;
+        }, 10000);
+    }
+    
     try {
-        const redirectUrl = window.location.origin + window.location.pathname;
+        // Use the correct Supabase auth callback URL
+        const redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
         console.log('Redirect URL:', redirectUrl);
         
         const { data, error } = await supabase.auth.signInWithOAuth({
@@ -263,6 +276,12 @@ async function handleSocialAuth(provider) {
     } catch (error) {
         console.error('Social auth error:', error);
         alert(`${provider} authentication failed: ${error.message}`);
+        
+        // Reset button state on error
+        if (socialBtn) {
+            socialBtn.disabled = false;
+            socialBtn.innerHTML = originalHTML;
+        }
     }
 }
 
