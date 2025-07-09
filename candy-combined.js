@@ -20,23 +20,39 @@ document.addEventListener('DOMContentLoaded', () => {
         if (menuToggle && sidebar) {
             // Toggle sidebar collapsed state
             menuToggle.addEventListener('click', () => {
-                sidebar.classList.toggle('collapsed');
-                
-                // Store sidebar state in local storage
-                const isCollapsed = sidebar.classList.contains('collapsed');
-                localStorage.setItem('sidebarCollapsed', isCollapsed);
+                // On mobile, don't use collapsed state but show/hide sidebar
+                if (window.innerWidth <= 1200) {
+                    sidebar.classList.toggle('mobile-hidden');
+                } else {
+                    sidebar.classList.toggle('collapsed');
+                    
+                    // Store sidebar state in local storage
+                    const isCollapsed = sidebar.classList.contains('collapsed');
+                    localStorage.setItem('sidebarCollapsed', isCollapsed);
+                }
             });
             
-            // Check local storage for saved state
-            const savedState = localStorage.getItem('sidebarCollapsed');
-            if (savedState === 'true') {
-                sidebar.classList.add('collapsed');
+            // Check local storage for saved state (desktop only)
+            if (window.innerWidth > 1200) {
+                const savedState = localStorage.getItem('sidebarCollapsed');
+                if (savedState === 'true') {
+                    sidebar.classList.add('collapsed');
+                }
             }
             
-            // Auto-collapse on small screens
+            // Handle responsive behavior
             const handleResize = () => {
-                if (window.innerWidth <= 768 && !sidebar.classList.contains('collapsed')) {
-                    sidebar.classList.add('collapsed');
+                if (window.innerWidth <= 1200) {
+                    // Mobile/tablet: remove collapsed class and ensure sidebar is visible
+                    sidebar.classList.remove('collapsed');
+                    sidebar.classList.remove('mobile-hidden');
+                } else {
+                    // Desktop: restore collapsed state if it was saved
+                    const savedState = localStorage.getItem('sidebarCollapsed');
+                    if (savedState === 'true') {
+                        sidebar.classList.add('collapsed');
+                    }
+                    sidebar.classList.remove('mobile-hidden');
                 }
             };
             
@@ -45,6 +61,16 @@ document.addEventListener('DOMContentLoaded', () => {
             
             // Add event listener for window resize
             window.addEventListener('resize', handleResize);
+            
+            // Close mobile sidebar when clicking outside
+            document.addEventListener('click', (e) => {
+                if (window.innerWidth <= 1200 && 
+                    !sidebar.contains(e.target) && 
+                    !menuToggle.contains(e.target) && 
+                    !sidebar.classList.contains('mobile-hidden')) {
+                    sidebar.classList.add('mobile-hidden');
+                }
+            });
         }
     }
     
@@ -497,19 +523,38 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Touch/swipe support for mobile
         let startX = 0;
+        let startY = 0;
         let endX = 0;
+        let endY = 0;
         
         carousel.addEventListener('touchstart', (e) => {
             startX = e.touches[0].clientX;
+            startY = e.touches[0].clientY;
             isPaused = true;
+        });
+        
+        carousel.addEventListener('touchmove', (e) => {
+            // Prevent default scrolling while swiping horizontally
+            const currentX = e.touches[0].clientX;
+            const currentY = e.touches[0].clientY;
+            const deltaX = Math.abs(currentX - startX);
+            const deltaY = Math.abs(currentY - startY);
+            
+            if (deltaX > deltaY && deltaX > 10) {
+                e.preventDefault();
+            }
         });
         
         carousel.addEventListener('touchend', (e) => {
             endX = e.changedTouches[0].clientX;
-            const difference = startX - endX;
+            endY = e.changedTouches[0].clientY;
             
-            if (Math.abs(difference) > 50) { // Minimum swipe distance
-                if (difference > 0) {
+            const differenceX = startX - endX;
+            const differenceY = startY - endY;
+            
+            // Only trigger if horizontal swipe is more prominent than vertical
+            if (Math.abs(differenceX) > Math.abs(differenceY) && Math.abs(differenceX) > 50) {
+                if (differenceX > 0) {
                     // Swipe left - next slide
                     nextSlide();
                 } else {
@@ -579,9 +624,97 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
+    // Mobile-specific enhancements
+    function initMobileEnhancements() {
+        // Add touch feedback for interactive elements
+        const interactiveElements = document.querySelectorAll(
+            '.auth-button, .social-btn, .submit-btn, .character-card, .nav-dot, .dropdown-item, .sidebar-item'
+        );
+        
+        interactiveElements.forEach(element => {
+            element.addEventListener('touchstart', function() {
+                this.style.transform = 'scale(0.95)';
+                this.style.transition = 'transform 0.1s ease';
+            });
+            
+            element.addEventListener('touchend', function() {
+                this.style.transform = '';
+                this.style.transition = 'transform 0.3s ease';
+            });
+            
+            element.addEventListener('touchcancel', function() {
+                this.style.transform = '';
+                this.style.transition = 'transform 0.3s ease';
+            });
+        });
+        
+        // Prevent zoom on double tap for certain elements
+        const preventZoomElements = document.querySelectorAll(
+            '.auth-button, .social-btn, .submit-btn, .nav-dot'
+        );
+        
+        preventZoomElements.forEach(element => {
+            element.addEventListener('touchend', function(e) {
+                e.preventDefault();
+                element.click();
+            });
+        });
+        
+        // Add pull-to-refresh hint (visual only)
+        if (window.innerWidth <= 768) {
+            const pullHint = document.createElement('div');
+            pullHint.className = 'pull-hint';
+            pullHint.innerHTML = '<i class="fas fa-chevron-down"></i> Pull to refresh';
+            pullHint.style.cssText = `
+                position: fixed;
+                top: 60px;
+                left: 50%;
+                transform: translateX(-50%);
+                background: rgba(162, 89, 255, 0.9);
+                color: white;
+                padding: 8px 16px;
+                border-radius: 20px;
+                font-size: 12px;
+                z-index: 1001;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+                pointer-events: none;
+            `;
+            document.body.appendChild(pullHint);
+            
+            let startY = 0;
+            let isAtTop = true;
+            
+            document.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+                isAtTop = window.scrollY === 0;
+            });
+            
+            document.addEventListener('touchmove', (e) => {
+                if (isAtTop) {
+                    const currentY = e.touches[0].clientY;
+                    const pullDistance = currentY - startY;
+                    
+                    if (pullDistance > 50) {
+                        pullHint.style.opacity = '1';
+                    } else {
+                        pullHint.style.opacity = '0';
+                    }
+                }
+            });
+            
+            document.addEventListener('touchend', () => {
+                pullHint.style.opacity = '0';
+            });
+        }
+    }
+    
     // Add loading state handling
     window.addEventListener('load', () => {
         document.body.classList.add('loaded');
+        
+        // Initialize mobile enhancements
+        initMobileEnhancements();
         
         // Trigger initial animations
         setTimeout(() => {
