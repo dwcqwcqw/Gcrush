@@ -315,6 +315,20 @@
     margin-right: 5px;
 }
 
+/* Login Button - Outlined Style */
+.login-btn {
+    background: transparent !important;
+    border: 2px solid var(--accent-purple) !important;
+    color: var(--accent-purple) !important;
+}
+
+.login-btn:hover {
+    background: rgba(162, 89, 255, 0.1) !important;
+    border-color: var(--accent-pink) !important;
+    color: var(--accent-pink) !important;
+    box-shadow: 0 4px 20px rgba(162, 89, 255, 0.3) !important;
+}
+
 /* Modal Styles */
 .modal-overlay {
     position: fixed;
@@ -470,18 +484,93 @@
     text-decoration: underline;
 }
 
-/* Supabase Auth UI Overrides */
+/* Auth UI Styles */
 #auth-container {
     width: 100%;
 }
+
+.auth-ui-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.auth-title {
+    font-size: 1.8rem;
+    text-align: center;
+    margin-bottom: 10px;
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.auth-divider {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    color: var(--text-silver);
+    font-size: 0.9rem;
+    opacity: 0.7;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(80, 80, 90, 0.5);
+}
+
+.social-auth {
+    display: flex;
+    gap: 12px;
+}
+
+.social-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 20px;
+    background: rgba(60, 60, 70, 0.3);
+    border: 1px solid rgba(80, 80, 90, 0.5);
+    border-radius: 10px;
+    color: white;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.social-btn:hover {
+    background: rgba(60, 60, 70, 0.5);
+    border-color: var(--accent-purple);
+    transform: translateY(-2px);
+}
+
+.social-btn i {
+    font-size: 18px;
+}
+
+.submit-btn.login-style {
+    background: transparent !important;
+    color: var(--accent-purple) !important;
+    border: 2px solid var(--accent-purple) !important;
+}
+
+.submit-btn.login-style:hover {
+    background: rgba(162, 89, 255, 0.1) !important;
+    box-shadow: 0 6px 30px rgba(162, 89, 255, 0.3) !important;
+}
+
+/* Supabase Auth UI Overrides */
 
 #auth-container .supabase-auth-ui_ui-container {
     gap: 16px;
 }
 
 #auth-container .supabase-auth-ui_ui-button {
-    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink)) !important;
-    border: none !important;
     border-radius: 50px !important;
     padding: 12px 24px !important;
     font-weight: 600 !important;
@@ -491,6 +580,18 @@
 #auth-container .supabase-auth-ui_ui-button:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 6px 30px rgba(162, 89, 255, 0.4) !important;
+}
+
+/* Style for social provider buttons */
+#auth-container .supabase-auth-ui_ui-button[data-provider] {
+    background: rgba(60, 60, 70, 0.3) !important;
+    border: 1px solid rgba(80, 80, 90, 0.5) !important;
+    color: white !important;
+}
+
+#auth-container .supabase-auth-ui_ui-button[data-provider]:hover {
+    background: rgba(60, 60, 70, 0.5) !important;
+    border-color: var(--accent-purple) !important;
 }
 
 #auth-container .supabase-auth-ui_ui-input {
@@ -811,6 +912,13 @@ ul {
     align-items: center;
     gap: 8px;
     cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 25px;
+    transition: all 0.3s ease;
+}
+
+.user-profile:hover {
+    background: rgba(162, 89, 255, 0.1);
 }
 
 .profile-img {
@@ -819,6 +927,60 @@ ul {
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--accent-purple);
+}
+
+.username-display {
+    font-weight: 500;
+    color: white;
+}
+
+/* Profile Dropdown Menu */
+.profile-dropdown {
+    position: fixed;
+    background: rgba(25, 25, 30, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(80, 80, 90, 0.5);
+    border-radius: 10px;
+    padding: 8px 0;
+    min-width: 180px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transform: translateY(-10px);
+    pointer-events: none;
+    transition: all 0.2s ease;
+    z-index: 1001;
+}
+
+.profile-dropdown.active {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: all;
+}
+
+.dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    color: var(--text-silver);
+}
+
+.dropdown-item:hover {
+    background: rgba(162, 89, 255, 0.1);
+    color: white;
+}
+
+.dropdown-item i {
+    font-size: 16px;
+    width: 20px;
+    text-align: center;
+}
+
+.dropdown-item span {
+    font-size: 14px;
+    font-weight: 500;
 }
 
 /* Sidebar Styles */

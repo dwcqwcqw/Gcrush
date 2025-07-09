@@ -84,14 +84,26 @@ function renderAuthUI() {
     authContainer.appendChild(container);
     
     // Render Auth UI
-    const { Auth } = window.supabaseAuthUi;
-    const authComponent = Auth({
+    const { Auth } = window.SupabaseAuthUI || {};
+    
+    if (!Auth) {
+        console.error('Supabase Auth UI not loaded');
+        authContainer.innerHTML = '<p style="color: #E63946; text-align: center;">Authentication service is loading. Please try again.</p>';
+        return;
+    }
+    
+    const authComponent = window.React.createElement(Auth, {
         supabaseClient: supabase,
         view: authView,
         appearance: {
             theme: customTheme,
             style: {
-                button: {
+                button: authView === 'sign_in' ? {
+                    background: 'transparent',
+                    color: '#A259FF',
+                    borderRadius: '50px',
+                    border: '2px solid #A259FF',
+                } : {
                     background: 'linear-gradient(135deg, #A259FF, #F8A3FF)',
                     color: 'white',
                     borderRadius: '50px',
@@ -153,17 +165,23 @@ function closeModal(modal) {
 }
 
 // Event Listeners for opening modals
-loginBtn.addEventListener('click', () => {
-    authView = 'sign_in';
-    renderAuthUI();
-    openModal(authModal);
-});
+if (loginBtn) {
+    loginBtn.addEventListener('click', () => {
+        console.log('Login button clicked');
+        authView = 'sign_in';
+        renderAuthUI();
+        openModal(authModal);
+    });
+}
 
-createAccountBtn.addEventListener('click', () => {
-    authView = 'sign_up';
-    renderAuthUI();
-    openModal(authModal);
-});
+if (createAccountBtn) {
+    createAccountBtn.addEventListener('click', () => {
+        console.log('Create account button clicked');
+        authView = 'sign_up';
+        renderAuthUI();
+        openModal(authModal);
+    });
+}
 
 // Close modal on clicking X or outside
 document.querySelectorAll('.modal-close').forEach(btn => {
@@ -218,27 +236,34 @@ document.getElementById('profileForm').addEventListener('submit', async (e) => {
 // Update UI for logged in user
 async function updateUIForLoggedInUser(user, username = null) {
     // Hide login/signup buttons
-    loginBtn.style.display = 'none';
-    createAccountBtn.style.display = 'none';
+    if (loginBtn) loginBtn.style.display = 'none';
+    if (createAccountBtn) createAccountBtn.style.display = 'none';
     
     // Show user profile
-    userProfile.style.display = 'flex';
-    
-    // Get username from profile if not provided
-    if (!username) {
-        const { data: profile } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('id', user.id)
-            .single();
-            
-        username = profile?.username;
-    }
-    
-    if (username) {
-        document.querySelector('.username-display').textContent = username;
-    } else {
-        document.querySelector('.username-display').textContent = user.email.split('@')[0];
+    if (userProfile) {
+        userProfile.style.display = 'flex';
+        
+        // Set default avatar
+        const profileImg = userProfile.querySelector('.profile-img');
+        if (profileImg) {
+            profileImg.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(username || user.email)}&background=A259FF&color=fff&size=128`;
+        }
+        
+        // Get username from profile if not provided
+        if (!username) {
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('username')
+                .eq('id', user.id)
+                .single();
+                
+            username = profile?.username;
+        }
+        
+        const usernameDisplay = document.querySelector('.username-display');
+        if (usernameDisplay) {
+            usernameDisplay.textContent = 'My Profile';
+        }
     }
 }
 
@@ -264,7 +289,11 @@ supabase.auth.onAuthStateChange(async (event, session) => {
     console.log('Auth state changed:', event, session);
     
     if (event === 'SIGNED_IN' && session) {
+        console.log('User signed in successfully');
         closeModal(authModal);
+        
+        // Auto-login after registration
+        const isNewUser = event === 'SIGNED_IN' && !session.user.confirmed_at;
         
         // Check if profile is complete
         const profileComplete = await checkUserProfile(session.user);
@@ -273,22 +302,25 @@ supabase.auth.onAuthStateChange(async (event, session) => {
         }
     } else if (event === 'SIGNED_OUT') {
         // Reset UI
-        loginBtn.style.display = 'inline-block';
-        createAccountBtn.style.display = 'inline-block';
-        userProfile.style.display = 'none';
+        if (loginBtn) loginBtn.style.display = 'inline-block';
+        if (createAccountBtn) createAccountBtn.style.display = 'inline-block';
+        if (userProfile) userProfile.style.display = 'none';
     }
 });
 
 // Check for existing session on page load
 document.addEventListener('DOMContentLoaded', async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    if (session) {
-        const profileComplete = await checkUserProfile(session.user);
-        if (profileComplete) {
-            updateUIForLoggedInUser(session.user);
+    // Wait a bit for Auth UI module to load
+    setTimeout(async () => {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+            const profileComplete = await checkUserProfile(session.user);
+            if (profileComplete) {
+                updateUIForLoggedInUser(session.user);
+            }
         }
-    }
+    }, 500);
 });
 
 // Handle logout
@@ -304,11 +336,73 @@ async function logout() {
     }
 }
 
-// Add logout option to user profile
-userProfile.addEventListener('click', () => {
-    if (confirm('Do you want to logout?')) {
+// Create dropdown menu for user profile
+let dropdownMenu = null;
+
+function createDropdownMenu() {
+    if (dropdownMenu) return dropdownMenu;
+    
+    dropdownMenu = document.createElement('div');
+    dropdownMenu.className = 'profile-dropdown';
+    dropdownMenu.innerHTML = `
+        <div class="dropdown-item" id="settingsOption">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </div>
+        <div class="dropdown-item" id="logoutOption">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </div>
+    `;
+    
+    document.body.appendChild(dropdownMenu);
+    
+    // Event listeners for dropdown items
+    document.getElementById('settingsOption').addEventListener('click', () => {
+        alert('Settings page coming soon!');
+        hideDropdown();
+    });
+    
+    document.getElementById('logoutOption').addEventListener('click', () => {
         logout();
+        hideDropdown();
+    });
+    
+    return dropdownMenu;
+}
+
+function showDropdown() {
+    const dropdown = createDropdownMenu();
+    const rect = userProfile.getBoundingClientRect();
+    
+    dropdown.style.position = 'fixed';
+    dropdown.style.top = (rect.bottom + 5) + 'px';
+    dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+    dropdown.classList.add('active');
+}
+
+function hideDropdown() {
+    if (dropdownMenu) {
+        dropdownMenu.classList.remove('active');
     }
+}
+
+// Toggle dropdown on user profile click
+if (userProfile) {
+    userProfile.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const dropdown = createDropdownMenu();
+        if (dropdown.classList.contains('active')) {
+            hideDropdown();
+        } else {
+            showDropdown();
+        }
+    });
+}
+
+// Hide dropdown when clicking outside
+document.addEventListener('click', () => {
+    hideDropdown();
 });
 
 // Create profiles table in Supabase (run this in SQL editor)
