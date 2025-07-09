@@ -138,8 +138,8 @@ async function performSocialAuth(provider) {
             // Twitter requires the Supabase callback URL
             redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
         } else {
-            // For Google and other providers, use the current domain
-            redirectUrl = window.location.origin;
+            // For Google and other providers, use the current page URL
+            redirectUrl = window.location.href.split('#')[0].split('?')[0];
         }
         console.log(`Using OAuth redirect URL for ${provider}:`, redirectUrl);
         
