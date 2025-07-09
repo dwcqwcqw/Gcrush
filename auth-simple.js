@@ -592,11 +592,13 @@ async function enhancedInitialization() {
             if (!document.getElementById('authModal')) {
                 console.log('Creating auth modal...');
                 const modalHTML = `
-                    <div class="modal-overlay" id="authModal">
+                                        <div class="modal-overlay" id="authModal">
                         <div class="modal-content auth-modal">
                             <button class="modal-close">&times;</button>
                             <div id="auth-container"></div>
-
+                            <p class="auth-disclaimer">
+                                By signing up you confirm that you are over 18 years old and agree to the <a href="#">Terms and Conditions</a>.
+                            </p>
                         </div>
                     </div>
                 `;
