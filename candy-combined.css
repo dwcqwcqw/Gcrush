@@ -1452,25 +1452,38 @@ ul {
 }
 
 .premium-button {
-    background-color: var(--accent-purple);
+    background: linear-gradient(135deg, #A259FF, #F8A3FF);
     color: white;
-    padding: 6px 12px;
-    border-radius: 20px;
+    padding: 8px 16px;
+    border-radius: 25px;
     font-size: 14px;
     font-weight: 600;
     display: flex;
     align-items: center;
-    gap: 6px;
-    box-shadow: 0 0 15px rgba(162, 89, 255, 0.4);
+    gap: 8px;
+    box-shadow: 0 4px 20px rgba(162, 89, 255, 0.4);
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
 }
 
 .premium-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 0 20px rgba(162, 89, 255, 0.6);
+    box-shadow: 0 6px 25px rgba(162, 89, 255, 0.6);
 }
 
 .premium-button i {
     color: #FFD700;
+    font-size: 16px;
+}
+
+.premium-button .discount {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 6px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 700;
+    margin-left: 4px;
 }
 
 .user-profile {
@@ -1507,57 +1520,20 @@ ul {
     backdrop-filter: blur(20px);
     border-radius: 12px;
     border: 1px solid rgba(162, 89, 255, 0.3);
-    min-width: 250px;
+    min-width: 180px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     z-index: 1000;
     opacity: 0;
     transform: translateY(-10px);
     transition: all 0.3s ease;
     pointer-events: none;
+    padding: 8px 0;
 }
 
 .profile-dropdown.active {
     opacity: 1;
     transform: translateY(0);
     pointer-events: all;
-}
-
-.dropdown-header {
-    display: flex;
-    align-items: center;
-    padding: 16px;
-    gap: 12px;
-}
-
-.dropdown-profile-img {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    border: 2px solid rgba(162, 89, 255, 0.5);
-}
-
-.dropdown-user-info {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.dropdown-username {
-    font-weight: 600;
-    color: #ffffff;
-    font-size: 14px;
-}
-
-.dropdown-email {
-    font-size: 12px;
-    color: #cccccc;
-}
-
-.dropdown-divider {
-    height: 1px;
-    background: rgba(255, 255, 255, 0.1);
-    margin: 0 8px;
 }
 
 .dropdown-item {
@@ -1579,39 +1555,6 @@ ul {
     width: 16px;
     text-align: center;
     color: #cccccc;
-}
-
-.dropdown-item.premium-item {
-    background: linear-gradient(135deg, rgba(162, 89, 255, 0.2), rgba(255, 215, 0, 0.1));
-    border: 1px solid rgba(162, 89, 255, 0.3);
-    border-radius: 8px;
-    margin: 4px 8px;
-}
-
-.dropdown-item.premium-item:hover {
-    background: linear-gradient(135deg, rgba(162, 89, 255, 0.3), rgba(255, 215, 0, 0.2));
-}
-
-.dropdown-item.premium-item i {
-    color: #FFD700;
-}
-
-.dropdown-item-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex: 1;
-}
-
-.discount-badge {
-    background: linear-gradient(135deg, #A259FF, #FF6B6B);
-    color: white;
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
 }
 
 .dropdown-item.logout-item {
@@ -2448,5 +2391,29 @@ ul {
     
     .faq-section {
         padding: 20px;
+    }
+}
+
+/* Auth Error Message */
+.auth-error {
+    background: rgba(255, 107, 107, 0.1);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    border-radius: 8px;
+    padding: 12px;
+    margin: 15px 0;
+    color: #ff6b6b;
+    font-size: 14px;
+    text-align: center;
+    animation: errorSlideIn 0.3s ease;
+}
+
+@keyframes errorSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
     }
 } 

@@ -83,6 +83,12 @@ function setupAuthStateListener() {
             if (loginBtn) loginBtn.style.display = 'inline-block';
             if (createAccountBtn) createAccountBtn.style.display = 'inline-block';
             if (userProfile) userProfile.style.display = 'none';
+            
+            // Hide premium button
+            const premiumBtn = document.querySelector('.premium-button');
+            if (premiumBtn) {
+                premiumBtn.style.display = 'none';
+            }
         }
     });
 }
@@ -155,37 +161,50 @@ function renderAuthUI() {
     }
 }
 
-// Handle form submission
+// Handle auth form submission
 async function handleAuthSubmit(e) {
     e.preventDefault();
     
+    // Clear any previous errors
+    clearInlineError();
+    
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
-    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const submitBtn = document.querySelector('#authForm button[type="submit"]');
     
+    // Validate inputs
     if (!email || !password) {
-        alert('Please fill in all fields');
+        showInlineError('Please fill in all fields');
         return;
     }
     
-    // Password validation
+    // Validate password length
     if (password.length < 6) {
-        alert('Password must be at least 6 characters long');
+        showInlineError('Password must be at least 6 characters');
         return;
     }
     
-    // Show loading state
-    const originalText = submitBtn.textContent;
+    // Store original button text and show loading
+    const originalText = submitBtn.innerHTML;
     submitBtn.disabled = true;
-    submitBtn.innerHTML = authView === 'sign_in' ? 
-        '<i class="fas fa-spinner fa-spin"></i> Signing in...' : 
-        '<i class="fas fa-spinner fa-spin"></i> Signing up...';
+    
+    if (authView === 'sign_in') {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing in...';
+    } else {
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Signing up...';
+    }
     
     try {
         let result;
         if (authView === 'sign_in') {
             result = await supabase.auth.signInWithPassword({ email, password });
         } else {
+            // Check if email is already registered
+            const emailExists = await checkEmailExists(email);
+            if (emailExists) {
+                throw new Error('This email is already registered. Please log in instead.');
+            }
+            
             // Sign up without email confirmation
             result = await supabase.auth.signUp({ 
                 email, 
@@ -231,7 +250,7 @@ async function handleAuthSubmit(e) {
             errorMessage = error.message;
         }
         
-        alert(errorMessage);
+        showInlineError(errorMessage);
     } finally {
         // Reset button state
         submitBtn.disabled = false;
@@ -242,6 +261,9 @@ async function handleAuthSubmit(e) {
 // Handle social auth
 async function handleSocialAuth(provider) {
     console.log(`Starting ${provider} authentication...`);
+    
+    // Clear any previous errors
+    clearInlineError();
     
     // Find the clicked button and show loading state
     const socialBtn = document.querySelector(`[data-provider="${provider}"]`);
@@ -258,9 +280,9 @@ async function handleSocialAuth(provider) {
     }
     
     try {
-        // Use the correct Supabase auth callback URL
+        // Use the correct production URL for OAuth redirect
         const redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
-        console.log('Redirect URL:', redirectUrl);
+        console.log('Using OAuth redirect URL:', redirectUrl);
         
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: provider,
@@ -273,9 +295,11 @@ async function handleSocialAuth(provider) {
         
         console.log(`${provider} auth initiated successfully`, data);
         
+        // The redirect will happen automatically, so we don't need to do anything else
+        
     } catch (error) {
         console.error('Social auth error:', error);
-        alert(`${provider} authentication failed: ${error.message}`);
+        showInlineError(`${provider} authentication failed: ${error.message}`);
         
         // Reset button state on error
         if (socialBtn) {
@@ -632,34 +656,10 @@ function createDropdownMenu() {
     dropdownMenu = document.createElement('div');
     dropdownMenu.className = 'profile-dropdown';
     dropdownMenu.innerHTML = `
-        <div class="dropdown-header">
-            <img src="" alt="User" class="dropdown-profile-img">
-            <div class="dropdown-user-info">
-                <span class="dropdown-username">My Profile</span>
-                <span class="dropdown-email">user@example.com</span>
-            </div>
-        </div>
-        <div class="dropdown-divider"></div>
-        <div class="dropdown-item premium-item" id="premiumOption">
-            <i class="fas fa-crown"></i>
-            <div class="dropdown-item-content">
-                <span>Premium</span>
-                <span class="discount-badge">75% OFF</span>
-            </div>
-        </div>
-        <div class="dropdown-item" id="profileOption">
-            <i class="fas fa-user"></i>
-            <span>My Profile</span>
-        </div>
-        <div class="dropdown-item" id="subscriptionOption">
-            <i class="fas fa-gem"></i>
-            <span>Subscription</span>
-        </div>
         <div class="dropdown-item" id="settingsOption">
             <i class="fas fa-cog"></i>
             <span>Settings</span>
         </div>
-        <div class="dropdown-divider"></div>
         <div class="dropdown-item logout-item" id="logoutOption">
             <i class="fas fa-sign-out-alt"></i>
             <span>Logout</span>
@@ -669,21 +669,6 @@ function createDropdownMenu() {
     document.body.appendChild(dropdownMenu);
     
     // Event listeners for dropdown items
-    document.getElementById('premiumOption').addEventListener('click', () => {
-        alert('Premium upgrade coming soon!');
-        hideDropdown();
-    });
-    
-    document.getElementById('profileOption').addEventListener('click', () => {
-        alert('Profile page coming soon!');
-        hideDropdown();
-    });
-    
-    document.getElementById('subscriptionOption').addEventListener('click', () => {
-        alert('Subscription management coming soon!');
-        hideDropdown();
-    });
-    
     document.getElementById('settingsOption').addEventListener('click', () => {
         alert('Settings page coming soon!');
         hideDropdown();
@@ -738,6 +723,12 @@ async function updateUIForLoggedInUser(user, username = null) {
     // Hide login/signup buttons
     if (loginBtn) loginBtn.style.display = 'none';
     if (createAccountBtn) createAccountBtn.style.display = 'none';
+    
+    // Show premium button
+    const premiumBtn = document.querySelector('.premium-button');
+    if (premiumBtn) {
+        premiumBtn.style.display = 'flex';
+    }
     
     // Show user profile
     if (userProfile) {
@@ -866,5 +857,69 @@ async function logout() {
         window.location.reload();
     } catch (error) {
         console.error('Logout error:', error);
+    }
+}
+
+// Check if email is already registered
+async function checkEmailExists(email) {
+    try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: 'dummy_password_to_check_if_email_exists'
+        });
+        
+        // If we get an "Invalid login credentials" error, it means email exists but password is wrong
+        if (error && error.message.includes('Invalid login credentials')) {
+            return true; // Email exists
+        }
+        
+        // If we get any other error, email might not exist
+        return false;
+    } catch (error) {
+        // Alternative method: try to sign up with the email
+        try {
+            const { data, error: signUpError } = await supabase.auth.signUp({
+                email: email,
+                password: 'dummy_password_check_only'
+            });
+            
+            if (signUpError && signUpError.message.includes('User already registered')) {
+                return true; // Email exists
+            }
+            
+            return false;
+        } catch (e) {
+            console.error('Error checking email:', e);
+            return false;
+        }
+    }
+}
+
+// Show inline error message
+function showInlineError(message) {
+    // Remove any existing error message
+    const existingError = document.querySelector('.auth-error');
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Create error element
+    const errorElement = document.createElement('div');
+    errorElement.className = 'auth-error';
+    errorElement.textContent = message;
+    
+    // Insert error message after the form title
+    const authForm = document.getElementById('authForm');
+    const formTitle = authForm.querySelector('h2');
+    if (formTitle) {
+        formTitle.insertAdjacentElement('afterend', errorElement);
+    }
+}
+
+// Clear inline error message
+function clearInlineError() {
+    const existingError = document.querySelector('.auth-error');
+    if (existingError) {
+        existingError.remove();
     }
 }
