@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authentication Debug - Cloudflare Pages</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+            line-height: 1.6;
+        }
+        .debug-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(40, 40, 50, 0.9);
+            padding: 30px;
+            border-radius: 15px;
+            border: 1px solid #333;
+        }
+        h1 { color: #A259FF; text-align: center; }
+        h2 { color: #F8A3FF; margin-top: 30px; }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: rgba(30, 30, 40, 0.8);
+            border-radius: 10px;
+            border-left: 4px solid #A259FF;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 15px 0;
+        }
+        button {
+            padding: 10px 20px;
+            background: #A259FF;
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: #8A4EE6;
+            transform: translateY(-1px);
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .log-output {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 15px 0;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-ok { background: #4CAF50; }
+        .status-error { background: #f44336; }
+        .status-warning { background: #ff9800; }
+        .form-group {
+            margin: 15px 0;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            background: rgba(60, 60, 70, 0.8);
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: white;
+            font-size: 14px;
+        }
+        input::placeholder { color: #999; }
+        .error { color: #f44336; }
+        .success { color: #4CAF50; }
+        .info { color: #2196F3; }
+        .warning { color: #ff9800; }
+        
+        @media (max-width: 768px) {
+            body { padding: 10px; }
+            .debug-container { padding: 20px; }
+            .button-group { flex-direction: column; }
+            button { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+    <div class="debug-container">
+        <h1><i class="fas fa-bug"></i> Authentication Debug Tool</h1>
+        <p>This tool helps diagnose authentication issues on Cloudflare Pages</p>
+        
+        <div class="test-section">
+            <h2>🔍 Environment Detection</h2>
+            <div id="envInfo"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📚 Dependencies Check</h2>
+            <div id="depCheck"></div>
+            <div class="button-group">
+                <button onclick="checkDependencies()">Check Dependencies</button>
+                <button onclick="testSupabaseConnection()">Test Supabase</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎯 DOM Elements Check</h2>
+            <div id="domCheck"></div>
+            <div class="button-group">
+                <button onclick="checkDOMElements()">Check DOM Elements</button>
+                <button onclick="testButtonEvents()">Test Button Events</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🔐 Authentication Tests</h2>
+            <div class="form-group">
+                <input type="email" id="testEmail" placeholder="Test Email" value="test@example.com">
+            </div>
+            <div class="form-group">
+                <input type="password" id="testPassword" placeholder="Test Password" value="test123456">
+            </div>
+            <div class="button-group">
+                <button onclick="testEmailAuth('signup')">Test Sign Up</button>
+                <button onclick="testEmailAuth('signin')">Test Sign In</button>
+                <button onclick="testGoogleAuth()">Test Google Auth</button>
+                <button onclick="testTwitterAuth()">Test Twitter Auth</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🌐 Network & CORS Tests</h2>
+            <div class="button-group">
+                <button onclick="testCORS()">Test CORS</button>
+                <button onclick="testNetworkConnectivity()">Test Network</button>
+                <button onclick="testRedirectURLs()">Test Redirect URLs</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>📊 Real-time Log</h2>
+            <div class="button-group">
+                <button onclick="clearLog()">Clear Log</button>
+                <button onclick="downloadLog()">Download Log</button>
+            </div>
+            <div class="log-output" id="logOutput">
+                Debug log will appear here...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://kuflobojizyttadwcbhe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+        
+        let supabase = null;
+        let logEntries = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toISOString();
+            const logEntry = { timestamp, message, type };
+            logEntries.push(logEntry);
+            
+            const logOutput = document.getElementById('logOutput');
+            const logLine = document.createElement('div');
+            logLine.className = type;
+            logLine.textContent = `[${timestamp}] ${message}`;
+            logOutput.appendChild(logLine);
+            logOutput.scrollTop = logOutput.scrollHeight;
+            
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function clearLog() {
+            document.getElementById('logOutput').innerHTML = '';
+            logEntries = [];
+            log('Log cleared');
+        }
+        
+        function downloadLog() {
+            const logText = logEntries.map(entry => 
+                `[${entry.timestamp}] [${entry.type.toUpperCase()}] ${entry.message}`
+            ).join('\n');
+            
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `auth-debug-${new Date().toISOString().split('T')[0]}.log`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+        
+        function setStatus(elementId, status, message) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                const statusClass = status === 'ok' ? 'status-ok' : 
+                                  status === 'error' ? 'status-error' : 'status-warning';
+                element.innerHTML = `<span class="${statusClass} status-indicator"></span>${message}`;
+            }
+        }
+        
+        function detectEnvironment() {
+            const envInfo = document.getElementById('envInfo');
+            const isCloudflare = window.location.hostname.includes('pages.dev') || 
+                               window.location.hostname.includes('cloudflare');
+            const isLocal = window.location.hostname === 'localhost' || 
+                           window.location.hostname === '127.0.0.1';
+            
+            const info = {
+                hostname: window.location.hostname,
+                protocol: window.location.protocol,
+                port: window.location.port,
+                pathname: window.location.pathname,
+                origin: window.location.origin,
+                userAgent: navigator.userAgent,
+                isCloudflare,
+                isLocal
+            };
+            
+            envInfo.innerHTML = `
+                <div><strong>Environment:</strong> ${isCloudflare ? 'Cloudflare Pages' : isLocal ? 'Local Development' : 'Unknown'}</div>
+                <div><strong>URL:</strong> ${window.location.href}</div>
+                <div><strong>Origin:</strong> ${info.origin}</div>
+                <div><strong>User Agent:</strong> ${info.userAgent}</div>
+            `;
+            
+            log(`Environment detected: ${isCloudflare ? 'Cloudflare Pages' : isLocal ? 'Local' : 'Unknown'}`);
+            log(`Current URL: ${window.location.href}`);
+        }
+        
+        function checkDependencies() {
+            const depCheck = document.getElementById('depCheck');
+            const results = [];
+            
+            // Check Supabase
+            if (typeof window.supabase !== 'undefined') {
+                results.push('<div class="success">✅ Supabase SDK loaded</div>');
+                try {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    results.push('<div class="success">✅ Supabase client created</div>');
+                    log('Supabase client created successfully');
+                } catch (error) {
+                    results.push('<div class="error">❌ Supabase client creation failed: ' + error.message + '</div>');
+                    log('Supabase client creation failed: ' + error.message, 'error');
+                }
+            } else {
+                results.push('<div class="error">❌ Supabase SDK not loaded</div>');
+                log('Supabase SDK not loaded', 'error');
+            }
+            
+            // Check Font Awesome
+            if (document.querySelector('link[href*="font-awesome"]')) {
+                results.push('<div class="success">✅ Font Awesome loaded</div>');
+            } else {
+                results.push('<div class="warning">⚠️ Font Awesome not detected</div>');
+            }
+            
+            // Check fetch API
+            if (typeof fetch !== 'undefined') {
+                results.push('<div class="success">✅ Fetch API available</div>');
+            } else {
+                results.push('<div class="error">❌ Fetch API not available</div>');
+            }
+            
+            // Check Promise support
+            if (typeof Promise !== 'undefined') {
+                results.push('<div class="success">✅ Promise support available</div>');
+            } else {
+                results.push('<div class="error">❌ Promise support not available</div>');
+            }
+            
+            depCheck.innerHTML = results.join('');
+        }
+        
+        async function testSupabaseConnection() {
+            if (!supabase) {
+                log('Supabase client not initialized', 'error');
+                return;
+            }
+            
+            try {
+                log('Testing Supabase connection...');
+                const { data, error } = await supabase.auth.getSession();
+                
+                if (error) {
+                    log('Supabase connection test failed: ' + error.message, 'error');
+                } else {
+                    log('Supabase connection test successful');
+                    log('Current session: ' + (data.session ? 'Active' : 'None'));
+                }
+            } catch (error) {
+                log('Supabase connection test error: ' + error.message, 'error');
+            }
+        }
+        
+        function checkDOMElements() {
+            const domCheck = document.getElementById('domCheck');
+            const results = [];
+            
+            const elements = [
+                { selector: '.login-btn', name: 'Login Button' },
+                { selector: '.create-account-btn', name: 'Create Account Button' },
+                { selector: '#authModal', name: 'Auth Modal' },
+                { selector: '#auth-container', name: 'Auth Container' },
+                { selector: '.modal-close', name: 'Modal Close Button' },
+                { selector: '.user-profile', name: 'User Profile' }
+            ];
+            
+            elements.forEach(({ selector, name }) => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    results.push(`<div class="success">✅ ${name} found</div>`);
+                    log(`${name} found: ${selector}`);
+                } else {
+                    results.push(`<div class="error">❌ ${name} not found</div>`);
+                    log(`${name} not found: ${selector}`, 'error');
+                }
+            });
+            
+            domCheck.innerHTML = results.join('');
+        }
+        
+        function testButtonEvents() {
+            const loginBtn = document.querySelector('.login-btn');
+            const createBtn = document.querySelector('.create-account-btn');
+            
+            if (loginBtn) {
+                log('Testing login button click...');
+                loginBtn.click();
+                log('Login button clicked');
+            } else {
+                log('Login button not found for testing', 'error');
+            }
+            
+            if (createBtn) {
+                log('Testing create account button click...');
+                createBtn.click();
+                log('Create account button clicked');
+            } else {
+                log('Create account button not found for testing', 'error');
+            }
+        }
+        
+        async function testEmailAuth(type) {
+            if (!supabase) {
+                log('Supabase client not initialized', 'error');
+                return;
+            }
+            
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            if (!email || !password) {
+                log('Email and password required for testing', 'error');
+                return;
+            }
+            
+            try {
+                log(`Testing ${type} with email: ${email}`);
+                
+                let result;
+                if (type === 'signup') {
+                    result = await supabase.auth.signUp({
+                        email,
+                        password,
+                        options: {
+                            emailRedirectTo: window.location.origin + '/auth/callback'
+                        }
+                    });
+                } else {
+                    result = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+                }
+                
+                if (result.error) {
+                    log(`${type} failed: ${result.error.message}`, 'error');
+                } else {
+                    log(`${type} successful!`, 'success');
+                    log(`User ID: ${result.data.user?.id}`);
+                }
+                
+            } catch (error) {
+                log(`${type} error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testGoogleAuth() {
+            if (!supabase) {
+                log('Supabase client not initialized', 'error');
+                return;
+            }
+            
+            try {
+                log('Testing Google authentication...');
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: window.location.origin
+                    }
+                });
+                
+                if (error) {
+                    log('Google auth failed: ' + error.message, 'error');
+                } else {
+                    log('Google auth initiated successfully');
+                }
+                
+            } catch (error) {
+                log('Google auth error: ' + error.message, 'error');
+            }
+        }
+        
+        async function testTwitterAuth() {
+            if (!supabase) {
+                log('Supabase client not initialized', 'error');
+                return;
+            }
+            
+            try {
+                log('Testing Twitter authentication...');
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'twitter',
+                    options: {
+                        redirectTo: window.location.origin
+                    }
+                });
+                
+                if (error) {
+                    log('Twitter auth failed: ' + error.message, 'error');
+                } else {
+                    log('Twitter auth initiated successfully');
+                }
+                
+            } catch (error) {
+                log('Twitter auth error: ' + error.message, 'error');
+            }
+        }
+        
+        async function testCORS() {
+            log('Testing CORS with Supabase...');
+            
+            try {
+                const response = await fetch(SUPABASE_URL + '/rest/v1/', {
+                    method: 'GET',
+                    headers: {
+                        'apikey': SUPABASE_ANON_KEY,
+                        'Authorization': 'Bearer ' + SUPABASE_ANON_KEY
+                    }
+                });
+                
+                if (response.ok) {
+                    log('CORS test successful');
+                } else {
+                    log(`CORS test failed: ${response.status} ${response.statusText}`, 'error');
+                }
+                
+            } catch (error) {
+                log('CORS test error: ' + error.message, 'error');
+            }
+        }
+        
+        async function testNetworkConnectivity() {
+            log('Testing network connectivity...');
+            
+            const urls = [
+                SUPABASE_URL,
+                'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+                'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css'
+            ];
+            
+            for (const url of urls) {
+                try {
+                    const response = await fetch(url, { method: 'HEAD' });
+                    if (response.ok) {
+                        log(`✅ ${url} - accessible`);
+                    } else {
+                        log(`❌ ${url} - ${response.status} ${response.statusText}`, 'error');
+                    }
+                } catch (error) {
+                    log(`❌ ${url} - ${error.message}`, 'error');
+                }
+            }
+        }
+        
+        function testRedirectURLs() {
+            log('Testing redirect URLs...');
+            
+            const currentOrigin = window.location.origin;
+            const callbackUrl = currentOrigin + '/auth/callback';
+            
+            log(`Current Origin: ${currentOrigin}`);
+            log(`Callback URL: ${callbackUrl}`);
+            log(`Protocol: ${window.location.protocol}`);
+            
+            // Test if URLs are HTTPS (required for OAuth)
+            if (window.location.protocol === 'https:' || window.location.hostname === 'localhost') {
+                log('✅ Protocol is secure for OAuth');
+            } else {
+                log('❌ Protocol is not secure - OAuth may fail', 'error');
+            }
+        }
+        
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            log('Debug page loaded');
+            detectEnvironment();
+            checkDependencies();
+            checkDOMElements();
+            
+            // Set up auth state listener
+            if (supabase) {
+                supabase.auth.onAuthStateChange((event, session) => {
+                    log(`Auth state changed: ${event}`);
+                    if (session) {
+                        log(`User: ${session.user.email}`);
+                    }
+                });
+            }
+        });
+        
+        // Global error handler
+        window.addEventListener('error', (event) => {
+            log(`Global error: ${event.error.message}`, 'error');
+        });
+        
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', (event) => {
+            log(`Unhandled promise rejection: ${event.reason}`, 'error');
+        });
+    </script>
+</body>
+</html>
