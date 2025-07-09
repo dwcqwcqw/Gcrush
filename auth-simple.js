@@ -76,11 +76,8 @@ function setupAuthStateListener() {
             console.log('User signed in successfully');
             closeModal(authModal);
             
-            // Check if profile is complete
-            const profileComplete = await checkUserProfile(session.user);
-            if (profileComplete) {
-                updateUIForLoggedInUser(session.user);
-            }
+            // Always update UI for logged in user
+            updateUIForLoggedInUser(session.user);
         } else if (event === 'SIGNED_OUT') {
             // Reset UI to show login/create account buttons
             if (loginBtn) loginBtn.style.display = 'inline-block';
@@ -296,7 +293,11 @@ async function handleSocialAuth(provider) {
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: provider,
             options: {
-                redirectTo: redirectUrl
+                redirectTo: 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback',
+                queryParams: {
+                    access_type: 'offline',
+                    prompt: 'consent'
+                }
             }
         });
         
@@ -661,12 +662,12 @@ async function checkUserProfile(user) {
 // Create dropdown menu HTML
 function createDropdownMenu() {
     return `
-        <div class="dropdown-menu" id="profileDropdown">
+        <div class="profile-dropdown" id="profileDropdown">
             <div class="dropdown-item">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
             </div>
-            <div class="dropdown-item" onclick="logout()">
+            <div class="dropdown-item logout-item" onclick="logout()">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </div>
@@ -701,6 +702,24 @@ function setupProfileDropdown() {
     // Add dropdown HTML to body
     document.body.insertAdjacentHTML('beforeend', createDropdownMenu());
     
+    // Setup user profile click handler
+    const userProfile = document.querySelector('.user-profile');
+    if (userProfile) {
+        userProfile.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const dropdown = document.getElementById('profileDropdown');
+            if (dropdown) {
+                // Position dropdown below user profile
+                const rect = userProfile.getBoundingClientRect();
+                dropdown.style.top = (rect.bottom + 10) + 'px';
+                dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+                
+                // Toggle dropdown
+                dropdown.classList.toggle('active');
+            }
+        });
+    }
+    
     // Hide dropdown when clicking outside
     document.addEventListener('click', (e) => {
         const dropdown = document.getElementById('profileDropdown');
@@ -716,9 +735,13 @@ function setupProfileDropdown() {
 async function updateUIForLoggedInUser(user, username = null) {
     console.log('Updating UI for logged in user:', user.email);
     
+    // Re-query DOM elements in case they were replaced
+    const currentLoginBtn = document.querySelector('.login-btn');
+    const currentCreateBtn = document.querySelector('.create-account-btn');
+    
     // Hide login/create account buttons
-    if (loginBtn) loginBtn.style.display = 'none';
-    if (createAccountBtn) createAccountBtn.style.display = 'none';
+    if (currentLoginBtn) currentLoginBtn.style.display = 'none';
+    if (currentCreateBtn) currentCreateBtn.style.display = 'none';
     
     // Show premium button
     const premiumBtn = document.querySelector('.premium-button');
@@ -726,9 +749,10 @@ async function updateUIForLoggedInUser(user, username = null) {
         premiumBtn.style.display = 'flex';
     }
     
-    // Show user profile
-    if (userProfile) {
-        userProfile.style.display = 'flex';
+    // Re-query user profile element and show it
+    const currentUserProfile = document.querySelector('.user-profile');
+    if (currentUserProfile) {
+        currentUserProfile.style.display = 'flex';
         
         // Get username from profile if not provided
         if (!username) {
@@ -750,13 +774,13 @@ async function updateUIForLoggedInUser(user, username = null) {
         const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(username || user.email)}&background=A259FF&color=fff&size=128`;
         
         // Set avatar in header
-        const profileImg = userProfile.querySelector('.profile-img');
+        const profileImg = currentUserProfile.querySelector('.profile-img');
         if (profileImg) {
             profileImg.src = avatarUrl;
         }
         
         // Set username in header
-        const usernameDisplay = document.querySelector('.username-display');
+        const usernameDisplay = currentUserProfile.querySelector('.username-display');
         if (usernameDisplay) {
             usernameDisplay.textContent = username || 'My Profile';
         }
@@ -856,32 +880,34 @@ async function logout() {
     }
 }
 
-// Check if email is already registered - FIXED VERSION
+// Make logout available globally
+window.logout = logout;
+
+// Check if email is already registered against the database
 async function checkEmailExists(email) {
     try {
-        // Try to sign up with a dummy password to check if email exists
-        const { data, error } = await supabase.auth.signUp({
-            email: email,
-            password: 'dummy_password_check_123456'
-        });
+        // Query the profiles table to check if email exists
+        const { data, error } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', email)
+            .single();
         
-        // If signup succeeds, email doesn't exist (but we need to cancel this signup)
-        if (data.user && !error) {
-            // Cancel the signup by immediately signing out
-            await supabase.auth.signOut();
-            return false; // Email doesn't exist
+        if (error && error.code === 'PGRST116') {
+            // No profile found - email doesn't exist
+            return false;
         }
         
-        // If we get an error about user already registered, email exists
-        if (error && error.message.includes('User already registered')) {
-            return true; // Email exists
+        if (data) {
+            // Profile found - email exists
+            return true;
         }
         
-        // For any other error, assume email doesn't exist
+        // For any other case, assume email doesn't exist
         return false;
         
     } catch (error) {
-        console.error('Error checking email:', error);
+        console.error('Error checking email in database:', error);
         return false; // On error, assume email doesn't exist
     }
 }
