@@ -43,9 +43,14 @@ document.addEventListener('DOMContentLoaded', () => {
             // Handle responsive behavior
             const handleResize = () => {
                 if (window.innerWidth <= 1200) {
-                    // Mobile/tablet: remove collapsed class and ensure sidebar is visible
+                    // Mobile/tablet: remove collapsed class and hide sidebar by default on small screens
                     sidebar.classList.remove('collapsed');
-                    sidebar.classList.remove('mobile-hidden');
+                    // Auto-hide sidebar on screens smaller than 768px
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.add('mobile-hidden');
+                    } else {
+                        sidebar.classList.remove('mobile-hidden');
+                    }
                 } else {
                     // Desktop: restore collapsed state if it was saved
                     const savedState = localStorage.getItem('sidebarCollapsed');
@@ -62,9 +67,9 @@ document.addEventListener('DOMContentLoaded', () => {
             // Add event listener for window resize
             window.addEventListener('resize', handleResize);
             
-            // Close mobile sidebar when clicking outside
+            // Close mobile sidebar when clicking outside (only on small screens)
             document.addEventListener('click', (e) => {
-                if (window.innerWidth <= 1200 && 
+                if (window.innerWidth <= 768 && 
                     !sidebar.contains(e.target) && 
                     !menuToggle.contains(e.target) && 
                     !sidebar.classList.contains('mobile-hidden')) {

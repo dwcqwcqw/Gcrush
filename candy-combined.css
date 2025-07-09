@@ -66,6 +66,7 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     display: block;
     background: linear-gradient(90deg, #2a2a2d 25%, #3a3a3f 50%, #2a2a2d 75%);
     background-size: 200% 100%;
@@ -654,6 +655,11 @@
         height: 350px;
     }
     
+    .banner-full-img {
+        object-fit: cover;
+        object-position: center;
+    }
+    
     .character-grid {
         max-width: 1000px;
         gap: 16px;
@@ -666,6 +672,11 @@
         width: calc(100% - 30px);
         margin: 0 15px;
         height: 300px;
+    }
+    
+    .banner-full-img {
+        object-fit: cover;
+        object-position: center;
     }
     
     .banner-split-container {
@@ -682,10 +693,16 @@
     
     .banner-text-side {
         padding: 20px;
+        flex: 1;
     }
     
     .banner-split-title {
         font-size: 1.8rem;
+    }
+    
+    .nav-dot {
+        width: 14px;
+        height: 14px;
     }
     
     .character-grid {
@@ -712,6 +729,13 @@
         margin: 0 10px;
     }
     
+    .banner-full-img {
+        object-fit: cover;
+        object-position: center;
+        width: 100%;
+        height: 100%;
+    }
+    
     .banner-split-container {
         flex-direction: column;
         gap: 15px;
@@ -720,10 +744,13 @@
     
     .banner-video-side {
         height: 150px;
+        width: 100%;
+        flex: none;
     }
     
     .banner-text-side {
         padding: 15px;
+        flex: 1;
     }
     
     .banner-split-title {
@@ -734,6 +761,12 @@
     .banner-split-cta {
         padding: 12px 30px;
         font-size: 1rem;
+    }
+    
+    .nav-dot {
+        width: 16px;
+        height: 16px;
+        border-width: 2px;
     }
     
     .character-grid {
@@ -793,6 +826,24 @@
         max-width: 120px;
         margin-top: 6px;
     }
+    
+    /* Make menu toggle more prominent on mobile */
+    .menu-toggle {
+        padding: 8px;
+        border-radius: 6px;
+        background: rgba(162, 89, 255, 0.1);
+        border: 1px solid rgba(162, 89, 255, 0.3);
+        transition: all 0.3s ease;
+    }
+    
+    .menu-toggle:hover {
+        background: rgba(162, 89, 255, 0.2);
+        border-color: rgba(162, 89, 255, 0.5);
+    }
+    
+    .menu-toggle i {
+        font-size: 18px;
+    }
 }
 
 /* Small screens (320px-480px) - Phones */
@@ -801,19 +852,37 @@
         height: 200px;
         width: calc(100% - 16px);
         margin: 0 8px;
+        border-radius: 15px;
+    }
+    
+    .banner-slide {
+        border-radius: 15px;
+    }
+    
+    .banner-full-img {
+        object-fit: cover;
+        object-position: center;
+        width: 100%;
+        height: 100%;
     }
     
     .banner-split-container {
         padding: 8px;
         gap: 10px;
+        flex-direction: column;
     }
     
     .banner-video-side {
         height: 120px;
+        border-radius: 15px;
+        width: 100%;
+        flex: none;
     }
     
     .banner-text-side {
         padding: 12px;
+        border-radius: 15px;
+        flex: 1;
     }
     
     .banner-split-title {
@@ -825,6 +894,17 @@
     .banner-split-cta {
         padding: 10px 24px;
         font-size: 0.9rem;
+    }
+    
+    .nav-dot {
+        width: 18px;
+        height: 18px;
+        border-width: 3px;
+    }
+    
+    .banner-nav {
+        margin-top: 12px;
+        gap: 10px;
     }
     
     .character-grid {
@@ -2059,13 +2139,17 @@ ul {
         border-bottom: 1px solid var(--border-color);
         padding: 10px 0;
         transform: translateY(0);
-        transition: transform 0.3s ease;
+        transition: transform 0.3s ease, opacity 0.3s ease;
     }
     
     .sidebar.mobile-hidden {
         transform: translateY(-100%);
         opacity: 0;
         pointer-events: none;
+        height: 0;
+        overflow: hidden;
+        padding: 0;
+        margin: 0;
     }
     
     .sidebar-nav {
