@@ -80,15 +80,22 @@ function setupAuthStateListener() {
             updateUIForLoggedInUser(session.user);
         } else if (event === 'SIGNED_OUT') {
             // Reset UI to show login/create account buttons
-            if (loginBtn) loginBtn.style.display = 'inline-block';
-            if (createAccountBtn) createAccountBtn.style.display = 'inline-block';
-            if (userProfile) userProfile.style.display = 'none';
+            const currentLoginBtn = document.querySelector('.login-btn');
+            const currentCreateBtn = document.querySelector('.create-account-btn');
+            const currentUserProfile = document.querySelector('.user-profile');
+            
+            if (currentLoginBtn) currentLoginBtn.style.display = 'inline-block';
+            if (currentCreateBtn) currentCreateBtn.style.display = 'inline-block';
+            if (currentUserProfile) currentUserProfile.style.display = 'none';
             
             // Hide premium button
             const premiumBtn = document.querySelector('.premium-button');
             if (premiumBtn) {
                 premiumBtn.style.display = 'none';
             }
+        } else if (event === 'INITIAL_SESSION' && !session) {
+            // User is not logged in on page load - do nothing
+            console.log('No active session on page load');
         }
     });
 }
@@ -104,43 +111,60 @@ function renderAuthUI() {
     
     authContainer.innerHTML = `
         <div class="auth-form">
-            <h2>${isSignUp ? 'Create Account' : 'Sign In'}</h2>
-            
-            <form id="authForm">
-                <div class="form-group">
-                    <input type="email" id="email" placeholder="Email" required>
-                </div>
-                
-                <div class="form-group">
-                    <input type="password" id="password" placeholder="Password" required ${isSignUp ? 'minlength="6"' : ''}>
-                </div>
-                
-                <button type="submit" class="auth-submit-btn">
-                    ${isSignUp ? 'Create Account' : 'Sign In'}
-                </button>
-            </form>
-            
-            <div class="auth-divider">
-                <span>or</span>
+            <div class="auth-header">
+                <h2 class="auth-title">${isSignUp ? 'Create Your Account' : 'Welcome Back'}</h2>
+                <p class="auth-subtitle">${isSignUp ? 'Join thousands of users exploring AI companions' : 'Sign in to continue your conversations'}</p>
             </div>
             
             <div class="social-auth">
                 <button type="button" class="social-btn google-btn" data-provider="google">
                     <i class="fab fa-google"></i>
-                    Continue with Google
+                    <span>Continue with Google</span>
                 </button>
                 
                 <button type="button" class="social-btn twitter-btn" data-provider="twitter">
                     <span class="x-icon">𝕏</span>
-                    Continue with X
+                    <span>Continue with X</span>
                 </button>
             </div>
             
-            <div class="auth-switch">
-                ${isSignUp ? 
-                    `Already have an account? <a href="#" id="switchToSignIn">Sign In</a>` : 
-                    `Don't have an account? <a href="#" id="switchToSignUp">Create Account</a>`
-                }
+            <div class="auth-divider">
+                <span>or continue with email</span>
+            </div>
+            
+            <form id="authForm" class="email-auth-form">
+                <div class="form-group">
+                    <label for="email" class="form-label">Email Address</label>
+                    <input type="email" id="email" class="form-input" placeholder="Enter your email" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="password" class="form-label">Password</label>
+                    <input type="password" id="password" class="form-input" placeholder="${isSignUp ? 'Create a password (min 6 characters)' : 'Enter your password'}" required ${isSignUp ? 'minlength="6"' : ''}>
+                    ${!isSignUp ? '<a href="#" class="forgot-password">Forgot password?</a>' : ''}
+                </div>
+                
+                ${isSignUp ? `
+                <div class="form-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="terms" required>
+                        <span>I agree to the <a href="#" class="auth-link">Terms of Service</a> and <a href="#" class="auth-link">Privacy Policy</a></span>
+                    </label>
+                </div>
+                ` : ''}
+                
+                <button type="submit" class="submit-btn primary-btn">
+                    <span class="btn-text">${isSignUp ? 'Create Account' : 'Sign In'}</span>
+                    <i class="fas fa-arrow-right"></i>
+                </button>
+            </form>
+            
+            <div class="auth-footer">
+                <p>${isSignUp ? 'Already have an account?' : "Don't have an account?"} 
+                   <a href="#" id="${isSignUp ? 'switchToSignIn' : 'switchToSignUp'}" class="auth-link-primary">
+                       ${isSignUp ? 'Sign In' : 'Create Account'}
+                   </a>
+                </p>
             </div>
         </div>
     `;
@@ -197,19 +221,21 @@ async function handleAuthSubmit(e) {
         return;
     }
     
-    const submitBtn = document.querySelector('.auth-submit-btn');
-    const originalText = submitBtn.textContent;
+    const submitBtn = document.querySelector('.primary-btn');
+    const originalHTML = submitBtn.innerHTML;
     
     try {
         // Show loading state
         submitBtn.disabled = true;
-        submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> ${authView === 'sign_up' ? 'Creating Account...' : 'Signing In...'}`;
+        submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">${authView === 'sign_up' ? 'Creating Account...' : 'Signing In...'}</span>`;
         
         if (authView === 'sign_up') {
             // Check if email already exists
             const emailExists = await checkEmailExists(email);
             if (emailExists) {
                 showInlineError('An account with this email already exists. Please sign in instead.');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalHTML;
                 return;
             }
             
@@ -226,7 +252,11 @@ async function handleAuthSubmit(e) {
             
             console.log('Sign up successful:', data);
             
-            // Don't show success message, just wait for auth state change
+            if (data.user && !data.session) {
+                // Email confirmation required
+                showInlineError('Please check your email to confirm your account before signing in.', 'success');
+            }
+            // If session exists, auth state change will handle the rest
             
         } else {
             // Sign in existing user
@@ -258,7 +288,7 @@ async function handleAuthSubmit(e) {
     } finally {
         // Reset button state
         submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
+        submitBtn.innerHTML = originalHTML;
     }
 }
 
@@ -286,14 +316,16 @@ async function handleSocialAuth(provider) {
     }, 10000);
     
     try {
-        // Use the current domain for OAuth redirect
-        const redirectUrl = `${window.location.origin}`;
+        // Use the production domain for OAuth redirect
+        const redirectUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000' 
+            : 'https://gcrush.org';
         console.log('Using OAuth redirect URL:', redirectUrl);
         
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: provider,
             options: {
-                redirectTo: 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback',
+                redirectTo: redirectUrl,
                 queryParams: {
                     access_type: 'offline',
                     prompt: 'consent'
@@ -912,33 +944,33 @@ async function checkEmailExists(email) {
     }
 }
 
-// Show inline error message
-function showInlineError(message) {
-    // Remove any existing error message
-    const existingError = document.querySelector('.auth-error');
-    if (existingError) {
-        existingError.remove();
+// Show inline error or success message
+function showInlineError(message, type = 'error') {
+    // Remove any existing message
+    const existingMsg = document.querySelector('.auth-message');
+    if (existingMsg) {
+        existingMsg.remove();
     }
     
-    // Create error element
-    const errorElement = document.createElement('div');
-    errorElement.className = 'auth-error';
-    errorElement.textContent = message;
+    // Create message element
+    const msgElement = document.createElement('div');
+    msgElement.className = `auth-message auth-${type}`;
+    msgElement.innerHTML = `<i class="fas fa-${type === 'error' ? 'exclamation-circle' : 'check-circle'}"></i> ${message}`;
     
-    // Insert error message after the form title
-    const authForm = document.getElementById('authForm');
+    // Insert message in auth form
+    const authForm = document.querySelector('.auth-form');
     if (authForm) {
-        const formTitle = authForm.querySelector('h2');
-        if (formTitle) {
-            formTitle.insertAdjacentElement('afterend', errorElement);
+        const authHeader = authForm.querySelector('.auth-header');
+        if (authHeader) {
+            authHeader.insertAdjacentElement('afterend', msgElement);
         }
     }
 }
 
 // Clear inline error message
 function clearInlineError() {
-    const existingError = document.querySelector('.auth-error');
-    if (existingError) {
-        existingError.remove();
+    const existingMsg = document.querySelector('.auth-message');
+    if (existingMsg) {
+        existingMsg.remove();
     }
 }
