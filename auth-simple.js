@@ -72,6 +72,7 @@ function setupAuthStateListener() {
     supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state changed:', event, session);
         
+        // Only handle actual sign in/out events, not initial session check
         if (event === 'SIGNED_IN' && session) {
             console.log('User signed in successfully');
             closeModal(authModal);
@@ -93,9 +94,14 @@ function setupAuthStateListener() {
             if (premiumBtn) {
                 premiumBtn.style.display = 'none';
             }
-        } else if (event === 'INITIAL_SESSION' && !session) {
-            // User is not logged in on page load - do nothing
-            console.log('No active session on page load');
+        } else if (event === 'INITIAL_SESSION') {
+            // Initial session check - only update UI if user is logged in
+            if (session) {
+                console.log('User already logged in on page load');
+                updateUIForLoggedInUser(session.user);
+            } else {
+                console.log('No active session on page load');
+            }
         }
     });
 }
@@ -473,9 +479,24 @@ function setupEventListeners() {
 // Enhanced modal controls with better error handling
 function openModal(modal) {
     console.log('Opening modal:', modal);
+    console.trace('Modal open call stack'); // Add stack trace to find what's calling this
+    
     if (!modal) {
         console.error('Modal not found!');
         return;
+    }
+    
+    // Prevent opening auth modal automatically
+    if (modal && modal.id === 'authModal') {
+        console.warn('Preventing automatic auth modal opening');
+        const caller = new Error().stack;
+        console.log('Called from:', caller);
+        // Only allow opening if triggered by user action
+        const event = window.event || {};
+        if (!event.isTrusted) {
+            console.warn('Blocking non-user triggered auth modal');
+            return;
+        }
     }
     
     try {
