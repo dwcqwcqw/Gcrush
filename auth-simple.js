@@ -40,7 +40,7 @@ function initializeAuth() {
         userProfile: !!userProfile, 
         authContainer: !!authContainer 
     });
-}"
+}
 
 // Initialize Auth UI
 let authView = 'sign_in';
