@@ -1218,28 +1218,52 @@ async function logout() {
     console.log('Logout initiated');
     
     try {
-        // First, check if we have a valid session
+        // Ensure we have a valid Supabase client
+        if (!supabase) {
+            console.log('Supabase client not initialized, reinitializing...');
+            if (!initializeSupabase()) {
+                console.error('Failed to reinitialize Supabase client');
+                // Continue with manual cleanup
+            }
+        }
+        
         if (supabase) {
             console.log('Checking for active session...');
-            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
             
-            if (sessionError) {
-                console.error('Error getting session:', sessionError);
-            } else if (session) {
-                console.log('Active session found, attempting signOut...');
-                const { error } = await supabase.auth.signOut();
-                if (error) {
-                    console.error('Supabase signOut error:', error);
-                    // Continue with manual cleanup even if signOut fails
+            try {
+                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) {
+                    console.error('Error getting session:', sessionError);
+                } else if (session) {
+                    console.log('Active session found, attempting signOut...');
+                    
+                    // Try to sign out with proper error handling
+                    try {
+                        const { error } = await supabase.auth.signOut({
+                            scope: 'local' // Only sign out locally to avoid API issues
+                        });
+                        
+                        if (error) {
+                            console.error('Supabase signOut error:', error);
+                            // If API signOut fails, continue with manual cleanup
+                        } else {
+                            console.log('Supabase signOut successful');
+                        }
+                    } catch (signOutError) {
+                        console.error('SignOut exception:', signOutError);
+                        // Continue with manual cleanup
+                    }
                 } else {
-                    console.log('Supabase signOut successful');
+                    console.log('No active session found, proceeding with manual cleanup');
                 }
-            } else {
-                console.log('No active session found, proceeding with manual cleanup');
+            } catch (sessionCheckError) {
+                console.error('Session check failed:', sessionCheckError);
+                // Continue with manual cleanup
             }
         }
     } catch (error) {
-        console.error('Error during Supabase signOut:', error);
+        console.error('Error during logout process:', error);
         // Continue with manual cleanup
     }
     
@@ -1248,7 +1272,8 @@ async function logout() {
         'gcrush-auth-token',
         'sb-kuflobojizyttadwcbhe-auth-token',
         'sb-kuflobojizyttadwcbhe-auth-token-refresh',
-        'supabase.auth.token'
+        'supabase.auth.token',
+        'rememberMe'
     ];
     
     // Clear specific auth keys
