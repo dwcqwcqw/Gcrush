@@ -61,14 +61,21 @@ The current password reset flow works as follows:
 5. If link is expired/invalid, user sees error modal on main page
 6. User can request new reset link from the error modal
 
+**Important Notes:**
+- Reset links are valid for **1 hour** by default (Supabase setting)
+- Links can only be used once
+- The system now provides more forgiving error handling to reduce false "expired" messages
+- Users get multiple chances to verify their session before showing error
+
 ## Error Handling
 
 The system handles the following error scenarios:
 
 - **Link Expired**: `error_code=otp_expired` - Shows expiration message
-- **Access Denied**: `error=access_denied` - Shows access denied message
+- **Access Denied**: `error=access_denied` - Shows access denied message (only if definitely expired)
 - **Rate Limiting**: Shows rate limit message with countdown
 - **Email Not Found**: Shows email not found message
+- **Session Recovery**: Attempts multiple times to recover session before failing
 
 ## Testing
 
