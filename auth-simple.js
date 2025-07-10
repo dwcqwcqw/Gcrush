@@ -30,7 +30,7 @@ function initializeSupabase() {
                 persistSession: true,
                 detectSessionInUrl: true,
                 storage: window.localStorage,
-                storageKey: 'gcrush-auth-token',
+                storageKey: 'sb-kuflobojizyttadwcbhe-auth-token',
                 flowType: 'pkce'
             }
         });
@@ -1197,15 +1197,24 @@ async function logout() {
     console.log('Logout initiated');
     
     try {
-        // First, try to properly sign out with Supabase
+        // First, check if we have a valid session
         if (supabase) {
-            console.log('Attempting Supabase signOut...');
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-                console.error('Supabase signOut error:', error);
-                // Continue with manual cleanup even if signOut fails
+            console.log('Checking for active session...');
+            const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+            
+            if (sessionError) {
+                console.error('Error getting session:', sessionError);
+            } else if (session) {
+                console.log('Active session found, attempting signOut...');
+                const { error } = await supabase.auth.signOut();
+                if (error) {
+                    console.error('Supabase signOut error:', error);
+                    // Continue with manual cleanup even if signOut fails
+                } else {
+                    console.log('Supabase signOut successful');
+                }
             } else {
-                console.log('Supabase signOut successful');
+                console.log('No active session found, proceeding with manual cleanup');
             }
         }
     } catch (error) {
@@ -1238,6 +1247,15 @@ async function logout() {
     keysToRemove.forEach(key => localStorage.removeItem(key));
     
     console.log('Local auth tokens cleared');
+    
+    // Reset UI immediately before reload
+    const currentLoginBtn = document.querySelector('.login-btn');
+    const currentCreateBtn = document.querySelector('.create-account-btn');
+    const currentUserProfile = document.querySelector('.user-profile');
+    
+    if (currentLoginBtn) currentLoginBtn.style.display = 'inline-block';
+    if (currentCreateBtn) currentCreateBtn.style.display = 'inline-block';
+    if (currentUserProfile) currentUserProfile.style.display = 'none';
     
     // Always reload the page to reset UI state
     window.location.reload();

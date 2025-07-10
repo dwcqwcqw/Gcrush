@@ -121,7 +121,7 @@
                     persistSession: true,
                     detectSessionInUrl: true,
                     storage: window.localStorage,
-                    storageKey: 'gcrush-auth-token',
+                    storageKey: 'sb-kuflobojizyttadwcbhe-auth-token',
                     flowType: 'pkce'
                 }
             });
@@ -218,10 +218,10 @@
             log('Clearing all storage...');
             
             const authKeys = [
-                'gcrush-auth-token',
                 'sb-kuflobojizyttadwcbhe-auth-token',
                 'sb-kuflobojizyttadwcbhe-auth-token-refresh',
-                'supabase.auth.token'
+                'supabase.auth.token',
+                'gcrush-auth-token'
             ];
             
             // Clear specific auth keys
