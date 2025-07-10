@@ -135,16 +135,16 @@ function setupAuthStateListener() {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
         if (!error && session) {
             console.log('Existing session found on initialization');
-            // Check if session is still valid (within 24 hours)
-            const sessionCreated = new Date(session.created_at);
-            const now = new Date();
-            const hoursSinceCreated = (now - sessionCreated) / (1000 * 60 * 60);
             
-            if (hoursSinceCreated < 24) {
-                console.log(`Session is ${hoursSinceCreated.toFixed(1)} hours old - auto logging in`);
+            // Check if session is still valid using expires_at instead of created_at
+            const now = Math.floor(Date.now() / 1000); // Current time in seconds
+            const expiresAt = session.expires_at;
+            
+            if (expiresAt && now < expiresAt) {
+                console.log(`Session is valid, expires at: ${new Date(expiresAt * 1000).toLocaleString()}`);
                 updateUIForLoggedInUser(session.user);
             } else {
-                console.log('Session older than 24 hours - requiring new login');
+                console.log('Session has expired - requiring new login');
                 supabase.auth.signOut();
             }
         } else {
