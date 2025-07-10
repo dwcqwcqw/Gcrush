@@ -327,17 +327,16 @@ async function handleSocialAuth(provider) {
     }, 10000);
     
     try {
-        // Use proper OAuth redirect URLs
-        let redirectUrl;
-        if (provider === 'twitter') {
-            // Twitter requires the Supabase callback URL
-            redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
-        } else {
-            // For Google and other providers, use the current page URL (not just origin)
-            // This ensures we redirect back to the exact page where auth was initiated
-            redirectUrl = window.location.href.split('#')[0].split('?')[0];
-        }
-        console.log(`Using OAuth redirect URL for ${provider}:`, redirectUrl);
+        // BOTH Google and Twitter should use the Supabase callback URL
+        // This avoids issues with dynamic Cloudflare Pages URLs
+        const redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
+        
+        // Log current environment for debugging
+        console.log(`OAuth Debug Info for ${provider}:`);
+        console.log('- Current URL:', window.location.href);
+        console.log('- Current Origin:', window.location.origin);
+        console.log('- Redirect URL:', redirectUrl);
+        console.log('- Provider:', provider);
         
         const { data, error } = await supabase.auth.signInWithOAuth({
             provider: provider,

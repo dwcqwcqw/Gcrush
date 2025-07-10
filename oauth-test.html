@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OAuth Redirect Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            padding: 10px 20px;
+            margin: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .google-btn {
+            background: #4285f4;
+            color: white;
+        }
+        .twitter-btn {
+            background: #1da1f2;
+            color: white;
+        }
+        .log {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>OAuth Redirect Configuration Test</h1>
+    
+    <div class="test-section">
+        <h2>Current Environment</h2>
+        <div id="env-info" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>OAuth Tests</h2>
+        <button class="google-btn" onclick="testGoogleAuth()">Test Google OAuth</button>
+        <button class="twitter-btn" onclick="testTwitterAuth()">Test Twitter OAuth</button>
+        <div id="oauth-log" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Supabase Configuration</h2>
+        <div id="config-info" class="log"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://kuflobojizyttadwcbhe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+        
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('oauth-log');
+            const timestamp = new Date().toISOString();
+            const className = type === 'error' ? 'error' : type === 'success' ? 'success' : '';
+            logDiv.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+        }
+        
+        // Display environment info
+        document.getElementById('env-info').innerHTML = `
+Current URL: ${window.location.href}
+Origin: ${window.location.origin}
+Protocol: ${window.location.protocol}
+Host: ${window.location.host}
+User Agent: ${navigator.userAgent}
+        `;
+        
+        // Display Supabase config
+        document.getElementById('config-info').innerHTML = `
+Supabase URL: ${SUPABASE_URL}
+Callback URL: ${SUPABASE_URL}/auth/v1/callback
+        `;
+        
+        async function testGoogleAuth() {
+            log('Testing Google OAuth...');
+            
+            try {
+                const redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
+                log(`Redirect URL: ${redirectUrl}`);
+                
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: redirectUrl,
+                        queryParams: {
+                            access_type: 'offline',
+                            prompt: 'consent'
+                        }
+                    }
+                });
+                
+                if (error) {
+                    log(`Error: ${error.message}`, 'error');
+                } else {
+                    log('OAuth initiated successfully', 'success');
+                    log(`Provider: ${data.provider}`);
+                    log(`URL: ${data.url}`);
+                    
+                    // Extract and display the actual redirect URL
+                    const url = new URL(data.url);
+                    const redirectParam = url.searchParams.get('redirect_to');
+                    if (redirectParam) {
+                        log(`Actual redirect_to parameter: ${redirectParam}`);
+                    }
+                }
+            } catch (err) {
+                log(`Exception: ${err.message}`, 'error');
+            }
+        }
+        
+        async function testTwitterAuth() {
+            log('Testing Twitter OAuth...');
+            
+            try {
+                const redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
+                log(`Redirect URL: ${redirectUrl}`);
+                
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'twitter',
+                    options: {
+                        redirectTo: redirectUrl
+                    }
+                });
+                
+                if (error) {
+                    log(`Error: ${error.message}`, 'error');
+                } else {
+                    log('OAuth initiated successfully', 'success');
+                    log(`Provider: ${data.provider}`);
+                    log(`URL: ${data.url}`);
+                    
+                    // Extract and display the actual redirect URL
+                    const url = new URL(data.url);
+                    const redirectParam = url.searchParams.get('redirect_to');
+                    if (redirectParam) {
+                        log(`Actual redirect_to parameter: ${redirectParam}`);
+                    }
+                }
+            } catch (err) {
+                log(`Exception: ${err.message}`, 'error');
+            }
+        }
+        
+        // Check current session
+        supabase.auth.getSession().then(({ data, error }) => {
+            if (data.session) {
+                log(`Current session: ${data.session.user.email}`, 'success');
+            } else {
+                log('No active session');
+            }
+        });
+    </script>
+</body>
+</html>
