@@ -350,9 +350,12 @@ async function handleForgotPasswordSubmit(e) {
         // Update loading text
         submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">Sending...</span>`;
         
-        // Use Supabase's password reset feature
+        // Use Supabase's password reset feature with explicit redirect URL
+        const redirectUrl = window.location.origin + '/reset-password.html';
+        console.log('Password reset redirect URL:', redirectUrl);
+        
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/reset-password.html`,
+            redirectTo: redirectUrl,
         });
         
         if (error) throw error;
@@ -663,18 +666,7 @@ function openModal(modal) {
         return;
     }
     
-    // Prevent opening auth modal automatically
-    if (modal && modal.id === 'authModal') {
-        console.warn('Preventing automatic auth modal opening');
-        const caller = new Error().stack;
-        console.log('Called from:', caller);
-        // Only allow opening if triggered by user action
-        const event = window.event || {};
-        if (!event.isTrusted) {
-            console.warn('Blocking non-user triggered auth modal');
-            return;
-        }
-    }
+    // Remove the blocking logic that's preventing the modal from working properly
     
     try {
         modal.classList.add('active');
@@ -783,9 +775,10 @@ async function enhancedInitialization() {
             authModal = document.getElementById('authModal');
             authContainer = document.getElementById('auth-container');
             
-            // Add direct event listeners
-            loginBtn.onclick = (e) => {
+            // Add direct event listeners with proper event handling
+            loginBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 console.log('Force login clicked');
                 
                 if (!supabase && !initializeSupabase()) {
@@ -796,10 +789,11 @@ async function enhancedInitialization() {
                 authView = 'sign_in';
                 renderAuthUI();
                 openModal(authModal);
-            };
+            });
             
-            createAccountBtn.onclick = (e) => {
+            createAccountBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 console.log('Force create account clicked');
                 
                 if (!supabase && !initializeSupabase()) {
@@ -810,7 +804,7 @@ async function enhancedInitialization() {
                 authView = 'sign_up';
                 renderAuthUI();
                 openModal(authModal);
-            };
+            });
             
             console.log('Force initialization complete');
         }
@@ -1101,6 +1095,9 @@ async function updateUIForLoggedInUser(user, username = null) {
             if (dropdownUsername) dropdownUsername.textContent = username || 'My Profile';
             if (dropdownEmail) dropdownEmail.textContent = user.email;
         }
+        
+        // Ensure profile dropdown is set up after login
+        setupProfileDropdown();
     }
 }
 
@@ -1175,13 +1172,28 @@ setTimeout(() => {
 // Handle logout
 async function logout() {
     try {
-        const { error } = await supabase.auth.signOut();
-        if (error) throw error;
+        // Get current session first
+        const { data: { session } } = await supabase.auth.getSession();
         
-        // Reload page
-        window.location.reload();
+        if (!session) {
+            console.log('No active session, reloading page anyway');
+            window.location.reload();
+            return;
+        }
+        
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+            console.error('Logout error:', error);
+            // Even if there's an error, reload the page to clear UI state
+            window.location.reload();
+        } else {
+            // Reload page on successful logout
+            window.location.reload();
+        }
     } catch (error) {
         console.error('Logout error:', error);
+        // Always reload to clear state
+        window.location.reload();
     }
 }
 
@@ -1193,35 +1205,31 @@ async function checkEmailExists(email) {
     try {
         console.log('Checking if email exists:', email);
         
-        // Method 1: Try to query the auth.users table through profiles
-        // This assumes profiles are created for each user
-        const { data: profiles, error: profileError } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('email', email)
-            .single();
-            
-        if (profiles) {
-            console.log('Email found in profiles table');
-            return true;
-        }
-        
-        // Method 2: Try to sign in with the email and a dummy password
-        // Only check specific error messages
+        // Only use the auth method to check email existence
+        // This avoids RLS policy issues with the profiles table
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email,
-            password: 'dummy_password_to_check_email_' + Date.now()
+            password: 'dummy_password_check_' + Math.random()
         });
         
         if (error) {
-            console.log('Auth check error:', error.message);
-            // Only return true if we're certain the email exists
+            console.log('Auth check response:', error.message);
+            
+            // If we get "Invalid login credentials", the email exists
             if (error.message === 'Invalid login credentials' || 
-                error.message.includes('Invalid login credentials')) {
-                console.log('Email confirmed to exist via auth check');
+                error.message.toLowerCase().includes('invalid login credentials')) {
+                console.log('Email exists - invalid credentials error');
                 return true;
             }
-            // For any other error (including "Email not confirmed"), assume email doesn't exist
+            
+            // If we get "Email not confirmed", the email exists but is unconfirmed
+            if (error.message.toLowerCase().includes('email not confirmed')) {
+                console.log('Email exists - unconfirmed account');
+                return true;
+            }
+            
+            // For any other error, assume email doesn't exist
+            console.log('Email does not exist - other error:', error.message);
             return false;
         }
         

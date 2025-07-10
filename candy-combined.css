@@ -2461,6 +2461,41 @@ ul {
     gap: 20px;
 }
 
+/* Checkbox and Remember Me styles */
+.form-group input[type="checkbox"] {
+    width: auto !important;
+    margin: 0 !important;
+    cursor: pointer;
+}
+
+.form-group label[for="rememberMe"] {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    margin: 0 !important;
+    font-size: 0.9rem !important;
+    color: var(--text-silver) !important;
+    cursor: pointer !important;
+    user-select: none;
+}
+
+/* Forgot password link */
+.forgot-password {
+    display: inline-block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    color: var(--accent-purple);
+    text-decoration: none;
+    font-size: 0.9rem;
+    margin-top: 5px;
+    float: right;
+    transition: color 0.3s ease;
+}
+
+.forgot-password:hover {
+    color: var(--accent-pink);
+}
+
 .form-label {
     display: block;
     font-size: 0.9rem;
