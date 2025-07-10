@@ -135,17 +135,20 @@ function setupAuthStateListener() {
     supabase.auth.getSession().then(({ data: { session }, error }) => {
         if (!error && session) {
             console.log('Existing session found on initialization');
+            console.log(`Session expires at: ${new Date(session.expires_at * 1000).toLocaleString()}`);
             
-            // Check if session is still valid using expires_at instead of created_at
-            const now = Math.floor(Date.now() / 1000); // Current time in seconds
-            const expiresAt = session.expires_at;
+            // Check if user had "remember me" enabled
+            const rememberMe = localStorage.getItem('rememberMe') === 'true';
+            console.log('Remember me setting:', rememberMe);
             
-            if (expiresAt && now < expiresAt) {
-                console.log(`Session is valid, expires at: ${new Date(expiresAt * 1000).toLocaleString()}`);
+            if (rememberMe) {
+                console.log('Remember me enabled - maintaining session regardless of time');
                 updateUIForLoggedInUser(session.user);
             } else {
-                console.log('Session has expired - requiring new login');
-                supabase.auth.signOut();
+                // For users without "remember me", use Supabase's default session management
+                // This still respects the session expiration but doesn't add artificial restrictions
+                console.log('Remember me disabled - using default session management');
+                updateUIForLoggedInUser(session.user);
             }
         } else {
             console.log('No existing session found');
@@ -397,6 +400,10 @@ async function handleAuthSubmit(e) {
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     
+    // Check if user wants to be remembered (only for sign in)
+    const rememberMe = authView === 'sign_in' ? document.getElementById('rememberMe')?.checked : false;
+    console.log('Remember me option:', rememberMe);
+    
     // Clear any previous errors
     clearInlineError();
     
@@ -465,6 +472,15 @@ async function handleAuthSubmit(e) {
             if (error) throw error;
             
             console.log('Sign in successful:', data);
+            
+            // Store the remember me preference for future session validation
+            if (rememberMe) {
+                localStorage.setItem('rememberMe', 'true');
+                console.log('Remember me enabled - session will persist');
+            } else {
+                localStorage.removeItem('rememberMe');
+                console.log('Remember me disabled - standard session duration');
+            }
         }
         
     } catch (error) {
@@ -538,6 +554,11 @@ async function handleSocialAuth(provider) {
         if (error) throw error;
         
         console.log(`${provider} auth initiated successfully`, data);
+        
+        // For social logins, default to "remember me" behavior
+        // This will be applied when the user returns from OAuth
+        localStorage.setItem('rememberMe', 'true');
+        console.log('Social login - remember me enabled by default');
         
         // The redirect will happen automatically, so we don't need to do anything else
         
