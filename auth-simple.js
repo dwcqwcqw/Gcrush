@@ -24,8 +24,17 @@ function initializeSupabase() {
     }
     
     try {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('Supabase client initialized successfully');
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true,
+                storage: window.localStorage,
+                storageKey: 'gcrush-auth-token',
+                flowType: 'pkce'
+            }
+        });
+        console.log('Supabase client initialized with persistent session');
         return true;
     } catch (error) {
         console.error('Failed to initialize Supabase client:', error);
@@ -115,8 +124,21 @@ function setupAuthStateListener() {
     // Check current session on initialization
     supabase.auth.getSession().then(({ data: { session }, error }) => {
         if (!error && session) {
-            console.log('Existing session found on initialization:', session.user.email);
-            updateUIForLoggedInUser(session.user);
+            console.log('Existing session found on initialization');
+            // Check if session is still valid (within 24 hours)
+            const sessionCreated = new Date(session.created_at);
+            const now = new Date();
+            const hoursSinceCreated = (now - sessionCreated) / (1000 * 60 * 60);
+            
+            if (hoursSinceCreated < 24) {
+                console.log(`Session is ${hoursSinceCreated.toFixed(1)} hours old - auto logging in`);
+                updateUIForLoggedInUser(session.user);
+            } else {
+                console.log('Session older than 24 hours - requiring new login');
+                supabase.auth.signOut();
+            }
+        } else {
+            console.log('No existing session found');
         }
     });
 }
@@ -149,7 +171,14 @@ function renderAuthUI() {
                     ${!isSignUp ? '<a href="#" class="forgot-password">Forgot password?</a>' : ''}
                 </div>
                 
-
+                ${!isSignUp ? `
+                <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: -10px;">
+                    <input type="checkbox" id="rememberMe" checked style="width: auto; margin: 0;">
+                    <label for="rememberMe" style="margin: 0; font-size: 0.9rem; color: var(--text-silver); cursor: pointer;">
+                        Keep me logged in for 24 hours
+                    </label>
+                </div>
+                ` : ''}
                 
                 <button type="submit" class="submit-btn primary-btn">
                     <span class="btn-text">${isSignUp ? 'Create Account' : 'Sign In'}</span>
@@ -298,6 +327,17 @@ async function handleForgotPasswordSubmit(e) {
     try {
         // Show loading state
         submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">Checking...</span>`;
+        
+        // First check if email exists in database
+        const emailExists = await checkEmailExists(email);
+        
+        if (!emailExists) {
+            showInlineError('No account found with this email address. Please check your email or create a new account.');
+            return;
+        }
+        
+        // Update loading text
         submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">Sending...</span>`;
         
         // Use Supabase's password reset feature
@@ -317,9 +357,7 @@ async function handleForgotPasswordSubmit(e) {
         console.error('Password reset error:', error);
         
         let errorMessage = 'Failed to send reset link';
-        if (error.message.includes('User not found')) {
-            errorMessage = 'No account found with this email address';
-        } else if (error.message.includes('Rate limit')) {
+        if (error.message.includes('Rate limit')) {
             errorMessage = 'Too many requests. Please try again later';
         } else {
             errorMessage = error.message;
@@ -925,17 +963,17 @@ function setupProfileDropdown() {
 
 // Update UI for logged in user
 async function updateUIForLoggedInUser(user, username = null) {
-    console.log('Updating UI for logged in user:', user.email);
+    console.log('Updating UI for logged in user');
     
     // Re-query DOM elements in case they were replaced
     const currentLoginBtn = document.querySelector('.login-btn');
     const currentCreateBtn = document.querySelector('.create-account-btn');
     
-    // Hide login/create account buttons
+    // Hide login/create account buttons immediately
     if (currentLoginBtn) currentLoginBtn.style.display = 'none';
     if (currentCreateBtn) currentCreateBtn.style.display = 'none';
     
-    // Show premium button
+    // Show premium button immediately
     const premiumBtn = document.querySelector('.premium-button');
     if (premiumBtn) {
         premiumBtn.style.display = 'flex';
@@ -947,11 +985,10 @@ async function updateUIForLoggedInUser(user, username = null) {
         currentUserProfile.style.display = 'flex';
         
         // Determine display name - never show email
-        let displayName = 'My Profile'; // Default display name
+        let displayName = null;
         
         if (!username) {
             // Debug user metadata
-            console.log('User object:', user);
             console.log('User metadata:', user.user_metadata);
             console.log('App metadata:', user.app_metadata);
             
@@ -965,21 +1002,25 @@ async function updateUIForLoggedInUser(user, username = null) {
                 console.log('User logged in with provider:', provider);
                 
                 if (provider === 'google' && user.user_metadata) {
-                    // For Google, use full_name or name, but NOT email
-                    displayName = user.user_metadata.full_name || user.user_metadata.name || 'My Profile';
-                } else if (provider === 'twitter' && user.user_metadata) {
-                    // For Twitter, check various possible fields
-                    displayName = user.user_metadata.user_name || 
-                                 user.user_metadata.preferred_username || 
+                    // For Google, use full_name or name
+                    displayName = user.user_metadata.full_name || 
                                  user.user_metadata.name || 
+                                 user.user_metadata.given_name ||
+                                 null;
+                } else if ((provider === 'twitter' || provider === 'twitter_v2') && user.user_metadata) {
+                    // For Twitter/X, check all possible fields
+                    displayName = user.user_metadata.name || 
+                                 user.user_metadata.user_name || 
+                                 user.user_metadata.preferred_username || 
                                  user.user_metadata.screen_name ||
-                                 'My Profile';
-                    console.log('Twitter display name:', displayName);
+                                 user.user_metadata.nickname ||
+                                 null;
+                    console.log('Twitter/X display name:', displayName);
                 }
             }
-            // For email auth, check if user has set a display name in profile
-            else {
-                // Try to get from profiles table
+            
+            // Only check profiles table if we don't have a name yet
+            if (!displayName) {
                 try {
                     const { data: profile } = await supabase
                         .from('profiles')
@@ -988,14 +1029,15 @@ async function updateUIForLoggedInUser(user, username = null) {
                         .single();
                     
                     if (profile) {
-                        displayName = profile.display_name || profile.username || 'My Profile';
+                        displayName = profile.display_name || profile.username || null;
                     }
                 } catch (error) {
                     console.error('Error fetching profile:', error);
                 }
             }
             
-            username = displayName;
+            // Final fallback - but never use email
+            username = displayName || 'My Profile';
         }
         
         // Use a fixed avatar image - local SVG file
