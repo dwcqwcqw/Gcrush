@@ -181,7 +181,7 @@ function renderAuthUI() {
                 <div class="form-group">
                     <label for="password" class="form-label">Password</label>
                     <input type="password" id="password" class="form-input" placeholder="${isSignUp ? 'Create a password (min 6 characters)' : 'Enter your password'}" required ${isSignUp ? 'minlength="6"' : ''}>
-                    ${!isSignUp ? '<a href="#" class="forgot-password">Forgot password?</a>' : ''}
+                    ${!isSignUp ? '<!-- <a href="#" class="forgot-password">Forgot password?</a> -->' : ''}
                 </div>
                 
                 ${!isSignUp ? `
