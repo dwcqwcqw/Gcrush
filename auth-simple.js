@@ -217,6 +217,120 @@ function renderAuthUI() {
             renderAuthUI();
         });
     }
+    
+    // Forgot password link
+    const forgotPasswordLink = document.querySelector('.forgot-password');
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            authView = 'forgot_password';
+            renderForgotPasswordUI();
+        });
+    }
+}
+
+// Render forgot password UI
+function renderForgotPasswordUI() {
+    if (!authContainer) {
+        console.error('Auth container not found!');
+        return;
+    }
+    
+    authContainer.innerHTML = `
+        <div class="auth-form">
+            <div class="auth-header">
+                <h2 class="auth-title">Reset Your Password</h2>
+                <p class="auth-subtitle">Enter your email address and we'll send you a link to reset your password</p>
+            </div>
+            
+            <form id="forgotPasswordForm" class="email-auth-form">
+                <div class="form-group">
+                    <label for="resetEmail" class="form-label">Email Address</label>
+                    <input type="email" id="resetEmail" class="form-input" placeholder="Enter your email" required>
+                </div>
+                
+                <button type="submit" class="submit-btn primary-btn">
+                    <span class="btn-text">Send Reset Link</span>
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </form>
+            
+            <div class="auth-footer" style="margin-top: 30px;">
+                <p>Remember your password? 
+                   <a href="#" id="backToSignIn" class="auth-link-primary">
+                       Back to Sign In
+                   </a>
+                </p>
+            </div>
+        </div>
+    `;
+    
+    // Add event listeners
+    const form = document.getElementById('forgotPasswordForm');
+    if (form) {
+        form.addEventListener('submit', handleForgotPasswordSubmit);
+    }
+    
+    // Back to sign in link
+    const backToSignIn = document.getElementById('backToSignIn');
+    if (backToSignIn) {
+        backToSignIn.addEventListener('click', (e) => {
+            e.preventDefault();
+            authView = 'sign_in';
+            renderAuthUI();
+        });
+    }
+}
+
+// Handle forgot password form submission
+async function handleForgotPasswordSubmit(e) {
+    e.preventDefault();
+    
+    const email = document.getElementById('resetEmail').value;
+    const submitBtn = document.querySelector('.primary-btn');
+    const originalHTML = submitBtn.innerHTML;
+    
+    if (!email) {
+        showInlineError('Please enter your email address');
+        return;
+    }
+    
+    try {
+        // Show loading state
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">Sending...</span>`;
+        
+        // Use Supabase's password reset feature
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+        });
+        
+        if (error) throw error;
+        
+        // Show success message
+        showInlineError('Password reset link sent! Please check your email.', 'success');
+        
+        // Clear the form
+        document.getElementById('resetEmail').value = '';
+        
+    } catch (error) {
+        console.error('Password reset error:', error);
+        
+        let errorMessage = 'Failed to send reset link';
+        if (error.message.includes('User not found')) {
+            errorMessage = 'No account found with this email address';
+        } else if (error.message.includes('Rate limit')) {
+            errorMessage = 'Too many requests. Please try again later';
+        } else {
+            errorMessage = error.message;
+        }
+        
+        showInlineError(errorMessage);
+    } finally {
+        // Reset button state
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalHTML;
+    }
 }
 
 // Handle form submission
@@ -832,52 +946,68 @@ async function updateUIForLoggedInUser(user, username = null) {
     if (currentUserProfile) {
         currentUserProfile.style.display = 'flex';
         
-        // Determine display name based on provider
-        let displayName = '';
+        // Determine display name - never show email
+        let displayName = 'My Profile'; // Default display name
+        
         if (!username) {
             // Debug user metadata
             console.log('User object:', user);
             console.log('User metadata:', user.user_metadata);
             console.log('App metadata:', user.app_metadata);
             
+            // Check for display_name in user metadata first
+            if (user.user_metadata && user.user_metadata.display_name) {
+                displayName = user.user_metadata.display_name;
+            }
             // Check if user logged in with OAuth provider
-            if (user.app_metadata && user.app_metadata.provider) {
+            else if (user.app_metadata && user.app_metadata.provider) {
                 const provider = user.app_metadata.provider;
                 console.log('User logged in with provider:', provider);
                 
                 if (provider === 'google' && user.user_metadata) {
-                    // For Google, use full_name or name
-                    displayName = user.user_metadata.full_name || user.user_metadata.name || user.email.split('@')[0];
+                    // For Google, use full_name or name, but NOT email
+                    displayName = user.user_metadata.full_name || user.user_metadata.name || 'My Profile';
                 } else if (provider === 'twitter' && user.user_metadata) {
                     // For Twitter, check various possible fields
                     displayName = user.user_metadata.user_name || 
                                  user.user_metadata.preferred_username || 
                                  user.user_metadata.name || 
                                  user.user_metadata.screen_name ||
-                                 user.email.split('@')[0];
+                                 'My Profile';
                     console.log('Twitter display name:', displayName);
-                } else {
-                    // For email auth, use email prefix
-                    displayName = user.email.split('@')[0];
                 }
-            } else {
-                // Fallback to email prefix
-                displayName = user.email.split('@')[0];
+            }
+            // For email auth, check if user has set a display name in profile
+            else {
+                // Try to get from profiles table
+                try {
+                    const { data: profile } = await supabase
+                        .from('profiles')
+                        .select('username, display_name')
+                        .eq('id', user.id)
+                        .single();
+                    
+                    if (profile) {
+                        displayName = profile.display_name || profile.username || 'My Profile';
+                    }
+                } catch (error) {
+                    console.error('Error fetching profile:', error);
+                }
             }
             
             username = displayName;
         }
         
-        // Generate avatar URL
-        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=A259FF&color=fff&size=128`;
+        // Use a fixed avatar image - local SVG file
+        const avatarUrl = '/default-avatar.svg';
         
-        // Set avatar in header immediately - no "My Profile" intermediate state
+        // Set avatar in header
         const profileImg = currentUserProfile.querySelector('.profile-img');
         if (profileImg) {
             profileImg.src = avatarUrl;
         }
         
-        // Set username in header immediately
+        // Set display name in header
         const usernameDisplay = currentUserProfile.querySelector('.username-display');
         if (usernameDisplay) {
             usernameDisplay.textContent = username;
@@ -981,12 +1111,36 @@ async function logout() {
 // Make logout available globally
 window.logout = logout;
 
-// Check if email is already registered - DISABLED FOR NOW
+// Check if email is already registered
 async function checkEmailExists(email) {
-    // Temporarily disable email checking to avoid issues
-    // This function was causing problems by always returning true
-    console.log('Email check disabled - allowing registration for:', email);
-    return false;
+    try {
+        console.log('Checking if email exists:', email);
+        
+        // Try to sign in with the email and a dummy password
+        // If the email exists, we'll get a specific error
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: 'dummy_password_to_check_email_exists_12345'
+        });
+        
+        if (error) {
+            // If we get "Invalid login credentials", the email exists
+            if (error.message.includes('Invalid login credentials')) {
+                console.log('Email already exists in database');
+                return true;
+            }
+            // Any other error means the email might not exist
+            console.log('Email check error:', error.message);
+            return false;
+        }
+        
+        // This shouldn't happen with a dummy password
+        return false;
+    } catch (error) {
+        console.error('Error checking email existence:', error);
+        // On error, assume email doesn't exist to allow registration
+        return false;
+    }
 }
 
 // Show inline error or success message

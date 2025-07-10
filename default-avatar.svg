@@ -1,0 +1,22 @@
+<svg width="128" height="128" viewBox="0 0 128 128" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background circle -->
+  <circle cx="64" cy="64" r="64" fill="#A259FF"/>
+  
+  <!-- Head -->
+  <circle cx="64" cy="48" r="20" fill="white" opacity="0.95"/>
+  
+  <!-- Body -->
+  <path d="M64 70C40 70 20 82 20 96V110C20 116 24 120 30 120H98C104 120 108 116 108 110V96C108 82 88 70 64 70Z" fill="white" opacity="0.95"/>
+  
+  <!-- Inner shadow for depth -->
+  <circle cx="64" cy="48" r="18" fill="none" stroke="#8B3DFF" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Subtle gradient overlay -->
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="128" y2="128">
+      <stop offset="0%" stop-color="#F8A3FF" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#A259FF" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  <circle cx="64" cy="64" r="64" fill="url(#gradient)"/>
+</svg>
