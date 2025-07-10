@@ -207,8 +207,8 @@ function renderAuthUI() {
                 </button>
                 
                 <button type="button" class="social-btn twitter-btn" data-provider="twitter">
-                    <span class="x-icon">𝕏</span>
-                    <span>Continue with X</span>
+                    <i class="fab fa-twitter"></i>
+                    <span>Continue with X (Twitter)</span>
                 </button>
             </div>
             
@@ -351,11 +351,17 @@ async function handleForgotPasswordSubmit(e) {
         submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">Sending...</span>`;
         
         // Use Supabase's password reset feature with explicit redirect URL
-        const redirectUrl = window.location.origin + '/reset-password.html';
+        // Use the full URL including protocol to ensure proper redirect
+        const currentOrigin = window.location.origin;
+        const redirectUrl = `${currentOrigin}/reset-password.html`;
         console.log('Password reset redirect URL:', redirectUrl);
         
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
             redirectTo: redirectUrl,
+            // Add additional headers to ensure proper redirect
+            data: {
+                redirect_to: redirectUrl
+            }
         });
         
         if (error) throw error;
@@ -1013,6 +1019,7 @@ async function updateUIForLoggedInUser(user, username = null) {
             else if (user.app_metadata && user.app_metadata.provider) {
                 const provider = user.app_metadata.provider;
                 console.log('User logged in with provider:', provider);
+                console.log('Full user object:', JSON.stringify(user, null, 2));
                 
                 if (provider === 'google' && user.user_metadata) {
                     // For Google, use full_name or name
@@ -1040,8 +1047,18 @@ async function updateUIForLoggedInUser(user, username = null) {
                                          twitterIdentity.identity_data.full_name ||
                                          twitterIdentity.identity_data.user_name ||
                                          twitterIdentity.identity_data.preferred_username ||
+                                         twitterIdentity.identity_data.screen_name ||
                                          null;
                         }
+                    }
+                    
+                    // Also check raw_user_meta_data for Twitter
+                    if (!displayName && user.raw_user_meta_data) {
+                        displayName = user.raw_user_meta_data.name ||
+                                     user.raw_user_meta_data.full_name ||
+                                     user.raw_user_meta_data.user_name ||
+                                     user.raw_user_meta_data.preferred_username ||
+                                     null;
                     }
                     
                     console.log('Twitter/X display name found:', displayName);
@@ -1172,27 +1189,58 @@ setTimeout(() => {
 // Handle logout
 async function logout() {
     try {
-        // Get current session first
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!session) {
-            console.log('No active session, reloading page anyway');
+        // Check if supabase is initialized
+        if (!supabase) {
+            console.log('Supabase not initialized, reloading page');
             window.location.reload();
             return;
         }
         
-        const { error } = await supabase.auth.signOut();
-        if (error) {
-            console.error('Logout error:', error);
-            // Even if there's an error, reload the page to clear UI state
-            window.location.reload();
-        } else {
-            // Reload page on successful logout
-            window.location.reload();
+        // Try to get current session
+        let session = null;
+        try {
+            const sessionResponse = await supabase.auth.getSession();
+            session = sessionResponse?.data?.session;
+        } catch (sessionError) {
+            console.log('Error getting session:', sessionError);
         }
+        
+        if (!session) {
+            console.log('No active session found, clearing local storage and reloading');
+            // Clear any auth tokens from localStorage
+            localStorage.removeItem('gcrush-auth-token');
+            localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
+            localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token-refresh');
+            window.location.reload();
+            return;
+        }
+        
+        // Attempt to sign out
+        try {
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('Logout error:', error);
+                // Clear local storage even if logout fails
+                localStorage.removeItem('gcrush-auth-token');
+                localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
+                localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token-refresh');
+            }
+        } catch (signOutError) {
+            console.error('Sign out error:', signOutError);
+            // Clear local storage on any error
+            localStorage.removeItem('gcrush-auth-token');
+            localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
+            localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token-refresh');
+        }
+        
+        // Always reload the page to reset UI state
+        window.location.reload();
     } catch (error) {
         console.error('Logout error:', error);
-        // Always reload to clear state
+        // Clear local storage and reload on any error
+        localStorage.removeItem('gcrush-auth-token');
+        localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
+        localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token-refresh');
         window.location.reload();
     }
 }
@@ -1205,27 +1253,46 @@ async function checkEmailExists(email) {
     try {
         console.log('Checking if email exists:', email);
         
+        // Validate email format first
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            console.log('Invalid email format');
+            return false;
+        }
+        
         // Only use the auth method to check email existence
         // This avoids RLS policy issues with the profiles table
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email,
-            password: 'dummy_password_check_' + Math.random()
+            password: 'dummy_password_check_' + Math.random().toString(36).substring(7)
         });
         
         if (error) {
             console.log('Auth check response:', error.message);
             
+            // Check for various error messages that indicate the email exists
+            const errorMessage = error.message.toLowerCase();
+            
             // If we get "Invalid login credentials", the email exists
-            if (error.message === 'Invalid login credentials' || 
-                error.message.toLowerCase().includes('invalid login credentials')) {
+            if (errorMessage.includes('invalid login credentials') || 
+                errorMessage.includes('invalid credentials') ||
+                errorMessage.includes('wrong password')) {
                 console.log('Email exists - invalid credentials error');
                 return true;
             }
             
             // If we get "Email not confirmed", the email exists but is unconfirmed
-            if (error.message.toLowerCase().includes('email not confirmed')) {
+            if (errorMessage.includes('email not confirmed') || 
+                errorMessage.includes('confirm your email')) {
                 console.log('Email exists - unconfirmed account');
                 return true;
+            }
+            
+            // If we get rate limit error, we can't check, so return false to allow attempt
+            if (errorMessage.includes('rate limit') || 
+                errorMessage.includes('too many requests')) {
+                console.log('Rate limited - cannot check email');
+                return false;
             }
             
             // For any other error, assume email doesn't exist

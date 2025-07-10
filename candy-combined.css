@@ -2634,4 +2634,38 @@ ul {
 
 .social-btn span {
     font-weight: 500;
+}
+
+/* Twitter button specific styles */
+.social-btn.twitter-btn {
+    background: rgba(29, 161, 242, 0.1);
+    border-color: rgba(29, 161, 242, 0.3);
+}
+
+.social-btn.twitter-btn:hover {
+    background: rgba(29, 161, 242, 0.2);
+    border-color: rgba(29, 161, 242, 0.6);
+    box-shadow: 0 8px 25px rgba(29, 161, 242, 0.4);
+}
+
+.social-btn.twitter-btn i {
+    color: #1DA1F2;
+}
+
+/* Google button specific styles */
+.social-btn.google-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.social-btn.google-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.social-btn.google-btn i {
+    background: conic-gradient(from 45deg, #4285F4 0deg 90deg, #34A853 90deg 180deg, #FBBC05 180deg 270deg, #EA4335 270deg 360deg);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
 } 
