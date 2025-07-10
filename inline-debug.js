@@ -99,10 +99,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.debugInfo.authEvents.push('login-click');
             }, { once: true });
             
-            // Trigger test click
-            setTimeout(() => {
-                loginBtn.dispatchEvent(testClick);
-            }, 100);
+            // Don't trigger test click - just log that handler is ready
+            console.log('Login button handler ready for testing');
         }
         
         if (createBtn) {
@@ -118,9 +116,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.debugInfo.authEvents.push('create-click');
             }, { once: true });
             
-            setTimeout(() => {
-                createBtn.dispatchEvent(testClick);
-            }, 100);
+            // Don't trigger test click - just log that handler is ready
+            console.log('Create button handler ready for testing');
         }
     }, 3000);
 });

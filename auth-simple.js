@@ -1188,61 +1188,37 @@ setTimeout(() => {
 
 // Handle logout
 async function logout() {
-    try {
-        // Check if supabase is initialized
-        if (!supabase) {
-            console.log('Supabase not initialized, reloading page');
-            window.location.reload();
-            return;
+    console.log('Logout initiated');
+    
+    // Clear all auth tokens from localStorage and sessionStorage
+    const authKeys = [
+        'gcrush-auth-token',
+        'sb-kuflobojizyttadwcbhe-auth-token',
+        'sb-kuflobojizyttadwcbhe-auth-token-refresh',
+        'supabase.auth.token'
+    ];
+    
+    // Clear specific auth keys
+    authKeys.forEach(key => {
+        localStorage.removeItem(key);
+        sessionStorage.removeItem(key);
+    });
+    
+    // Clear all localStorage items that might contain auth data
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('supabase') || key.includes('auth') || key.includes('sb-'))) {
+            keysToRemove.push(key);
         }
-        
-        // Try to get current session
-        let session = null;
-        try {
-            const sessionResponse = await supabase.auth.getSession();
-            session = sessionResponse?.data?.session;
-        } catch (sessionError) {
-            console.log('Error getting session:', sessionError);
-        }
-        
-        if (!session) {
-            console.log('No active session found, clearing local storage and reloading');
-            // Clear any auth tokens from localStorage
-            localStorage.removeItem('gcrush-auth-token');
-            localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
-            localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token-refresh');
-            window.location.reload();
-            return;
-        }
-        
-        // Attempt to sign out
-        try {
-            const { error } = await supabase.auth.signOut();
-            if (error) {
-                console.error('Logout error:', error);
-                // Clear local storage even if logout fails
-                localStorage.removeItem('gcrush-auth-token');
-                localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
-                localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token-refresh');
-            }
-        } catch (signOutError) {
-            console.error('Sign out error:', signOutError);
-            // Clear local storage on any error
-            localStorage.removeItem('gcrush-auth-token');
-            localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
-            localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token-refresh');
-        }
-        
-        // Always reload the page to reset UI state
-        window.location.reload();
-    } catch (error) {
-        console.error('Logout error:', error);
-        // Clear local storage and reload on any error
-        localStorage.removeItem('gcrush-auth-token');
-        localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
-        localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token-refresh');
-        window.location.reload();
     }
+    keysToRemove.forEach(key => localStorage.removeItem(key));
+    
+    console.log('Local auth tokens cleared');
+    
+    // Always reload the page to reset UI state
+    // Don't wait for Supabase signOut which might fail
+    window.location.reload();
 }
 
 // Make logout available globally
