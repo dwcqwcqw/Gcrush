@@ -971,13 +971,19 @@ function setupProfileDropdown() {
     });
     
     // Setup logout button click handler
-    const logoutBtn = document.getElementById('logoutBtn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            logout();
-        });
-    }
+    setTimeout(() => {
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                hideDropdown();
+                logout();
+            });
+            console.log('Logout button event listener attached');
+        } else {
+            console.log('Logout button not found in dropdown');
+        }
+    }, 100);
 }
 
 // Update UI for logged in user
@@ -1190,6 +1196,23 @@ setTimeout(() => {
 async function logout() {
     console.log('Logout initiated');
     
+    try {
+        // First, try to properly sign out with Supabase
+        if (supabase) {
+            console.log('Attempting Supabase signOut...');
+            const { error } = await supabase.auth.signOut();
+            if (error) {
+                console.error('Supabase signOut error:', error);
+                // Continue with manual cleanup even if signOut fails
+            } else {
+                console.log('Supabase signOut successful');
+            }
+        }
+    } catch (error) {
+        console.error('Error during Supabase signOut:', error);
+        // Continue with manual cleanup
+    }
+    
     // Clear all auth tokens from localStorage and sessionStorage
     const authKeys = [
         'gcrush-auth-token',
@@ -1217,7 +1240,6 @@ async function logout() {
     console.log('Local auth tokens cleared');
     
     // Always reload the page to reset UI state
-    // Don't wait for Supabase signOut which might fail
     window.location.reload();
 }
 
