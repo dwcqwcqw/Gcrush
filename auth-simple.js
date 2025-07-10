@@ -1322,48 +1322,44 @@ async function checkEmailExists(email) {
             return false;
         }
         
-        // Only use the auth method to check email existence
-        // This avoids RLS policy issues with the profiles table
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: email,
-            password: 'dummy_password_check_' + Math.random().toString(36).substring(7)
-        });
+        // Temporarily disable email existence check to avoid false positives
+        // The issue is that "Invalid login credentials" error can mean either:
+        // 1. Email doesn't exist, or 
+        // 2. Email exists but password is wrong
+        // This ambiguity causes all emails to be treated as existing
         
-        if (error) {
-            console.log('Auth check response:', error.message);
+        console.log('Email existence check disabled - allowing registration attempt');
+        return false;
+        
+        // Alternative approach: Use password reset to check email existence
+        // This is more reliable but generates emails, so we'll avoid it for now
+        /*
+        try {
+            const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: 'http://localhost:3000/reset-password' // dummy URL
+            });
             
-            // Check for various error messages that indicate the email exists
-            const errorMessage = error.message.toLowerCase();
-            
-            // If we get "Invalid login credentials", the email exists
-            if (errorMessage.includes('invalid login credentials') || 
-                errorMessage.includes('invalid credentials') ||
-                errorMessage.includes('wrong password')) {
-                console.log('Email exists - invalid credentials error');
-                return true;
-            }
-            
-            // If we get "Email not confirmed", the email exists but is unconfirmed
-            if (errorMessage.includes('email not confirmed') || 
-                errorMessage.includes('confirm your email')) {
-                console.log('Email exists - unconfirmed account');
-                return true;
-            }
-            
-            // If we get rate limit error, we can't check, so return false to allow attempt
-            if (errorMessage.includes('rate limit') || 
-                errorMessage.includes('too many requests')) {
-                console.log('Rate limited - cannot check email');
+            if (error) {
+                // If we get "User not found" or similar, email doesn't exist
+                if (error.message.includes('User not found') || 
+                    error.message.includes('Unable to validate email address')) {
+                    console.log('Email does not exist - password reset failed');
+                    return false;
+                }
+                // If we get rate limit or other errors, assume email doesn't exist
+                console.log('Email existence check failed:', error.message);
                 return false;
+            } else {
+                // If password reset succeeds, email exists
+                console.log('Email exists - password reset initiated');
+                return true;
             }
-            
-            // For any other error, assume email doesn't exist
-            console.log('Email does not exist - other error:', error.message);
+        } catch (resetError) {
+            console.log('Password reset check failed:', resetError.message);
             return false;
         }
+        */
         
-        // This shouldn't happen with a dummy password
-        return false;
     } catch (error) {
         console.error('Error checking email existence:', error);
         // On error, assume email doesn't exist to allow registration

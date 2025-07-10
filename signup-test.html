@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signup Test - Gcrush</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #0056b3;
+        }
+        .signup-button {
+            background: #28a745;
+        }
+        .signup-button:hover {
+            background: #218838;
+        }
+        .status {
+            background: #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        .form-group {
+            margin: 10px 0;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            background: #333;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Signup Test - Registration Debugging</h1>
+    
+    <div class="test-section">
+        <h2>Current Status</h2>
+        <div id="status" class="status">Loading...</div>
+        <button class="test-button" onclick="checkStatus()">Refresh Status</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Manual Signup Test</h2>
+        <div class="form-group">
+            <label for="testEmail">Email:</label>
+            <input type="email" id="testEmail" placeholder="Enter test email" value="test@example.com">
+        </div>
+        <div class="form-group">
+            <label for="testPassword">Password:</label>
+            <input type="password" id="testPassword" placeholder="Enter password" value="test123456">
+        </div>
+        <button class="test-button signup-button" onclick="testSignup()">Test Signup</button>
+        <button class="test-button signup-button" onclick="testSignupRandom()">Test Signup (Random Email)</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Email Existence Check</h2>
+        <div class="form-group">
+            <label for="checkEmail">Email to check:</label>
+            <input type="email" id="checkEmail" placeholder="Enter email to check" value="test@example.com">
+        </div>
+        <button class="test-button" onclick="testEmailCheck()">Check Email Existence</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Supabase Direct Tests</h2>
+        <button class="test-button" onclick="testSupabaseSignup()">Direct Supabase Signup</button>
+        <button class="test-button" onclick="testSupabaseSignin()">Direct Supabase Signin</button>
+        <button class="test-button" onclick="clearAllData()">Clear All Data</button>
+    </div>
+    
+    <div class="test-section">
+        <h2>Debug Log</h2>
+        <div id="debugLog" class="status"></div>
+        <button class="test-button" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <!-- Load Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // Supabase Configuration
+        const SUPABASE_URL = 'https://kuflobojizyttadwcbhe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+        
+        let supabase = null;
+        
+        // Initialize Supabase
+        function initializeSupabase() {
+            if (!window.supabase) {
+                logMessage('Supabase SDK not loaded!', 'error');
+                return false;
+            }
+            
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true,
+                        storage: window.localStorage,
+                        storageKey: 'sb-kuflobojizyttadwcbhe-auth-token',
+                        flowType: 'pkce'
+                    }
+                });
+                logMessage('Supabase client initialized', 'success');
+                return true;
+            } catch (error) {
+                logMessage('Failed to initialize Supabase: ' + error.message, 'error');
+                return false;
+            }
+        }
+        
+        // Logging function
+        function logMessage(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logDiv = document.getElementById('debugLog');
+            const logEntry = `[${timestamp}] ${message}\n`;
+            logDiv.innerHTML += `<span class="${type}">${logEntry}</span>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        // Clear log
+        function clearLog() {
+            document.getElementById('debugLog').innerHTML = '';
+        }
+        
+        // Check current status
+        async function checkStatus() {
+            logMessage('Checking current status...', 'info');
+            
+            const statusDiv = document.getElementById('status');
+            let statusText = '';
+            
+            // Check Supabase client
+            if (!supabase) {
+                statusText += 'Supabase Client: Not initialized\n';
+                logMessage('Supabase client not initialized, initializing...', 'warning');
+                initializeSupabase();
+            } else {
+                statusText += 'Supabase Client: Initialized\n';
+            }
+            
+            // Check session
+            if (supabase) {
+                try {
+                    const { data: { session }, error } = await supabase.auth.getSession();
+                    if (error) {
+                        statusText += `Session Error: ${error.message}\n`;
+                        logMessage('Session error: ' + error.message, 'error');
+                    } else if (session) {
+                        statusText += `Session: Active (${session.user.email})\n`;
+                        statusText += `Expires: ${new Date(session.expires_at * 1000).toLocaleString()}\n`;
+                        logMessage('Active session found for: ' + session.user.email, 'success');
+                    } else {
+                        statusText += 'Session: None\n';
+                        logMessage('No active session', 'info');
+                    }
+                } catch (error) {
+                    statusText += `Session Check Failed: ${error.message}\n`;
+                    logMessage('Session check failed: ' + error.message, 'error');
+                }
+            }
+            
+            statusDiv.textContent = statusText;
+        }
+        
+        // Test email existence check
+        async function testEmailCheck() {
+            const email = document.getElementById('checkEmail').value;
+            if (!email) {
+                logMessage('Please enter an email to check', 'warning');
+                return;
+            }
+            
+            logMessage('Testing email existence check for: ' + email, 'info');
+            
+            if (window.checkEmailExists) {
+                try {
+                    const exists = await window.checkEmailExists(email);
+                    logMessage(`Email existence result: ${exists}`, exists ? 'warning' : 'success');
+                } catch (error) {
+                    logMessage('Email check error: ' + error.message, 'error');
+                }
+            } else {
+                logMessage('checkEmailExists function not available', 'error');
+            }
+        }
+        
+        // Test signup with form values
+        async function testSignup() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            if (!email || !password) {
+                logMessage('Please enter both email and password', 'warning');
+                return;
+            }
+            
+            logMessage('Testing signup with: ' + email, 'info');
+            
+            if (window.testAuth && window.testAuth.signUp) {
+                try {
+                    await window.testAuth.signUp(email, password);
+                    logMessage('Signup test completed - check console for details', 'success');
+                    setTimeout(checkStatus, 1000);
+                } catch (error) {
+                    logMessage('Signup test error: ' + error.message, 'error');
+                }
+            } else {
+                logMessage('testAuth.signUp function not available', 'error');
+            }
+        }
+        
+        // Test signup with random email
+        async function testSignupRandom() {
+            const randomEmail = `test${Math.floor(Math.random() * 10000)}@example.com`;
+            const password = 'test123456';
+            
+            document.getElementById('testEmail').value = randomEmail;
+            
+            logMessage('Testing signup with random email: ' + randomEmail, 'info');
+            
+            if (window.testAuth && window.testAuth.signUp) {
+                try {
+                    await window.testAuth.signUp(randomEmail, password);
+                    logMessage('Random signup test completed - check console for details', 'success');
+                    setTimeout(checkStatus, 1000);
+                } catch (error) {
+                    logMessage('Random signup test error: ' + error.message, 'error');
+                }
+            } else {
+                logMessage('testAuth.signUp function not available', 'error');
+            }
+        }
+        
+        // Direct Supabase signup test
+        async function testSupabaseSignup() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            if (!email || !password) {
+                logMessage('Please enter both email and password', 'warning');
+                return;
+            }
+            
+            logMessage('Testing direct Supabase signup...', 'info');
+            
+            if (!supabase) {
+                logMessage('Supabase not initialized', 'error');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabase.auth.signUp({
+                    email: email,
+                    password: password,
+                    options: {
+                        data: {
+                            email_confirm: false
+                        }
+                    }
+                });
+                
+                if (error) {
+                    logMessage('Direct signup error: ' + error.message, 'error');
+                } else {
+                    logMessage('Direct signup successful!', 'success');
+                    logMessage('User ID: ' + (data.user ? data.user.id : 'None'), 'info');
+                    logMessage('Session: ' + (data.session ? 'Created' : 'None'), 'info');
+                    setTimeout(checkStatus, 1000);
+                }
+            } catch (error) {
+                logMessage('Direct signup exception: ' + error.message, 'error');
+            }
+        }
+        
+        // Direct Supabase signin test
+        async function testSupabaseSignin() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+            
+            if (!email || !password) {
+                logMessage('Please enter both email and password', 'warning');
+                return;
+            }
+            
+            logMessage('Testing direct Supabase signin...', 'info');
+            
+            if (!supabase) {
+                logMessage('Supabase not initialized', 'error');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) {
+                    logMessage('Direct signin error: ' + error.message, 'error');
+                } else {
+                    logMessage('Direct signin successful!', 'success');
+                    logMessage('User: ' + data.user.email, 'info');
+                    setTimeout(checkStatus, 1000);
+                }
+            } catch (error) {
+                logMessage('Direct signin exception: ' + error.message, 'error');
+            }
+        }
+        
+        // Clear all data
+        function clearAllData() {
+            logMessage('Clearing all data...', 'info');
+            
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            logMessage('All data cleared', 'success');
+            setTimeout(checkStatus, 1000);
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            logMessage('Page loaded, initializing...', 'info');
+            initializeSupabase();
+            checkStatus();
+        });
+    </script>
+    
+    <!-- Load the main auth script -->
+    <script src="auth-simple.js"></script>
+</body>
+</html> 
