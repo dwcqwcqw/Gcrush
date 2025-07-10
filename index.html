@@ -449,5 +449,87 @@
     <script src="inline-debug.js"></script>
     <script src="candy-combined.js"></script>
     <script src="auth-simple.js"></script>
+    
+    <!-- Password Reset Error Handler -->
+    <script>
+        // Check for password reset errors on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const hashParams = new URLSearchParams(window.location.hash.substring(1));
+            
+            // Check for password reset errors
+            const errorCode = urlParams.get('error_code') || hashParams.get('error_code');
+            const error = urlParams.get('error') || hashParams.get('error');
+            const errorDescription = urlParams.get('error_description') || hashParams.get('error_description');
+            
+            if (errorCode === 'otp_expired' || error === 'access_denied') {
+                console.log('Password reset error detected:', { errorCode, error, errorDescription });
+                
+                // Show password reset error modal
+                showPasswordResetErrorModal(errorDescription);
+                
+                // Clean up URL
+                const cleanUrl = window.location.origin + window.location.pathname;
+                window.history.replaceState({}, document.title, cleanUrl);
+            }
+        });
+        
+        function showPasswordResetErrorModal(errorDescription) {
+            let message = 'Password reset link has expired or is invalid.';
+            
+            if (errorDescription) {
+                if (errorDescription.includes('expired')) {
+                    message = 'Password reset link has expired.';
+                } else if (errorDescription.includes('invalid')) {
+                    message = 'Password reset link is invalid.';
+                }
+            }
+            
+            // Create and show error modal
+            const errorModal = document.createElement('div');
+            errorModal.className = 'modal-overlay';
+            errorModal.style.display = 'flex';
+            errorModal.innerHTML = `
+                <div class="modal-content auth-modal" style="max-width: 400px;">
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">&times;</button>
+                    <div style="text-align: center; padding: 20px;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 3rem; color: #ffc107; margin-bottom: 20px;"></i>
+                        <h2 style="color: #fff; margin-bottom: 15px;">Password Reset Link Expired</h2>
+                        <p style="color: #ccc; margin-bottom: 25px;">${message} Please request a new password reset link.</p>
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button onclick="showForgotPasswordModal()" class="submit-btn" style="flex: 1;">
+                                <i class="fas fa-key"></i>
+                                Reset Password
+                            </button>
+                            <button onclick="this.closest('.modal-overlay').remove()" class="submit-btn secondary" style="flex: 1;">
+                                <i class="fas fa-times"></i>
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(errorModal);
+            
+            // Auto-remove after 30 seconds
+            setTimeout(() => {
+                if (errorModal.parentNode) {
+                    errorModal.remove();
+                }
+            }, 30000);
+        }
+        
+        function showForgotPasswordModal() {
+            // Close error modal
+            const errorModal = document.querySelector('.modal-overlay');
+            if (errorModal) {
+                errorModal.remove();
+            }
+            
+            // Redirect to dedicated forgot password page
+            window.location.href = '/forgot-password.html';
+        }
+    </script>
 </body>
 </html>
