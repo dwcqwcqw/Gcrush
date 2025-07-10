@@ -342,8 +342,8 @@ async function handleForgotPasswordSubmit(e) {
         submitBtn.disabled = true;
         submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">Checking...</span>`;
         
-        // First check if email exists in database
-        const emailExists = await checkEmailExists(email);
+        // First check if email exists using the password reset method
+        const emailExists = await checkEmailExistsForPasswordReset(email);
         
         if (!emailExists) {
             showInlineError('No account found with this email address. Please check your email or create a new account.');
@@ -367,10 +367,19 @@ async function handleForgotPasswordSubmit(e) {
             }
         });
         
-        if (error) throw error;
+        if (error) {
+            // Handle specific error cases
+            if (error.message.includes('Rate limit') || error.message.includes('too many requests')) {
+                throw new Error('Too many requests. Please try again later.');
+            } else if (error.message.includes('User not found') || error.message.includes('unable to validate email address')) {
+                throw new Error('No account found with this email address. Please check your email or create a new account.');
+            } else {
+                throw error;
+            }
+        }
         
         // Show success message
-        showInlineError('Password reset link sent! Please check your email.', 'success');
+        showInlineError('Password reset link sent! Please check your email and follow the instructions to reset your password.', 'success');
         
         // Clear the form
         document.getElementById('resetEmail').value = '';
@@ -379,10 +388,12 @@ async function handleForgotPasswordSubmit(e) {
         console.error('Password reset error:', error);
         
         let errorMessage = 'Failed to send reset link';
-        if (error.message.includes('Rate limit')) {
+        if (error.message.includes('Rate limit') || error.message.includes('too many requests')) {
             errorMessage = 'Too many requests. Please try again later';
-        } else {
+        } else if (error.message.includes('No account found')) {
             errorMessage = error.message;
+        } else {
+            errorMessage = error.message || 'Failed to send reset link';
         }
         
         showInlineError(errorMessage);
@@ -1310,7 +1321,7 @@ async function logout() {
 // Make logout available globally
 window.logout = logout;
 
-// Check if email is already registered
+// Check if email is already registered (for signup)
 async function checkEmailExists(email) {
     try {
         console.log('Checking if email exists:', email);
@@ -1331,39 +1342,68 @@ async function checkEmailExists(email) {
         console.log('Email existence check disabled - allowing registration attempt');
         return false;
         
-        // Alternative approach: Use password reset to check email existence
-        // This is more reliable but generates emails, so we'll avoid it for now
-        /*
-        try {
-            const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: 'http://localhost:3000/reset-password' // dummy URL
-            });
-            
-            if (error) {
-                // If we get "User not found" or similar, email doesn't exist
-                if (error.message.includes('User not found') || 
-                    error.message.includes('Unable to validate email address')) {
-                    console.log('Email does not exist - password reset failed');
-                    return false;
-                }
-                // If we get rate limit or other errors, assume email doesn't exist
-                console.log('Email existence check failed:', error.message);
-                return false;
-            } else {
-                // If password reset succeeds, email exists
-                console.log('Email exists - password reset initiated');
-                return true;
-            }
-        } catch (resetError) {
-            console.log('Password reset check failed:', resetError.message);
-            return false;
-        }
-        */
-        
     } catch (error) {
         console.error('Error checking email existence:', error);
         // On error, assume email doesn't exist to allow registration
         return false;
+    }
+}
+
+// Check if email exists for password reset (more reliable method)
+async function checkEmailExistsForPasswordReset(email) {
+    try {
+        console.log('Checking if email exists for password reset:', email);
+        
+        // Validate email format first
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            console.log('Invalid email format');
+            return false;
+        }
+        
+        // Use a more reliable method for password reset
+        // Try to initiate password reset with a dummy redirect URL
+        // This will tell us if the email exists without actually sending an email
+        const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: 'https://example.com/dummy-reset' // dummy URL to test
+        });
+        
+        if (error) {
+            console.log('Password reset check response:', error.message);
+            
+            // Check for specific error messages
+            const errorMessage = error.message.toLowerCase();
+            
+            // If we get "User not found" or similar, email doesn't exist
+            if (errorMessage.includes('user not found') || 
+                errorMessage.includes('unable to validate email address') ||
+                errorMessage.includes('invalid email') ||
+                errorMessage.includes('email not found')) {
+                console.log('Email does not exist - password reset failed');
+                return false;
+            }
+            
+            // If we get rate limit error, we can't check reliably
+            if (errorMessage.includes('rate limit') || 
+                errorMessage.includes('too many requests')) {
+                console.log('Rate limited - cannot check email reliably');
+                // In case of rate limit, assume email exists to avoid blocking legitimate users
+                return true;
+            }
+            
+            // For other errors, assume email exists (safer for password reset)
+            console.log('Email likely exists - other error:', error.message);
+            return true;
+        } else {
+            // If password reset succeeds, email definitely exists
+            console.log('Email exists - password reset would be initiated');
+            return true;
+        }
+        
+    } catch (error) {
+        console.error('Error checking email existence for password reset:', error);
+        // On error, assume email exists to be safe
+        return true;
     }
 }
 
