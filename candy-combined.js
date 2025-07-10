@@ -676,4 +676,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }, 500);
     });
+    
+    // Export functions for external use
+    window.initCharacterVideoHover = initCharacterVideoHover;
 });
