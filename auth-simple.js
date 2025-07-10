@@ -72,14 +72,29 @@ function setupAuthStateListener() {
     supabase.auth.onAuthStateChange(async (event, session) => {
         console.log('Auth state changed:', event, session);
         
-        // Only handle actual sign in/out events, not initial session check
-        if (event === 'SIGNED_IN' && session) {
-            console.log('User signed in successfully');
-            closeModal(authModal);
+        // Handle all auth events that result in a valid session
+        if (session && session.user) {
+            console.log(`Auth event: ${event}, User: ${session.user.email}`);
+            
+            // Close any open auth modal
+            if (authModal) {
+                closeModal(authModal);
+            }
             
             // Always update UI for logged in user
-            updateUIForLoggedInUser(session.user);
+            await updateUIForLoggedInUser(session.user);
+            
+            // For OAuth providers, handle the redirect properly
+            if (event === 'SIGNED_IN' && session.user.app_metadata?.provider) {
+                console.log('OAuth sign in completed for provider:', session.user.app_metadata.provider);
+                // Ensure we're on the main page after OAuth redirect
+                if (window.location.pathname.includes('/auth/callback') || window.location.search.includes('code=')) {
+                    console.log('Redirecting to main page after OAuth callback');
+                    window.location.href = '/';
+                }
+            }
         } else if (event === 'SIGNED_OUT') {
+            console.log('User signed out');
             // Reset UI to show login/create account buttons
             const currentLoginBtn = document.querySelector('.login-btn');
             const currentCreateBtn = document.querySelector('.create-account-btn');
@@ -94,14 +109,14 @@ function setupAuthStateListener() {
             if (premiumBtn) {
                 premiumBtn.style.display = 'none';
             }
-        } else if (event === 'INITIAL_SESSION') {
-            // Initial session check - only update UI if user is logged in
-            if (session) {
-                console.log('User already logged in on page load');
-                updateUIForLoggedInUser(session.user);
-            } else {
-                console.log('No active session on page load');
-            }
+        }
+    });
+    
+    // Check current session on initialization
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (!error && session) {
+            console.log('Existing session found on initialization:', session.user.email);
+            updateUIForLoggedInUser(session.user);
         }
     });
 }
@@ -817,35 +832,55 @@ async function updateUIForLoggedInUser(user, username = null) {
     if (currentUserProfile) {
         currentUserProfile.style.display = 'flex';
         
-        // Get username from profile if not provided
+        // Determine display name based on provider
+        let displayName = '';
         if (!username) {
-            try {
-                const { data: profile } = await supabase
-                    .from('profiles')
-                    .select('username')
-                    .eq('id', user.id)
-                    .single();
-                    
-                username = profile?.username || user.email.split('@')[0];
-            } catch (error) {
-                console.error('Error getting username:', error);
-                username = user.email.split('@')[0];
+            // Debug user metadata
+            console.log('User object:', user);
+            console.log('User metadata:', user.user_metadata);
+            console.log('App metadata:', user.app_metadata);
+            
+            // Check if user logged in with OAuth provider
+            if (user.app_metadata && user.app_metadata.provider) {
+                const provider = user.app_metadata.provider;
+                console.log('User logged in with provider:', provider);
+                
+                if (provider === 'google' && user.user_metadata) {
+                    // For Google, use full_name or name
+                    displayName = user.user_metadata.full_name || user.user_metadata.name || user.email.split('@')[0];
+                } else if (provider === 'twitter' && user.user_metadata) {
+                    // For Twitter, check various possible fields
+                    displayName = user.user_metadata.user_name || 
+                                 user.user_metadata.preferred_username || 
+                                 user.user_metadata.name || 
+                                 user.user_metadata.screen_name ||
+                                 user.email.split('@')[0];
+                    console.log('Twitter display name:', displayName);
+                } else {
+                    // For email auth, use email prefix
+                    displayName = user.email.split('@')[0];
+                }
+            } else {
+                // Fallback to email prefix
+                displayName = user.email.split('@')[0];
             }
+            
+            username = displayName;
         }
         
         // Generate avatar URL
-        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(username || user.email)}&background=A259FF&color=fff&size=128`;
+        const avatarUrl = `https://ui-avatars.com/api/?name=${encodeURIComponent(username)}&background=A259FF&color=fff&size=128`;
         
-        // Set avatar in header
+        // Set avatar in header immediately - no "My Profile" intermediate state
         const profileImg = currentUserProfile.querySelector('.profile-img');
         if (profileImg) {
             profileImg.src = avatarUrl;
         }
         
-        // Set username in header
+        // Set username in header immediately
         const usernameDisplay = currentUserProfile.querySelector('.username-display');
         if (usernameDisplay) {
-            usernameDisplay.textContent = username || 'My Profile';
+            usernameDisplay.textContent = username;
         }
         
         // Update dropdown menu if it exists
