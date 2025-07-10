@@ -356,11 +356,7 @@ async function handleForgotPasswordSubmit(e) {
         console.log('Password reset redirect URL:', redirectUrl);
         
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: redirectUrl,
-            // Add additional headers to ensure proper redirect
-            data: {
-                redirect_to: redirectUrl
-            }
+            redirectTo: redirectUrl
         });
         
         if (error) {
@@ -384,7 +380,7 @@ async function handleForgotPasswordSubmit(e) {
         }
         
         // Show success message
-        showInlineError('Password reset link sent! Please check your email and follow the instructions to reset your password.', 'success');
+        showInlineError('Password reset link sent! If your email is correct, you will receive a reset email shortly. Please check your email and follow the instructions.', 'success');
         
         // Clear the form
         document.getElementById('resetEmail').value = '';
