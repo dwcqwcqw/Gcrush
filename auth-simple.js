@@ -96,6 +96,16 @@ function setupAuthStateListener() {
             // For OAuth providers, handle the redirect properly
             if (event === 'SIGNED_IN' && session.user.app_metadata?.provider) {
                 console.log('OAuth sign in completed for provider:', session.user.app_metadata.provider);
+                console.log('Full user data:', JSON.stringify(session.user, null, 2));
+                
+                // Force UI update for Twitter users who might have different metadata structure
+                if (session.user.app_metadata.provider === 'twitter' || session.user.app_metadata.provider === 'twitter_v2') {
+                    console.log('Twitter user detected, forcing UI update');
+                    setTimeout(() => {
+                        updateUIForLoggedInUser(session.user);
+                    }, 500);
+                }
+                
                 // Ensure we're on the main page after OAuth redirect
                 if (window.location.pathname.includes('/auth/callback') || window.location.search.includes('code=')) {
                     console.log('Redirecting to main page after OAuth callback');
@@ -175,7 +185,7 @@ function renderAuthUI() {
                 <div class="form-group" style="display: flex; align-items: center; gap: 8px; margin-top: -10px;">
                     <input type="checkbox" id="rememberMe" checked style="width: auto; margin: 0;">
                     <label for="rememberMe" style="margin: 0; font-size: 0.9rem; color: var(--text-silver); cursor: pointer;">
-                        Keep me logged in for 24 hours
+                        Keep me logged in
                     </label>
                 </div>
                 ` : ''}
@@ -342,7 +352,7 @@ async function handleForgotPasswordSubmit(e) {
         
         // Use Supabase's password reset feature
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-            redirectTo: `${window.location.origin}/reset-password`,
+            redirectTo: `${window.location.origin}/reset-password.html`,
         });
         
         if (error) throw error;
@@ -897,7 +907,7 @@ function createDropdownMenu() {
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
             </div>
-            <div class="dropdown-item logout-item" onclick="logout()">
+            <div class="dropdown-item logout-item" id="logoutBtn">
                 <i class="fas fa-sign-out-alt"></i>
                 <span>Logout</span>
             </div>
@@ -959,6 +969,15 @@ function setupProfileDropdown() {
             hideDropdown();
         }
     });
+    
+    // Setup logout button click handler
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            logout();
+        });
+    }
 }
 
 // Update UI for logged in user
@@ -1009,13 +1028,29 @@ async function updateUIForLoggedInUser(user, username = null) {
                                  null;
                 } else if ((provider === 'twitter' || provider === 'twitter_v2') && user.user_metadata) {
                     // For Twitter/X, check all possible fields
+                    // Twitter sometimes returns data in different structures
                     displayName = user.user_metadata.name || 
+                                 user.user_metadata.full_name ||
                                  user.user_metadata.user_name || 
                                  user.user_metadata.preferred_username || 
                                  user.user_metadata.screen_name ||
                                  user.user_metadata.nickname ||
+                                 user.user_metadata.provider_username ||
                                  null;
-                    console.log('Twitter/X display name:', displayName);
+                    
+                    // If still no name, try to extract from identities
+                    if (!displayName && user.identities && user.identities.length > 0) {
+                        const twitterIdentity = user.identities.find(id => id.provider === 'twitter' || id.provider === 'twitter_v2');
+                        if (twitterIdentity && twitterIdentity.identity_data) {
+                            displayName = twitterIdentity.identity_data.name ||
+                                         twitterIdentity.identity_data.full_name ||
+                                         twitterIdentity.identity_data.user_name ||
+                                         twitterIdentity.identity_data.preferred_username ||
+                                         null;
+                        }
+                    }
+                    
+                    console.log('Twitter/X display name found:', displayName);
                 }
             }
             
@@ -1158,21 +1193,35 @@ async function checkEmailExists(email) {
     try {
         console.log('Checking if email exists:', email);
         
-        // Try to sign in with the email and a dummy password
-        // If the email exists, we'll get a specific error
+        // Method 1: Try to query the auth.users table through profiles
+        // This assumes profiles are created for each user
+        const { data: profiles, error: profileError } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('email', email)
+            .single();
+            
+        if (profiles) {
+            console.log('Email found in profiles table');
+            return true;
+        }
+        
+        // Method 2: Try to sign in with the email and a dummy password
+        // Only check specific error messages
         const { data, error } = await supabase.auth.signInWithPassword({
             email: email,
-            password: 'dummy_password_to_check_email_exists_12345'
+            password: 'dummy_password_to_check_email_' + Date.now()
         });
         
         if (error) {
-            // If we get "Invalid login credentials", the email exists
-            if (error.message.includes('Invalid login credentials')) {
-                console.log('Email already exists in database');
+            console.log('Auth check error:', error.message);
+            // Only return true if we're certain the email exists
+            if (error.message === 'Invalid login credentials' || 
+                error.message.includes('Invalid login credentials')) {
+                console.log('Email confirmed to exist via auth check');
                 return true;
             }
-            // Any other error means the email might not exist
-            console.log('Email check error:', error.message);
+            // For any other error (including "Email not confirmed"), assume email doesn't exist
             return false;
         }
         
