@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Character Cards Debug - Gcrush</title>
+    <link rel="stylesheet" href="candy-combined.css">
+    <style>
+        .debug-panel {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px;
+            color: white;
+        }
+        
+        .debug-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 10px;
+        }
+        
+        .debug-title {
+            color: #ff6b9d;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success { background-color: #4CAF50; }
+        .status-error { background-color: #f44336; }
+        .status-warning { background-color: #ff9800; }
+        .status-loading { background-color: #2196F3; animation: pulse 1s infinite; }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .debug-log {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .test-button {
+            background: linear-gradient(45deg, #ff6b9d, #c44569);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin: 5px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 157, 0.4);
+        }
+        
+        .character-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+        
+        .error-message {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px;
+            color: white;
+            text-align: center;
+        }
+        
+        .loading-message {
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid rgba(33, 150, 243, 0.5);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px;
+            color: white;
+            text-align: center;
+        }
+        
+        .retry-btn {
+            background: linear-gradient(45deg, #ff6b9d, #c44569);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 style="text-align: center; color: white; margin: 20px 0;">Character Cards Debug Panel</h1>
+        
+        <div class="debug-panel">
+            <div class="debug-section">
+                <div class="debug-title">System Status</div>
+                <div id="system-status">
+                    <div><span id="supabase-status" class="status-indicator status-loading"></span>Supabase Connection: <span id="supabase-text">Checking...</span></div>
+                    <div><span id="loader-status" class="status-indicator status-loading"></span>Character Loader: <span id="loader-text">Initializing...</span></div>
+                    <div><span id="data-status" class="status-indicator status-loading"></span>Data Loading: <span id="data-text">Waiting...</span></div>
+                </div>
+            </div>
+            
+            <div class="debug-section">
+                <div class="debug-title">Test Controls</div>
+                <button class="test-button" onclick="testSupabaseConnection()">Test Supabase Connection</button>
+                <button class="test-button" onclick="testCharacterLoader()">Test Character Loader</button>
+                <button class="test-button" onclick="loadFromDatabase()">Load from Database</button>
+                <button class="test-button" onclick="loadDefaultData()">Load Default Data</button>
+                <button class="test-button" onclick="clearLogs()">Clear Logs</button>
+            </div>
+            
+            <div class="debug-section">
+                <div class="debug-title">Database Info</div>
+                <div id="database-info">
+                    <div>URL: <span id="db-url">Loading...</span></div>
+                    <div>API Key: <span id="db-key">Loading...</span></div>
+                    <div>Characters Count: <span id="db-count">Unknown</span></div>
+                </div>
+            </div>
+            
+            <div class="debug-section">
+                <div class="debug-title">Console Logs</div>
+                <div id="debug-logs" class="debug-log">Debug logs will appear here...</div>
+            </div>
+        </div>
+        
+        <div class="character-grid" id="character-grid">
+            <!-- Character cards will be rendered here -->
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="candy-combined.js"></script>
+    <script src="character-data-loader.js"></script>
+    
+    <script>
+        // Debug logging system
+        const debugLogs = document.getElementById('debug-logs');
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        function addDebugLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}\n`;
+            debugLogs.textContent += logEntry;
+            debugLogs.scrollTop = debugLogs.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            addDebugLog(args.join(' '), 'info');
+        };
+        
+        console.error = function(...args) {
+            originalConsoleError.apply(console, args);
+            addDebugLog(args.join(' '), 'error');
+        };
+        
+        console.warn = function(...args) {
+            originalConsoleWarn.apply(console, args);
+            addDebugLog(args.join(' '), 'warn');
+        };
+        
+        // Status update functions
+        function updateStatus(elementId, status, text) {
+            const indicator = document.getElementById(elementId);
+            const textElement = document.getElementById(elementId.replace('-status', '-text'));
+            
+            indicator.className = `status-indicator status-${status}`;
+            if (textElement) textElement.textContent = text;
+        }
+        
+        // Test functions
+        async function testSupabaseConnection() {
+            try {
+                updateStatus('supabase-status', 'loading', 'Testing connection...');
+                
+                if (!window.supabase) {
+                    throw new Error('Supabase library not loaded');
+                }
+                
+                const supabaseUrl = CHARACTER_LOADER_SUPABASE_URL || 'Not found';
+                const supabaseKey = CHARACTER_LOADER_SUPABASE_KEY || 'Not found';
+                
+                document.getElementById('db-url').textContent = supabaseUrl;
+                document.getElementById('db-key').textContent = supabaseKey.substring(0, 20) + '...';
+                
+                if (!characterLoaderSupabase) {
+                    throw new Error('Character loader Supabase client not initialized');
+                }
+                
+                const { data, error } = await characterLoaderSupabase
+                    .from('characters')
+                    .select('count', { count: 'exact' });
+                
+                if (error) {
+                    throw new Error(`Database error: ${error.message}`);
+                }
+                
+                updateStatus('supabase-status', 'success', 'Connected successfully');
+                console.log('Supabase connection test passed');
+                
+            } catch (error) {
+                updateStatus('supabase-status', 'error', `Connection failed: ${error.message}`);
+                console.error('Supabase connection test failed:', error);
+            }
+        }
+        
+        async function testCharacterLoader() {
+            try {
+                updateStatus('loader-status', 'loading', 'Testing loader...');
+                
+                if (!window.characterLoader) {
+                    throw new Error('Character loader not found');
+                }
+                
+                updateStatus('loader-status', 'success', 'Loader ready');
+                console.log('Character loader test passed');
+                
+            } catch (error) {
+                updateStatus('loader-status', 'error', `Loader error: ${error.message}`);
+                console.error('Character loader test failed:', error);
+            }
+        }
+        
+        async function loadFromDatabase() {
+            try {
+                updateStatus('data-status', 'loading', 'Loading from database...');
+                
+                const { data, error } = await characterLoaderSupabase
+                    .from('characters')
+                    .select('*')
+                    .order('number', { ascending: true });
+                
+                if (error) {
+                    throw new Error(`Database query error: ${error.message}`);
+                }
+                
+                document.getElementById('db-count').textContent = data?.length || 0;
+                
+                if (data && data.length > 0) {
+                    console.log(`Loaded ${data.length} characters from database:`, data);
+                    updateStatus('data-status', 'success', `Loaded ${data.length} characters`);
+                    
+                    // Render characters
+                    renderCharacters(data);
+                } else {
+                    updateStatus('data-status', 'warning', 'No characters found in database');
+                }
+                
+            } catch (error) {
+                updateStatus('data-status', 'error', `Database load failed: ${error.message}`);
+                console.error('Database load failed:', error);
+            }
+        }
+        
+        async function loadDefaultData() {
+            try {
+                updateStatus('data-status', 'loading', 'Loading default data...');
+                
+                const defaultData = characterLoader.getDefaultCharacters();
+                console.log(`Loaded ${defaultData.length} default characters:`, defaultData);
+                
+                updateStatus('data-status', 'success', `Loaded ${defaultData.length} default characters`);
+                
+                // Render characters
+                renderCharacters(defaultData);
+                
+            } catch (error) {
+                updateStatus('data-status', 'error', `Default data load failed: ${error.message}`);
+                console.error('Default data load failed:', error);
+            }
+        }
+        
+        function renderCharacters(characters) {
+            const grid = document.getElementById('character-grid');
+            
+            try {
+                const html = characters.map(character => 
+                    characterLoader.generateCharacterCard(character)
+                ).join('');
+                
+                grid.innerHTML = html;
+                
+                // Re-initialize video hover effects
+                if (typeof initCharacterVideoHover === 'function') {
+                    initCharacterVideoHover();
+                }
+                
+                console.log('Characters rendered successfully');
+                
+            } catch (error) {
+                grid.innerHTML = `
+                    <div class="error-message">
+                        <p>Failed to render characters</p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+                console.error('Character rendering failed:', error);
+            }
+        }
+        
+        function clearLogs() {
+            debugLogs.textContent = 'Debug logs cleared...\n';
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('Debug page loaded');
+            
+            // Wait a bit for scripts to load
+            setTimeout(async () => {
+                await testSupabaseConnection();
+                await testCharacterLoader();
+                await loadFromDatabase();
+            }, 1000);
+        });
+    </script>
+</body>
+</html> 

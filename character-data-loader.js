@@ -3,14 +3,14 @@
 // Character Data Loader for Dynamic Character Cards
 // =====================================================
 
-// Supabase客户端配置
-const SUPABASE_URL = 'https://kuflobojizyttadwcbhe.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+// Supabase client configuration - use existing global variables if available
+const CHARACTER_LOADER_SUPABASE_URL = window.SUPABASE_URL || 'https://kuflobojizyttadwcbhe.supabase.co';
+const CHARACTER_LOADER_SUPABASE_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
 
-// 初始化Supabase客户端
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Initialize Supabase client - use existing global client if available
+const characterLoaderSupabase = window.supabase ? window.supabase.createClient(CHARACTER_LOADER_SUPABASE_URL, CHARACTER_LOADER_SUPABASE_KEY) : null;
 
-// 角色数据管理类
+// Character data management class
 class CharacterDataLoader {
     constructor() {
         this.characters = [];
@@ -19,29 +19,33 @@ class CharacterDataLoader {
         this.errorMessage = '';
     }
 
-    // 从数据库加载角色数据
+    // Load character data from database
     async loadCharacters() {
         this.isLoading = true;
         this.hasError = false;
         
         try {
-            console.log('正在从数据库加载角色数据...');
+            console.log('Loading character data from database...');
             
-            const { data, error } = await supabase
+            if (!characterLoaderSupabase) {
+                throw new Error('Supabase client not available');
+            }
+            
+            const { data, error } = await characterLoaderSupabase
                 .from('characters')
                 .select('*')
                 .eq('is_active', true)
                 .order('number', { ascending: true });
 
             if (error) {
-                throw new Error(`数据库查询错误: ${error.message}`);
+                throw new Error(`Database query error: ${error.message}`);
             }
 
             if (!data || data.length === 0) {
-                console.warn('数据库中没有找到角色数据，使用默认数据');
+                console.warn('No character data found in database, using default data');
                 this.characters = this.getDefaultCharacters();
             } else {
-                console.log(`成功加载${data.length}个角色数据`);
+                console.log(`Successfully loaded ${data.length} characters`);
                 this.characters = data;
             }
 
@@ -49,26 +53,26 @@ class CharacterDataLoader {
             return this.characters;
             
         } catch (error) {
-            console.error('加载角色数据失败:', error);
+            console.error('Failed to load character data:', error);
             this.hasError = true;
             this.errorMessage = error.message;
             this.isLoading = false;
             
-            // 发生错误时使用默认数据
-            console.log('使用默认角色数据作为后备方案');
+            // Use default data when error occurs
+            console.log('Using default character data as fallback');
             this.characters = this.getDefaultCharacters();
             return this.characters;
         }
     }
 
-    // 获取默认角色数据（基于现有HTML中的信息）
+    // Get default character data (based on existing HTML information)
     getDefaultCharacters() {
         return [
             {
                 number: 1,
                 name: 'Alex',
-                age: 21,
-                description: 'College student exploring his identity, athletic swimmer with a curious mind...',
+                age: 25,
+                description: 'College student exploring his identity, athletic swimmer with a curious mind and open heart. Alex is the perfect companion for deep conversations and shared adventures.',
                 tag1: 'Athletic',
                 tag2: 'Student',
                 tag3: 'Curious',
@@ -78,8 +82,8 @@ class CharacterDataLoader {
             {
                 number: 2,
                 name: 'Bruno',
-                age: 45,
-                description: 'Mature Latin bear, protective daddy with a commanding presence...',
+                age: 19,
+                description: 'Mature Latin bear, protective daddy with a commanding presence and warm heart. Bruno brings wisdom, passion, and unconditional support to every relationship.',
                 tag1: 'Mature',
                 tag2: 'Protective',
                 tag3: 'Daddy',
@@ -111,8 +115,8 @@ class CharacterDataLoader {
             {
                 number: 5,
                 name: 'Ethan',
-                age: 24,
-                description: 'Tech geek with a submissive side, loves gaming and coding...',
+                age: 20,
+                description: 'Tech geek with a submissive side, loves gaming and coding. Ethan is the perfect companion for anyone who appreciates intelligence, loyalty, and gentle devotion.',
                 tag1: 'Tech',
                 tag2: 'Gamer',
                 tag3: 'Submissive',
@@ -166,8 +170,8 @@ class CharacterDataLoader {
             {
                 number: 10,
                 name: 'Mason',
-                age: 27,
-                description: 'Fitness influencer with perfect physique, motivational and energetic...',
+                age: 28,
+                description: 'Fitness influencer with perfect physique, motivational and energetic. Mason inspires others to reach their potential through dedication and positive energy.',
                 tag1: 'Fitness',
                 tag2: 'Motivational',
                 tag3: 'Energetic',
@@ -177,8 +181,8 @@ class CharacterDataLoader {
             {
                 number: 11,
                 name: 'Rohan',
-                age: 32,
-                description: 'Indian tech professional, spiritual and thoughtful with cultural depth...',
+                age: 24,
+                description: 'Indian tech professional, spiritual and thoughtful with cultural depth. Rohan combines ancient wisdom with modern innovation, creating meaningful connections.',
                 tag1: 'Spiritual',
                 tag2: 'Thoughtful',
                 tag3: 'Cultural',
@@ -188,8 +192,8 @@ class CharacterDataLoader {
             {
                 number: 12,
                 name: 'Terrell',
-                age: 36,
-                description: 'Powerful black alpha, confident leader with magnetic personality...',
+                age: 30,
+                description: 'Powerful black alpha, confident leader with magnetic personality. Terrell commands respect through strength, wisdom, and unwavering determination.',
                 tag1: 'Powerful',
                 tag2: 'Alpha',
                 tag3: 'Leader',
@@ -199,15 +203,17 @@ class CharacterDataLoader {
         ];
     }
 
-    // 生成角色卡HTML
+    // Generate character card HTML
     generateCharacterCard(character) {
-        const imageUrl = character.images && character.images.length > 0 ? character.images[0] : '';
-        const videoUrl = character.videos && character.videos.length > 0 ? character.videos[0] : '';
+        // Handle different data structures - database vs default
+        const imageUrl = this.getImageUrl(character);
+        const videoUrl = this.getVideoUrl(character);
         
-        // 截取描述文本到最多两行
-        const truncatedDescription = this.truncateDescription(character.description || '', 100);
+        // Truncate description text to max two lines
+        const description = character.description || character.system_prompt || '';
+        const truncatedDescription = this.truncateDescription(description, 100);
         
-        // 生成标签HTML
+        // Generate tags HTML - handle different tag formats
         const tagsHtml = this.generateTagsHtml(character.tag1, character.tag2, character.tag3);
         
         return `
@@ -229,7 +235,36 @@ class CharacterDataLoader {
         `;
     }
 
-    // 生成标签HTML
+    // Get image URL from character data
+    getImageUrl(character) {
+        // Handle array format
+        if (character.images && Array.isArray(character.images) && character.images.length > 0) {
+            return character.images[0];
+        }
+        // Handle single string format
+        if (character.image) {
+            return character.image;
+        }
+        // Default fallback based on character name
+        return `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${character.name}/${character.name}1.png`;
+    }
+
+    // Get video URL from character data
+    getVideoUrl(character) {
+        // Handle array format
+        if (character.videos && Array.isArray(character.videos) && character.videos.length > 0) {
+            return character.videos[0];
+        }
+        // Handle single string format
+        if (character.video) {
+            return character.video;
+        }
+        // Default fallback based on character name
+        const videoExt = character.name === 'Ethan' ? 'mp4' : 'mov';
+        return `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Video/${character.name}/${character.name}1.${videoExt}`;
+    }
+
+    // Generate tags HTML
     generateTagsHtml(tag1, tag2, tag3) {
         const tags = [tag1, tag2, tag3].filter(tag => tag && tag.trim() !== '');
         
@@ -242,7 +277,7 @@ class CharacterDataLoader {
         `;
     }
 
-    // 截取描述文本
+    // Truncate description text
     truncateDescription(description, maxLength) {
         if (!description || description.length <= maxLength) {
             return description || '';
@@ -258,70 +293,70 @@ class CharacterDataLoader {
         return truncated + '...';
     }
 
-    // 渲染所有角色卡
+    // Render all character cards
     async renderCharacterCards() {
         const characterGrid = document.querySelector('.character-grid');
         
         if (!characterGrid) {
-            console.error('未找到角色网格容器 (.character-grid)');
+            console.error('Character grid container (.character-grid) not found');
             return;
         }
 
-        // 显示加载状态
-        characterGrid.innerHTML = '<div class="loading-message">正在加载角色数据...</div>';
+        // Show loading state
+        characterGrid.innerHTML = '<div class="loading-message">Loading character data...</div>';
 
         try {
-            // 加载角色数据
+            // Load character data
             await this.loadCharacters();
 
-            // 生成角色卡HTML
+            // Generate character cards HTML
             const characterCardsHtml = this.characters.map(character => 
                 this.generateCharacterCard(character)
             ).join('');
 
-            // 插入到页面
+            // Insert into page
             characterGrid.innerHTML = characterCardsHtml;
 
-            // 重新初始化视频悬停效果
+            // Re-initialize video hover effects
             if (typeof initCharacterVideoHover === 'function') {
                 initCharacterVideoHover();
             }
 
-            console.log('角色卡渲染完成');
+            console.log('Character cards rendered successfully');
             
         } catch (error) {
-            console.error('渲染角色卡失败:', error);
+            console.error('Failed to render character cards:', error);
             characterGrid.innerHTML = `
                 <div class="error-message">
-                    <p>加载角色数据失败</p>
+                    <p>Failed to load character data</p>
                     <p>${this.errorMessage}</p>
-                    <button onclick="characterLoader.renderCharacterCards()" class="retry-btn">重试</button>
+                    <button onclick="characterLoader.renderCharacterCards()" class="retry-btn">Retry</button>
                 </div>
             `;
         }
     }
 
-    // 根据姓名查找角色
+    // Find character by name
     findCharacterByName(name) {
         return this.characters.find(character => 
             character.name.toLowerCase() === name.toLowerCase()
         );
     }
 
-    // 获取所有角色
+    // Get all characters
     getAllCharacters() {
         return this.characters;
     }
 }
 
-// 创建全局实例
+// Create global instance
 const characterLoader = new CharacterDataLoader();
 
-// 页面加载完成后自动渲染角色卡
+// Auto-render character cards after page load
 document.addEventListener('DOMContentLoaded', () => {
     characterLoader.renderCharacterCards();
 });
 
-// 导出给其他模块使用
+// Export for other modules
 window.CharacterDataLoader = CharacterDataLoader;
 window.characterLoader = characterLoader; 
