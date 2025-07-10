@@ -457,6 +457,18 @@
             const urlParams = new URLSearchParams(window.location.search);
             const hashParams = new URLSearchParams(window.location.hash.substring(1));
             
+            // Check for password reset code parameter
+            const resetCode = urlParams.get('code');
+            if (resetCode) {
+                console.log('Password reset code detected:', resetCode);
+                
+                // Redirect to reset password page with the code
+                const resetURL = `/reset-password.html?code=${resetCode}`;
+                console.log('Redirecting to:', resetURL);
+                window.location.href = resetURL;
+                return;
+            }
+            
             // Check for password reset errors
             const errorCode = urlParams.get('error_code') || hashParams.get('error_code');
             const error = urlParams.get('error') || hashParams.get('error');
