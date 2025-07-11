@@ -20,6 +20,19 @@ class MainChatSystem {
     async init() {
         await this.setupAuthentication();
         this.setupEventListeners();
+        this.checkUrlParameters();
+    }
+
+    checkUrlParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const characterName = urlParams.get('character');
+        
+        if (characterName) {
+            // Delay to ensure page is fully loaded
+            setTimeout(() => {
+                this.startChat(characterName);
+            }, 500);
+        }
     }
     
     async setupAuthentication() {
@@ -69,6 +82,11 @@ class MainChatSystem {
     
     async startChat(characterName) {
         console.log('Starting chat with:', characterName);
+        
+        // Update URL to show current character
+        const currentUrl = new URL(window.location);
+        currentUrl.searchParams.set('character', characterName);
+        window.history.pushState({}, '', currentUrl);
         
         // Always show chat interface first
         this.showChatInterface();
@@ -158,9 +176,8 @@ class MainChatSystem {
             const { data, error } = await this.supabase
                 .from('chat_sessions')
                 .insert({
-                    character_id: character.id,
+                    character_name: character.name,
                     user_id: userId,
-                    session_name: `Chat with ${character.name}`,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 })
@@ -687,6 +704,11 @@ class MainChatSystem {
 
 // Global functions
 function backToExplore() {
+    // Clear URL parameters
+    const currentUrl = new URL(window.location);
+    currentUrl.searchParams.delete('character');
+    window.history.pushState({}, '', currentUrl);
+    
     // Hide chat interface
     document.getElementById('chatInterface').style.display = 'none';
     
