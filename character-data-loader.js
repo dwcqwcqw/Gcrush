@@ -34,7 +34,6 @@ class CharacterDataLoader {
             const { data, error } = await characterLoaderSupabase
                 .from('characters')
                 .select('*')
-                .eq('is_active', true)
                 .order('number', { ascending: true });
 
             if (error) {

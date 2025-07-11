@@ -136,6 +136,7 @@
                 <button class="test-button" onclick="testCharacterLoader()">Test Character Loader</button>
                 <button class="test-button" onclick="loadFromDatabase()">Load from Database</button>
                 <button class="test-button" onclick="loadDefaultData()">Load Default Data</button>
+                <button class="test-button" onclick="inspectDatabase()">Inspect Database</button>
                 <button class="test-button" onclick="clearLogs()">Clear Logs</button>
             </div>
             
@@ -301,6 +302,85 @@
             } catch (error) {
                 updateStatus('data-status', 'error', `Default data load failed: ${error.message}`);
                 console.error('Default data load failed:', error);
+            }
+        }
+        
+        async function inspectDatabase() {
+            try {
+                console.log('=== DATABASE INSPECTION ===');
+                
+                // Check table structure
+                const { data: tableData, error: tableError } = await characterLoaderSupabase
+                    .from('characters')
+                    .select('*')
+                    .limit(1);
+                
+                if (tableError) {
+                    console.error('Table access error:', tableError);
+                    return;
+                }
+                
+                if (tableData && tableData.length > 0) {
+                    console.log('Sample record structure:', tableData[0]);
+                    console.log('Available columns:', Object.keys(tableData[0]));
+                }
+                
+                // Check total count
+                const { count, error: countError } = await characterLoaderSupabase
+                    .from('characters')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (countError) {
+                    console.error('Count query error:', countError);
+                } else {
+                    console.log(`Total records in database: ${count}`);
+                }
+                
+                                 // Check all records
+                 const { data: allData, error: allError } = await characterLoaderSupabase
+                     .from('characters')
+                     .select('id, number, name, age, style')
+                     .order('number', { ascending: true });
+                 
+                 if (allError) {
+                     console.error('All records query error:', allError);
+                     console.error('Error details:', allError);
+                 } else {
+                     console.log('All character records:', allData);
+                 }
+                 
+                 // Test with different query approaches
+                 console.log('--- Testing different query approaches ---');
+                 
+                 // Try without ordering
+                 const { data: noOrderData, error: noOrderError } = await characterLoaderSupabase
+                     .from('characters')
+                     .select('*')
+                     .limit(5);
+                 
+                 if (noOrderError) {
+                     console.error('No order query error:', noOrderError);
+                 } else {
+                     console.log('No order query result:', noOrderData);
+                 }
+                 
+                 // Try with specific schema
+                 const { data: schemaData, error: schemaError } = await characterLoaderSupabase
+                     .schema('public')
+                     .from('characters')
+                     .select('*')
+                     .limit(5);
+                 
+                 if (schemaError) {
+                     console.error('Schema query error:', schemaError);
+                 } else {
+                     console.log('Schema query result:', schemaData);
+                 }
+                
+                console.log('=== INSPECTION COMPLETE ===');
+                
+            } catch (error) {
+                console.error('Database inspection failed:', error);
             }
         }
         
