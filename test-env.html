@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>环境变量测试 - Gcrush</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .test-container {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+        }
+        .test-item {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+        .status {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        .success { background: #4CAF50; }
+        .error { background: #f44336; }
+        .warning { background: #ff9800; }
+        code {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 Cloudflare Pages 环境变量测试</h1>
+        
+        <div class="test-item">
+            <h3>📋 测试结果</h3>
+            <div id="testResults"></div>
+        </div>
+        
+        <div class="test-item">
+            <h3>🔍 配置详情</h3>
+            <div id="configDetails"></div>
+        </div>
+        
+        <div class="test-item">
+            <h3>💡 说明</h3>
+            <p>此页面用于测试Cloudflare Pages环境变量是否正确配置。</p>
+            <ul>
+                <li>如果显示 <span class="status success">成功</span>，说明环境变量已正确设置</li>
+                <li>如果显示 <span class="status error">错误</span>，请检查Cloudflare Pages环境变量配置</li>
+                <li>如果显示 <span class="status warning">警告</span>，可能使用了本地配置</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Load scripts in correct order -->
+    <script src="env-config.js"></script>
+    <script src="env-loader.js"></script>
+    <script src="config.js"></script>
+    <script src="config.local.js"></script>
+    
+    <script>
+        function runTests() {
+            const results = [];
+            const details = [];
+            
+            // Test 1: Check if environment variables are loaded
+            const hasApiKey = !!window.RUNPOD_API_KEY;
+            const hasEndpointId = !!window.RUNPOD_TEXT_ENDPOINT_ID;
+            
+            results.push({
+                test: 'RUNPOD_API_KEY 环境变量',
+                status: hasApiKey ? 'success' : 'error',
+                message: hasApiKey ? '✅ API密钥已加载' : '❌ API密钥未找到'
+            });
+            
+            results.push({
+                test: 'RUNPOD_TEXT_ENDPOINT_ID 环境变量',
+                status: hasEndpointId ? 'success' : 'error',
+                message: hasEndpointId ? '✅ 端点ID已加载' : '❌ 端点ID未找到'
+            });
+            
+            // Test 2: Check CONFIG object
+            const configLoaded = typeof CONFIG !== 'undefined';
+            results.push({
+                test: 'CONFIG 对象',
+                status: configLoaded ? 'success' : 'error',
+                message: configLoaded ? '✅ 配置对象已加载' : '❌ 配置对象未找到'
+            });
+            
+            if (configLoaded) {
+                const apiKeyInConfig = !!CONFIG.RUNPOD_API_KEY && CONFIG.RUNPOD_API_KEY !== 'YOUR_RUNPOD_API_KEY_HERE';
+                results.push({
+                    test: 'CONFIG 中的 API 密钥',
+                    status: apiKeyInConfig ? 'success' : 'warning',
+                    message: apiKeyInConfig ? '✅ API密钥已配置' : '⚠️ 使用默认占位符'
+                });
+            }
+            
+            // Display results
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = results.map(r => 
+                `<div style="margin: 10px 0;">
+                    <span class="status ${r.status}">${r.status.toUpperCase()}</span>
+                    <strong>${r.test}:</strong> ${r.message}
+                </div>`
+            ).join('');
+            
+            // Display details
+            details.push(`<strong>Window 环境变量:</strong>`);
+            details.push(`- RUNPOD_API_KEY: ${window.RUNPOD_API_KEY ? '***已设置***' : '未设置'}`);
+            details.push(`- RUNPOD_TEXT_ENDPOINT_ID: <code>${window.RUNPOD_TEXT_ENDPOINT_ID || '未设置'}</code>`);
+            
+            if (configLoaded) {
+                details.push(`<br><strong>CONFIG 对象:</strong>`);
+                details.push(`- API URL: <code>${CONFIG.RUNPOD_API_URL}</code>`);
+                details.push(`- API Key: ${CONFIG.RUNPOD_API_KEY && CONFIG.RUNPOD_API_KEY !== 'YOUR_RUNPOD_API_KEY_HERE' ? '***已配置***' : '未配置'}`);
+                details.push(`- Model: <code>${CONFIG.MODEL_NAME}</code>`);
+            }
+            
+            const detailsDiv = document.getElementById('configDetails');
+            detailsDiv.innerHTML = details.join('<br>');
+        }
+        
+        // Run tests when page loads
+        window.addEventListener('load', runTests);
+    </script>
+</body>
+</html> 
