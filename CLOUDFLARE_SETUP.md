@@ -10,7 +10,7 @@
 
 ### 步骤 2: 配置环境变量
 1. 在项目页面中，点击 **Settings** 标签
-2. 滚动到 **Environment variables** 部分
+2. 找到 **Environment variables** 部分（不是 Variables and Secrets）
 3. 点击 **Add variable** 按钮
 
 ### 步骤 3: 添加必需的环境变量
@@ -18,17 +18,18 @@
 #### 变量 1: RUNPOD_API_KEY
 - **Variable name**: `RUNPOD_API_KEY`
 - **Value**: `[你的RunPod API密钥]`
-- **Environment**: `Production` (和 `Preview` 如果需要)
+- **Environment**: 选择 `Production` 和 `Preview`
 
 #### 变量 2: RUNPOD_TEXT_ENDPOINT_ID
 - **Variable name**: `RUNPOD_TEXT_ENDPOINT_ID`
 - **Value**: `4cx6jtjdx6hdhr`
-- **Environment**: `Production` (和 `Preview` 如果需要)
+- **Environment**: 选择 `Production` 和 `Preview`
 
 ### 步骤 4: 保存并重新部署
-1. 点击 **Save** 保存环境变量
-2. 触发新的部署（推送新代码或手动重新部署）
-3. 环境变量将在构建时注入到应用中
+1. 点击 **Save** 保存每个环境变量
+2. 返回到项目的 **Deployments** 页面
+3. 点击最新部署旁边的三个点，选择 **Retry deployment**
+4. 环境变量将在 Cloudflare Worker Functions 中可用
 
 ## 🚀 自动构建过程
 

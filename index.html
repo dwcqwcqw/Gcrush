@@ -335,6 +335,8 @@
     </div>
 
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Load environment configuration if available -->
+    <script src="env-config.js" onerror="console.warn('env-config.js not found - using defaults')"></script>
     <script src="inline-debug.js?v=2.0"></script>
     <script src="candy-combined.js?v=2.0"></script>
     <script src="character-data-loader.js?v=2.0"></script>

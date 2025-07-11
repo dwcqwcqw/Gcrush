@@ -391,6 +391,8 @@ class MainChatSystem {
     
     async getAIResponse(userMessage) {
         try {
+            console.log('Calling chat API with message:', userMessage);
+            
             // Call through Cloudflare Worker endpoint
             const response = await fetch('/api/chat', {
                 method: 'POST',
@@ -404,19 +406,33 @@ class MainChatSystem {
                 })
             });
             
+            const data = await response.json();
+            console.log('Chat API response:', data);
+            
             if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || `API request failed: ${response.status}`);
+                console.error('Chat API error:', data);
+                
+                // Check if it's a mock response due to missing env vars
+                if (data.mock) {
+                    console.warn('Using mock response - RunPod API not configured on server');
+                    return data.response;
+                }
+                
+                throw new Error(data.error || `API request failed: ${response.status}`);
             }
             
-            const data = await response.json();
+            // Check if we got a mock response
+            if (data.mock) {
+                console.warn('Received mock response - RunPod API not configured on server');
+            }
+            
             return data.response || 'Sorry, I could not generate a response.';
             
         } catch (error) {
             console.error('Error calling chat API:', error);
             
             // Fallback to test mode
-            console.warn('Using test mode for AI response');
+            console.warn('Using local test mode for AI response');
             return this.getTestResponse(userMessage);
         }
     }
@@ -456,20 +472,32 @@ class MainChatSystem {
     
     showLoginModal() {
         console.log('[showLoginModal] Called');
-        // Use the existing auth modal from the main page
+        
+        // First try to click the login button which should trigger the proper auth modal
+        const loginBtn = document.querySelector('.login-btn');
+        if (loginBtn) {
+            console.log('[showLoginModal] Clicking login button');
+            loginBtn.click();
+            return;
+        }
+        
+        // Fallback: directly show auth modal if login button not found
         const authModal = document.getElementById('authModal');
         if (authModal) {
-            authModal.style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-            console.log('[showLoginModal] Auth modal displayed');
+            // Make sure auth is set to sign in mode
+            if (window.authView) {
+                window.authView = 'sign_in';
+            }
+            if (window.showAuthModal && typeof window.showAuthModal === 'function') {
+                console.log('[showLoginModal] Using showAuthModal function');
+                window.showAuthModal('sign_in');
+            } else {
+                console.log('[showLoginModal] Directly showing auth modal');
+                authModal.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
         } else {
             console.error('[showLoginModal] Auth modal not found!');
-            // Fallback: try to trigger the login button click
-            const loginBtn = document.querySelector('.login-btn');
-            if (loginBtn) {
-                loginBtn.click();
-                console.log('[showLoginModal] Triggered login button click');
-            }
         }
     }
     
