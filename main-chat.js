@@ -9,10 +9,14 @@ class MainChatSystem {
         this.isTyping = false;
         
         // Initialize Supabase
-        this.supabase = window.supabase.createClient(
-            'https://kuflobojizyttadwcbhe.supabase.co',
-            'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
-        );
+        if (window.supabase && window.supabase.createClient) {
+            this.supabase = window.supabase.createClient(
+                'https://kuflobojizyttadwcbhe.supabase.co',
+                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
+            );
+        } else {
+            console.error('Supabase not loaded');
+        }
         
         this.init();
     }
@@ -217,6 +221,11 @@ class MainChatSystem {
     
     async sendMessage() {
         const input = document.getElementById('messageInput');
+        if (!input) {
+            console.error('Message input not found');
+            return;
+        }
+        
         const message = input.value.trim();
         
         if (!message || this.isTyping) return;
@@ -235,22 +244,23 @@ class MainChatSystem {
     async processMessage(message) {
         const input = document.getElementById('messageInput');
         
-        // Add user message first
-        await this.addMessage('user', message, true);
-        
-        // Clear input after adding message
-        input.value = '';
-        
-        // Show typing indicator
-        this.showTypingIndicator();
-        
-        // Get AI response
         try {
+            // Add user message first
+            await this.addMessage('user', message, true);
+            
+            // Clear input after adding message
+            input.value = '';
+            
+            // Show typing indicator
+            this.showTypingIndicator();
+            
+            // Get AI response
             const response = await this.getAIResponse(message);
+            
             this.hideTypingIndicator();
             await this.addMessage('assistant', response, true);
         } catch (error) {
-            console.error('Error getting AI response:', error);
+            console.error('Error in processMessage:', error);
             this.hideTypingIndicator();
             await this.addMessage('assistant', 'Sorry, I encountered an error. Please try again.', true);
         }
@@ -258,6 +268,11 @@ class MainChatSystem {
     
     async addMessage(role, content, saveToDb = true) {
         const messagesContainer = document.getElementById('chatMessages');
+        
+        if (!messagesContainer) {
+            console.error('Messages container not found');
+            return;
+        }
         
         // Create message element
         const messageDiv = document.createElement('div');
@@ -816,10 +831,16 @@ function backToExplore() {
 function sendMessage() {
     if (window.mainChatSystem) {
         window.mainChatSystem.sendMessage();
+    } else {
+        console.error('mainChatSystem not initialized');
     }
 }
 
 // Initialize chat system when page loads
 document.addEventListener('DOMContentLoaded', () => {
-    window.mainChatSystem = new MainChatSystem();
+    try {
+        window.mainChatSystem = new MainChatSystem();
+    } catch (error) {
+        console.error('Failed to initialize MainChatSystem:', error);
+    }
 }); 

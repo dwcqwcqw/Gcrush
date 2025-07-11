@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Test - Simple</title>
+    <style>
+        body {
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        
+        .chat-container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .messages {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            padding: 20px;
+            margin-bottom: 20px;
+            background: rgba(255,255,255,0.05);
+        }
+        
+        .message {
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        
+        .message.user {
+            background: #ff6b9d;
+            text-align: right;
+        }
+        
+        .message.assistant {
+            background: #333;
+        }
+        
+        .input-area {
+            display: flex;
+            gap: 10px;
+        }
+        
+        input {
+            flex: 1;
+            padding: 10px;
+            background: #333;
+            border: 1px solid #555;
+            color: #fff;
+            border-radius: 5px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #ff6b9d;
+            border: none;
+            color: #fff;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        button:hover {
+            background: #ff4583;
+        }
+        
+        .debug {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <h1>Simple Chat Test</h1>
+        
+        <div id="messages" class="messages">
+            <div class="message assistant">Welcome! Type a message below to test.</div>
+        </div>
+        
+        <div class="input-area">
+            <input type="text" id="messageInput" placeholder="Type your message..." />
+            <button onclick="testSendMessage()">Send</button>
+        </div>
+        
+        <div id="debug" class="debug">
+            Debug output will appear here...
+        </div>
+    </div>
+
+    <script>
+        let messageCount = 0;
+        
+        function log(message) {
+            const debug = document.getElementById('debug');
+            const timestamp = new Date().toLocaleTimeString();
+            debug.innerHTML += `[${timestamp}] ${message}<br>`;
+            console.log(message);
+        }
+        
+        function testSendMessage() {
+            log('testSendMessage called');
+            
+            const input = document.getElementById('messageInput');
+            const messagesDiv = document.getElementById('messages');
+            
+            if (!input) {
+                log('ERROR: Input element not found');
+                return;
+            }
+            
+            const message = input.value.trim();
+            log(`Message value: "${message}"`);
+            
+            if (!message) {
+                log('Empty message, not sending');
+                return;
+            }
+            
+            // Add user message
+            const userDiv = document.createElement('div');
+            userDiv.className = 'message user';
+            userDiv.textContent = message;
+            messagesDiv.appendChild(userDiv);
+            log('User message added to DOM');
+            
+            // Clear input
+            input.value = '';
+            log('Input cleared');
+            
+            // Add fake response after delay
+            setTimeout(() => {
+                const assistantDiv = document.createElement('div');
+                assistantDiv.className = 'message assistant';
+                assistantDiv.textContent = `Response ${++messageCount}: I received your message "${message}"`;
+                messagesDiv.appendChild(assistantDiv);
+                log('Assistant message added to DOM');
+                
+                // Scroll to bottom
+                messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }, 1000);
+        }
+        
+        // Test Enter key
+        document.addEventListener('DOMContentLoaded', () => {
+            log('DOM loaded');
+            
+            const input = document.getElementById('messageInput');
+            if (input) {
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        log('Enter key pressed');
+                        testSendMessage();
+                    }
+                });
+                log('Enter key listener added');
+            } else {
+                log('ERROR: Could not find input to add Enter listener');
+            }
+        });
+    </script>
+</body>
+</html>
