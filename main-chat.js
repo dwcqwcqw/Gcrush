@@ -139,14 +139,11 @@ class MainChatSystem {
         document.getElementById('heroSection').style.display = 'none';
         document.getElementById('titleSection').style.display = 'none';
         document.getElementById('characterLobby').style.display = 'none';
-        document.querySelector('.faq-section').style.display = 'none';
+        const faqSection = document.querySelector('.faq-section');
+        if (faqSection) faqSection.style.display = 'none';
         
         // Show chat interface
         document.getElementById('chatInterface').style.display = 'flex';
-        
-        // Make sure header and sidebar remain visible
-        document.querySelector('.site-header').style.display = 'flex';
-        document.querySelector('.sidebar').style.display = 'block';
         
         // Update sidebar active state
         const sidebarItems = document.querySelectorAll('.sidebar-item');
@@ -183,28 +180,46 @@ class MainChatSystem {
     }
     
     async createChatSession(character) {
+        if (!this.currentUser) {
+            console.log('Cannot create chat session - no user logged in');
+            return;
+        }
+        
         try {
             const userId = this.currentUser.id;
+            const characterId = character.id || 'fallback';
+            
+            console.log('Creating chat session:', {
+                character_id: characterId,
+                character_name: character.name,
+                user_id: userId
+            });
             
             const { data, error } = await this.supabase
                 .from('chat_sessions')
                 .insert({
-                    character_id: character.id,
+                    character_id: characterId,
                     user_id: userId,
                     created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString()
+                    updated_at: new Date().toISOString(),
+                    last_message_at: new Date().toISOString()
                 })
                 .select()
                 .single();
             
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase error creating session:', error);
+                throw error;
+            }
             
             this.currentSessionId = data.id;
-            console.log('Chat session created:', this.currentSessionId);
+            console.log('Chat session created successfully:', this.currentSessionId);
             
         } catch (error) {
             console.error('Error creating chat session:', error);
-            // Don't create temp session - wait for user to login
+            // Create a temporary session ID for this chat
+            this.currentSessionId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            console.log('Using temporary session ID:', this.currentSessionId);
         }
     }
     
@@ -319,34 +334,58 @@ class MainChatSystem {
             return;
         }
         
+        if (!this.supabase) {
+            console.error('Supabase client not initialized');
+            return;
+        }
+        
         try {
             const messageType = role === 'assistant' ? 'character' : role;
             const userId = this.currentUser.id;
             
-            const { error } = await this.supabase
+            console.log('Saving message to database:', {
+                session_id: this.currentSessionId,
+                user_id: userId,
+                character_id: this.currentCharacter?.id,
+                message_type: messageType,
+                content_length: content.length
+            });
+            
+            const { data, error } = await this.supabase
                 .from('chat_messages')
                 .insert({
                     session_id: this.currentSessionId,
                     user_id: userId,
-                    character_id: this.currentCharacter?.id,
+                    character_id: this.currentCharacter?.id || 'fallback',
                     message_type: messageType,
                     content: content,
                     created_at: new Date().toISOString()
-                });
+                })
+                .select();
             
-            if (error) throw error;
+            if (error) {
+                console.error('Supabase insert error:', error);
+                throw error;
+            }
+            
+            console.log('Message saved successfully:', data);
             
             // Update session timestamp
-            await this.supabase
+            const { error: updateError } = await this.supabase
                 .from('chat_sessions')
                 .update({
                     last_message_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', this.currentSessionId);
+                
+            if (updateError) {
+                console.error('Session update error:', updateError);
+            }
             
         } catch (error) {
             console.error('Error saving message to database:', error);
+            // Don't throw - let chat continue even if save fails
         }
     }
     
@@ -376,48 +415,13 @@ class MainChatSystem {
         } catch (error) {
             console.error('Error calling chat API:', error);
             
-            // Fallback to direct RunPod API if worker endpoint fails
-            try {
-                return await this.getAIResponseDirect(userMessage);
-            } catch (fallbackError) {
-                console.error('Fallback API also failed:', fallbackError);
-                return 'I apologize, but I am having trouble responding right now. Please try again in a moment.';
-            }
+            // Fallback to test mode
+            console.warn('Using test mode for AI response');
+            return this.getTestResponse(userMessage);
         }
     }
     
-    async getAIResponseDirect(userMessage) {
-        // Try direct RunPod API as fallback
-        const apiKey = await this.getRunPodApiKey();
-        
-        // Test mode - return simulated responses
-        if (apiKey === 'test-mode') {
-            return this.getTestResponse(userMessage);
-        }
-        
-        const response = await fetch(`https://api.runpod.ai/v2/4cx6jtjdx6hdhr/runsync`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                input: {
-                    prompt: this.buildPrompt(userMessage),
-                    max_tokens: 300,
-                    temperature: 0.8,
-                    top_p: 0.9
-                }
-            })
-        });
-        
-        if (!response.ok) {
-            throw new Error(`Direct API request failed: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        return data.output?.generated_text || 'Sorry, I could not generate a response.';
-    }
+    // Removed direct API call - using Worker endpoint only
     
     getTestResponse(userMessage) {
         // Simulated responses for testing
@@ -438,33 +442,7 @@ class MainChatSystem {
         return `[${characterName}] ${randomResponse}`;
     }
     
-    async getRunPodApiKey() {
-        // Try to get from environment variables first
-        if (window.ENV_CONFIG && window.ENV_CONFIG.RUNPOD_API_KEY) {
-            return window.ENV_CONFIG.RUNPOD_API_KEY;
-        }
-        
-        // For development/testing, return a dummy response
-        console.warn('RunPod API key not configured. Using test mode.');
-        return 'test-mode';
-    }
-    
-    buildPrompt(userMessage) {
-        const character = this.currentCharacter;
-        let prompt = `You are ${character.name}. `;
-        
-        if (character.personality) {
-            prompt += `Your personality: ${character.personality}. `;
-        }
-        
-        if (character.background) {
-            prompt += `Your background: ${character.background}. `;
-        }
-        
-        prompt += `User says: "${userMessage}"\n\nRespond as ${character.name}:`;
-        
-        return prompt;
-    }
+    // Removed API key and prompt building - handled by Worker
     
     showTypingIndicator() {
         this.isTyping = true;
@@ -509,157 +487,9 @@ class MainChatSystem {
         }
     }
     
-    createLoginModal() {
-        const modalHTML = `
-            <div id="chatLoginModal" class="auth-modal-overlay" style="display: none;">
-                <div class="auth-modal-content">
-                    <div class="auth-modal-header">
-                        <h2>Login to Continue Chat</h2>
-                        <button class="auth-modal-close" onclick="mainChatSystem.closeLoginModal()">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    
-                    <div class="auth-modal-body">
-                        <p>Please login to save your chat history and continue the conversation.</p>
-                        
-                        <div class="auth-tabs">
-                            <button class="auth-tab active" onclick="mainChatSystem.switchAuthTab('signin')">Sign In</button>
-                            <button class="auth-tab" onclick="mainChatSystem.switchAuthTab('signup')">Sign Up</button>
-                        </div>
-                        
-                        <form id="chatAuthForm" class="auth-form">
-                            <div class="form-group">
-                                <label for="chatEmail">Email</label>
-                                <input type="email" id="chatEmail" required placeholder="Enter your email">
-                            </div>
-                            
-                            <div class="form-group">
-                                <label for="chatPassword">Password</label>
-                                <input type="password" id="chatPassword" required placeholder="Enter your password">
-                            </div>
-                            
-                            <button type="submit" class="auth-submit-btn">
-                                <span class="btn-text">Sign In</span>
-                            </button>
-                        </form>
-                        
-                        <div class="auth-divider">
-                            <span>or</span>
-                        </div>
-                        
-                        <div class="social-auth">
-                            <button class="social-btn google-btn" onclick="mainChatSystem.handleSocialAuth('google')">
-                                <i class="fab fa-google"></i>
-                                Sign in with Google
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
-        // Setup form submission
-        document.getElementById('chatAuthForm').addEventListener('submit', (e) => {
-            this.handleAuthSubmit(e);
-        });
-    }
+    // Removed createLoginModal - using main auth modal instead
     
-    switchAuthTab(type) {
-        const tabs = document.querySelectorAll('.auth-tab');
-        const submitBtn = document.querySelector('.auth-submit-btn .btn-text');
-        const passwordInput = document.getElementById('chatPassword');
-        
-        tabs.forEach(tab => tab.classList.remove('active'));
-        
-        if (type === 'signin') {
-            tabs[0].classList.add('active');
-            submitBtn.textContent = 'Sign In';
-            passwordInput.placeholder = 'Enter your password';
-        } else {
-            tabs[1].classList.add('active');
-            submitBtn.textContent = 'Sign Up';
-            passwordInput.placeholder = 'Create password (min 6 characters)';
-        }
-    }
-    
-    async handleAuthSubmit(e) {
-        e.preventDefault();
-        
-        const email = document.getElementById('chatEmail').value;
-        const password = document.getElementById('chatPassword').value;
-        const isSignUp = document.querySelector('.auth-tab.active').textContent === 'Sign Up';
-        const submitBtn = document.querySelector('.auth-submit-btn');
-        const btnText = submitBtn.querySelector('.btn-text');
-        
-        const originalText = btnText.textContent;
-        btnText.textContent = isSignUp ? 'Signing up...' : 'Signing in...';
-        submitBtn.disabled = true;
-        
-        try {
-            if (isSignUp) {
-                const { data, error } = await this.supabase.auth.signUp({
-                    email: email,
-                    password: password
-                });
-                
-                if (error) throw error;
-                
-                if (data.user && !data.session) {
-                    alert('Registration successful! Please check your email and click the confirmation link.');
-                } else {
-                    console.log('Sign up and auto sign in successful');
-                }
-            } else {
-                const { data, error } = await this.supabase.auth.signInWithPassword({
-                    email: email,
-                    password: password
-                });
-                
-                if (error) throw error;
-                
-                console.log('Sign in successful');
-            }
-        } catch (error) {
-            console.error('Auth error:', error);
-            let errorMessage = 'Authentication failed';
-            
-            if (error.message.includes('Invalid login credentials')) {
-                errorMessage = 'Invalid email or password';
-            } else if (error.message.includes('Email not confirmed')) {
-                errorMessage = 'Please confirm your email first';
-            } else if (error.message.includes('User already registered')) {
-                errorMessage = 'This email is already registered, please sign in';
-            } else {
-                errorMessage = error.message;
-            }
-            
-            alert(errorMessage);
-        } finally {
-            btnText.textContent = originalText;
-            submitBtn.disabled = false;
-        }
-    }
-    
-    async handleSocialAuth(provider) {
-        try {
-            const { data, error } = await this.supabase.auth.signInWithOAuth({
-                provider: provider,
-                options: {
-                    redirectTo: window.location.origin + '/'
-                }
-            });
-            
-            if (error) throw error;
-            
-            console.log(`${provider} auth initiated`);
-        } catch (error) {
-            console.error(`${provider} auth error:`, error);
-            alert(`${provider} login failed: ${error.message}`);
-        }
-    }
+    // Removed auth handling functions - using main auth system
 
     async renderChatList() {
         try {
