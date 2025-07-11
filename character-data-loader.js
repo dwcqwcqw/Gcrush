@@ -385,8 +385,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Navigation function for chat
 function navigateToChat(characterName) {
-    // Navigate to chat page with character parameter
-    window.location.href = `chat.html?character=${encodeURIComponent(characterName)}`;
+    console.log(`Starting chat with ${characterName}`);
+    
+    // Use the main chat system to start chat
+    if (window.mainChatSystem) {
+        window.mainChatSystem.startChat(characterName);
+    } else {
+        console.error('Main chat system not available');
+        alert('聊天系统暂时不可用，请稍后重试。');
+    }
 }
 
 // Export for other modules
