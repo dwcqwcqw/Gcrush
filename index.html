@@ -112,8 +112,48 @@
 
         <!-- Main Content -->
         <main class="main-content">
+            <!-- Chat Interface (hidden by default) -->
+            <div id="chatInterface" class="chat-interface" style="display: none;">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <button class="back-to-explore" onclick="backToExplore()">
+                            <i class="fas fa-arrow-left"></i>
+                        </button>
+                        <div class="chat-character-info">
+                            <img id="chatCharacterAvatar" src="" alt="" class="character-avatar">
+                            <div class="character-details">
+                                <h3 id="chatCharacterName"></h3>
+                                <span id="chatCharacterStatus">Online</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- Messages will be dynamically added here -->
+                    </div>
+                    
+                    <div class="chat-input-container">
+                        <div class="typing-indicator" id="typingIndicator" style="display: none;">
+                            <div class="typing-dots">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                            <span class="typing-text">Typing...</span>
+                        </div>
+                        
+                        <div class="chat-input-area">
+                            <input type="text" id="messageInput" placeholder="Type your message..." maxlength="500">
+                            <button id="sendButton" onclick="sendMessage()">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Hero Banner Carousel -->
-            <section class="hero-banner">
+            <section class="hero-banner" id="heroSection">
                 <div class="banner-carousel">
                     <!-- Banner 1 - Full Image -->
                     <div class="banner-slide active" data-slide="0">
@@ -150,12 +190,12 @@
             </section>
 
             <!-- Title Section -->
-            <section class="title-section">
+            <section class="title-section" id="titleSection">
                 <h1 class="page-title">Meet Your <span class="title-highlight">Soulmate</span></h1>
             </section>
 
             <!-- Character Lobby Section -->
-            <section class="character-lobby">
+            <section class="character-lobby" id="characterLobby">
                 <div class="character-grid">
                     <!-- Character cards will be dynamically loaded here -->
                 </div>
@@ -285,6 +325,7 @@
     <script src="candy-combined.js"></script>
     <script src="character-data-loader.js"></script>
     <script src="auth-simple.js"></script>
+    <script src="main-chat.js"></script>
     
     <!-- Password Reset Error Handler -->
     <script>
