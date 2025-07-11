@@ -137,6 +137,7 @@
                 <button class="test-button" onclick="loadFromDatabase()">Load from Database</button>
                 <button class="test-button" onclick="loadDefaultData()">Load Default Data</button>
                 <button class="test-button" onclick="inspectDatabase()">Inspect Database</button>
+                <button class="test-button" onclick="testWithServiceKey()">Test with Service Key</button>
                 <button class="test-button" onclick="clearLogs()">Clear Logs</button>
             </div>
             
@@ -305,77 +306,118 @@
             }
         }
         
-        async function inspectDatabase() {
+                async function inspectDatabase() {
             try {
                 console.log('=== DATABASE INSPECTION ===');
                 
-                // Check table structure
-                const { data: tableData, error: tableError } = await characterLoaderSupabase
+                // Test connection first
+                console.log('Testing basic connection...');
+                const { data: connectionTest, error: connectionError } = await characterLoaderSupabase
                     .from('characters')
-                    .select('*')
-                    .limit(1);
+                    .select('count', { count: 'exact', head: true });
                 
-                if (tableError) {
-                    console.error('Table access error:', tableError);
+                if (connectionError) {
+                    console.error('Connection test failed:', connectionError);
+                    console.error('Error code:', connectionError.code);
+                    console.error('Error message:', connectionError.message);
+                    console.error('Error details:', connectionError.details);
+                    console.error('Error hint:', connectionError.hint);
+                    
+                    // Check if it's an RLS issue
+                    if (connectionError.code === 'PGRST116' || connectionError.message.includes('permission')) {
+                        console.warn('🔒 This looks like a Row Level Security (RLS) issue!');
+                        console.warn('Solutions:');
+                        console.warn('1. Disable RLS on the characters table');
+                        console.warn('2. Create a policy that allows SELECT for anonymous users');
+                        console.warn('3. Use a service key instead of anon key');
+                    }
+                    
                     return;
                 }
                 
-                if (tableData && tableData.length > 0) {
-                    console.log('Sample record structure:', tableData[0]);
-                    console.log('Available columns:', Object.keys(tableData[0]));
+                console.log('Connection successful, checking data...');
+                
+                // Check different table name possibilities
+                const tableNames = ['characters', 'character', 'Characters', 'Character'];
+                
+                for (const tableName of tableNames) {
+                    console.log(`--- Testing table name: ${tableName} ---`);
+                    
+                    const { data, error, count } = await characterLoaderSupabase
+                        .from(tableName)
+                        .select('*', { count: 'exact' })
+                        .limit(1);
+                    
+                    if (error) {
+                        console.error(`Table ${tableName} error:`, error.message);
+                    } else {
+                        console.log(`Table ${tableName} - Count: ${count}, Sample:`, data);
+                        
+                        if (count > 0) {
+                            console.log(`✅ Found data in table: ${tableName}`);
+                            
+                            // Get all data from this table
+                            const { data: allData, error: allError } = await characterLoaderSupabase
+                                .from(tableName)
+                                .select('*')
+                                .order('number', { ascending: true });
+                            
+                            if (allError) {
+                                console.error('Error getting all data:', allError);
+                            } else {
+                                console.log('All data from working table:', allData);
+                                
+                                // Try to render this data
+                                if (allData && allData.length > 0) {
+                                    console.log('Attempting to render characters...');
+                                    renderCharacters(allData);
+                                }
+                            }
+                            
+                            break; // Found working table, stop testing
+                        }
+                    }
                 }
                 
-                // Check total count
-                const { count, error: countError } = await characterLoaderSupabase
+                // Test with service role key if available
+                console.log('--- Testing with direct SQL ---');
+                try {
+                    const { data: sqlData, error: sqlError } = await characterLoaderSupabase
+                        .rpc('get_characters'); // This would be a custom function
+                    
+                    if (sqlError) {
+                        console.log('Custom RPC not available (expected):', sqlError.message);
+                    } else {
+                        console.log('Custom RPC result:', sqlData);
+                    }
+                } catch (e) {
+                    console.log('RPC test skipped:', e.message);
+                }
+                
+                // Check if we can insert (to test permissions)
+                console.log('--- Testing insert permissions ---');
+                const testRecord = {
+                    name: 'Test Character',
+                    age: 25,
+                    number: 999
+                };
+                
+                const { data: insertData, error: insertError } = await characterLoaderSupabase
                     .from('characters')
-                    .select('*', { count: 'exact', head: true });
+                    .insert(testRecord)
+                    .select();
                 
-                if (countError) {
-                    console.error('Count query error:', countError);
+                if (insertError) {
+                    console.error('Insert test failed:', insertError);
                 } else {
-                    console.log(`Total records in database: ${count}`);
+                    console.log('Insert test successful:', insertData);
+                    
+                    // Clean up test record
+                    await characterLoaderSupabase
+                        .from('characters')
+                        .delete()
+                        .eq('number', 999);
                 }
-                
-                                 // Check all records
-                 const { data: allData, error: allError } = await characterLoaderSupabase
-                     .from('characters')
-                     .select('id, number, name, age, style')
-                     .order('number', { ascending: true });
-                 
-                 if (allError) {
-                     console.error('All records query error:', allError);
-                     console.error('Error details:', allError);
-                 } else {
-                     console.log('All character records:', allData);
-                 }
-                 
-                 // Test with different query approaches
-                 console.log('--- Testing different query approaches ---');
-                 
-                 // Try without ordering
-                 const { data: noOrderData, error: noOrderError } = await characterLoaderSupabase
-                     .from('characters')
-                     .select('*')
-                     .limit(5);
-                 
-                 if (noOrderError) {
-                     console.error('No order query error:', noOrderError);
-                 } else {
-                     console.log('No order query result:', noOrderData);
-                 }
-                 
-                 // Try with specific schema
-                 const { data: schemaData, error: schemaError } = await characterLoaderSupabase
-                     .schema('public')
-                     .from('characters')
-                     .select('*')
-                     .limit(5);
-                 
-                 if (schemaError) {
-                     console.error('Schema query error:', schemaError);
-                 } else {
-                     console.log('Schema query result:', schemaData);
-                 }
                 
                 console.log('=== INSPECTION COMPLETE ===');
                 
@@ -409,6 +451,49 @@
                     </div>
                 `;
                 console.error('Character rendering failed:', error);
+            }
+        }
+        
+        async function testWithServiceKey() {
+            try {
+                console.log('=== TESTING WITH SERVICE KEY ===');
+                
+                // Prompt user for service key
+                const serviceKey = prompt('Enter your Supabase Service Key (starts with eyJ...):', '');
+                
+                if (!serviceKey) {
+                    console.log('Service key test cancelled');
+                    return;
+                }
+                
+                // Create a new client with service key
+                const serviceClient = window.supabase.createClient(
+                    CHARACTER_LOADER_SUPABASE_URL,
+                    serviceKey
+                );
+                
+                console.log('Testing with service key...');
+                
+                // Test basic query
+                const { data, error, count } = await serviceClient
+                    .from('characters')
+                    .select('*', { count: 'exact' });
+                
+                if (error) {
+                    console.error('Service key test failed:', error);
+                } else {
+                    console.log(`✅ Service key test successful! Found ${count} records:`, data);
+                    
+                    if (data && data.length > 0) {
+                        console.log('Rendering characters with service key data...');
+                        renderCharacters(data);
+                    }
+                }
+                
+                console.log('=== SERVICE KEY TEST COMPLETE ===');
+                
+            } catch (error) {
+                console.error('Service key test failed:', error);
             }
         }
         
