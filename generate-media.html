@@ -119,7 +119,8 @@
                     <p class="subtitle">✨ Create stunning AI-generated images and videos ✨</p>
                 </div>
 
-                <div class="tab-container">
+                <div class="generation-box">
+                    <div class="tab-container">
                     <button class="tab-button active" data-tab="image">
                         <svg class="tab-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -260,6 +261,7 @@
                         </svg>
                         Generate
                     </button>
+                    </div>
                 </div>
 
                 <!-- Gallery Section -->
@@ -271,6 +273,17 @@
                 </div>
             </div>
         </main>
+    </div>
+
+    <!-- Fullscreen Preview -->
+    <div class="fullscreen-preview" id="fullscreenPreview">
+        <button class="fullscreen-close" onclick="closeFullscreen()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+        <div id="fullscreenContent"></div>
     </div>
 
     <!-- Auth Modal with Supabase Auth UI -->

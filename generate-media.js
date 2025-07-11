@@ -138,3 +138,176 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Gallery Management
+let galleryItems = JSON.parse(localStorage.getItem('galleryItems') || '[]');
+const galleryGrid = document.getElementById('galleryGrid');
+
+// Initialize gallery on page load
+document.addEventListener('DOMContentLoaded', () => {
+    updateGalleryDisplay();
+});
+
+// Update gallery display based on current tab
+function updateGalleryDisplay() {
+    const activeTab = document.querySelector('.tab-button.active').getAttribute('data-tab');
+    const filteredItems = galleryItems.filter(item => item.type === activeTab);
+    
+    // Sort by timestamp (newest first)
+    filteredItems.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+    // Clear gallery
+    galleryGrid.innerHTML = '';
+    
+    // Add generating item if exists
+    const generatingItem = filteredItems.find(item => item.status === 'generating');
+    if (generatingItem) {
+        const generatingEl = createGalleryItem(generatingItem);
+        galleryGrid.appendChild(generatingEl);
+    }
+    
+    // Add completed items
+    filteredItems.filter(item => item.status === 'completed').forEach(item => {
+        const itemEl = createGalleryItem(item);
+        galleryGrid.appendChild(itemEl);
+    });
+}
+
+// Create gallery item element
+function createGalleryItem(item) {
+    const div = document.createElement('div');
+    div.className = 'gallery-item glass-card';
+    
+    if (item.status === 'generating') {
+        div.classList.add('generating');
+        div.innerHTML = '<span class="status-text">Generating...</span>';
+    } else {
+        if (item.type === 'image') {
+            div.innerHTML = `
+                <img src="${item.url}" alt="Generated image">
+                <span class="timestamp">${formatTimestamp(item.timestamp)}</span>
+            `;
+        } else {
+            div.innerHTML = `
+                <video src="${item.url}" muted loop onmouseover="this.play()" onmouseout="this.pause()">
+                    Your browser does not support the video tag.
+                </video>
+                <div class="play-icon">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3"></polygon>
+                    </svg>
+                </div>
+                <span class="timestamp">${formatTimestamp(item.timestamp)}</span>
+            `;
+        }
+        
+        div.onclick = () => openFullscreen(item);
+    }
+    
+    return div;
+}
+
+// Format timestamp
+function formatTimestamp(timestamp) {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    
+    return date.toLocaleDateString();
+}
+
+// Update generate button to add items to gallery
+const originalGenerateClick = generateButton.onclick;
+generateButton.onclick = () => {
+    const mediaType = document.querySelector('.tab-button.active').getAttribute('data-tab');
+    
+    // Add generating item to gallery
+    const generatingItem = {
+        id: Date.now().toString(),
+        type: mediaType,
+        status: 'generating',
+        timestamp: new Date().toISOString()
+    };
+    
+    galleryItems.unshift(generatingItem);
+    localStorage.setItem('galleryItems', JSON.stringify(galleryItems));
+    updateGalleryDisplay();
+    
+    // Call original generate function
+    originalGenerateClick();
+    
+    // Simulate completion (replace with actual API callback)
+    setTimeout(() => {
+        // Update item status and add mock URL
+        const index = galleryItems.findIndex(item => item.id === generatingItem.id);
+        if (index !== -1) {
+            galleryItems[index].status = 'completed';
+            galleryItems[index].url = mediaType === 'image' 
+                ? `https://picsum.photos/400/400?random=${Date.now()}`
+                : 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+            
+            localStorage.setItem('galleryItems', JSON.stringify(galleryItems));
+            updateGalleryDisplay();
+        }
+    }, 3000);
+};
+
+// Fullscreen preview functions
+function openFullscreen(item) {
+    const preview = document.getElementById('fullscreenPreview');
+    const content = document.getElementById('fullscreenContent');
+    
+    if (item.type === 'image') {
+        content.innerHTML = `<img src="${item.url}" alt="Fullscreen preview">`;
+    } else {
+        content.innerHTML = `
+            <video src="${item.url}" controls autoplay>
+                Your browser does not support the video tag.
+            </video>
+        `;
+    }
+    
+    preview.classList.add('active');
+}
+
+function closeFullscreen() {
+    const preview = document.getElementById('fullscreenPreview');
+    const content = document.getElementById('fullscreenContent');
+    
+    preview.classList.remove('active');
+    
+    // Stop video if playing
+    const video = content.querySelector('video');
+    if (video) {
+        video.pause();
+    }
+    
+    // Clear content after animation
+    setTimeout(() => {
+        content.innerHTML = '';
+    }, 300);
+}
+
+// Close fullscreen on escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+        closeFullscreen();
+    }
+});
+
+// Update gallery when tab changes
+tabButtons.forEach(button => {
+    const originalClick = button.onclick;
+    button.onclick = (e) => {
+        if (originalClick) originalClick(e);
+        updateGalleryDisplay();
+    };
+});
