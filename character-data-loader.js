@@ -216,7 +216,7 @@ class CharacterDataLoader {
         const tagsHtml = this.generateTagsHtml(character.tag1, character.tag2, character.tag3);
         
         return `
-            <div class="character-card glass-card" data-character="${character.name}">
+            <div class="character-card glass-card" data-character="${character.name}" onclick="navigateToChat('${character.name}')">
                 <div class="character-image">
                     <img src="${imageUrl}" alt="${character.name}">
                     ${videoUrl ? `
@@ -229,6 +229,12 @@ class CharacterDataLoader {
                     <h3 class="character-name">${character.name} <span class="character-age">${character.age}</span></h3>
                     ${tagsHtml}
                     <p class="character-bio">${truncatedDescription}</p>
+                </div>
+                <div class="character-chat-overlay">
+                    <div class="chat-button">
+                        <i class="fas fa-comment"></i>
+                        <span>Chat Now</span>
+                    </div>
                 </div>
             </div>
         `;
@@ -383,6 +389,13 @@ document.addEventListener('DOMContentLoaded', () => {
     characterLoader.renderCharacterCards();
 });
 
+// Navigation function for chat
+function navigateToChat(characterName) {
+    // Navigate to chat page with character parameter
+    window.location.href = `chat.html?character=${encodeURIComponent(characterName)}`;
+}
+
 // Export for other modules
 window.CharacterDataLoader = CharacterDataLoader;
-window.characterLoader = characterLoader; 
+window.characterLoader = characterLoader;
+window.navigateToChat = navigateToChat; 

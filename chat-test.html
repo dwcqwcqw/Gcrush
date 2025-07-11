@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Test - Gcrush</title>
+    <link rel="stylesheet" href="candy-combined.css">
+    <link rel="stylesheet" href="chat.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        .test-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            z-index: 1000;
+            color: white;
+            min-width: 300px;
+        }
+        
+        .test-controls h3 {
+            margin-bottom: 15px;
+            color: #ff6b9d;
+        }
+        
+        .test-controls button {
+            display: block;
+            width: 100%;
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            background: #ff6b9d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        
+        .test-controls button:hover {
+            background: #c44569;
+        }
+        
+        .test-status {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        .status-success {
+            color: #4CAF50;
+        }
+        
+        .status-error {
+            color: #f44336;
+        }
+        
+        .status-info {
+            color: #2196F3;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Left Sidebar - Chat History -->
+        <div class="chat-sidebar">
+            <div class="sidebar-header">
+                <h2>Recent Chats</h2>
+                <button class="new-chat-btn" onclick="showCharacterSelection()">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <div class="chat-list" id="chatList">
+                <!-- Chat history will be populated here -->
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="chat-main">
+            <!-- Character Selection Screen -->
+            <div class="character-selection" id="characterSelection">
+                <h2>Choose a Character to Chat With</h2>
+                <div class="character-grid-chat" id="characterGridChat">
+                    <!-- Characters will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Chat Interface -->
+            <div class="chat-interface" id="chatInterface" style="display: none;">
+                <!-- Chat Header -->
+                <div class="chat-header">
+                    <div class="character-info">
+                        <img class="character-avatar" id="characterAvatar" src="" alt="">
+                        <div class="character-details">
+                            <h3 id="characterName"></h3>
+                            <span class="character-status">Online</span>
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="action-btn" onclick="clearChat()">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button class="action-btn" onclick="showCharacterSelection()">
+                            <i class="fas fa-users"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages -->
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Messages will be populated here -->
+                </div>
+
+                <!-- Chat Input -->
+                <div class="chat-input-container">
+                    <div class="chat-input-wrapper">
+                        <input type="text" 
+                               id="messageInput" 
+                               placeholder="Send a message..." 
+                               onkeypress="handleKeyPress(event)">
+                        <button class="send-btn" onclick="sendMessage()">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Test Controls -->
+    <div class="test-controls">
+        <h3>Chat Test Controls</h3>
+        <button onclick="testDatabaseConnection()">Test Database Connection</button>
+        <button onclick="testCharacterLoad()">Test Character Loading</button>
+        <button onclick="testChatSession()">Test Chat Session Creation</button>
+        <button onclick="testRunPodAPI()">Test RunPod API</button>
+        <button onclick="simulateMessage()">Simulate Message</button>
+        <button onclick="clearTestData()">Clear Test Data</button>
+        
+        <div class="test-status" id="testStatus">
+            <div class="status-info">Ready for testing...</div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>AI is thinking...</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    <script src="character-data-loader.js"></script>
+    <script src="chat.js"></script>
+    
+    <script>
+        // Test functions
+        function updateTestStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('testStatus');
+            statusDiv.innerHTML = `<div class="status-${type}">${message}</div>`;
+        }
+        
+        async function testDatabaseConnection() {
+            updateTestStatus('Testing database connection...', 'info');
+            try {
+                const { data, error } = await chatSystem.supabase
+                    .from('characters')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) throw error;
+                updateTestStatus('✅ Database connection successful!', 'success');
+            } catch (error) {
+                updateTestStatus(`❌ Database connection failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testCharacterLoad() {
+            updateTestStatus('Testing character loading...', 'info');
+            try {
+                await chatSystem.loadCharacters();
+                updateTestStatus(`✅ Loaded ${chatSystem.characters.length} characters`, 'success');
+            } catch (error) {
+                updateTestStatus(`❌ Character loading failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testChatSession() {
+            updateTestStatus('Testing chat session creation...', 'info');
+            try {
+                if (chatSystem.characters.length === 0) {
+                    await chatSystem.loadCharacters();
+                }
+                
+                const testCharacter = chatSystem.characters[0];
+                if (!testCharacter) {
+                    throw new Error('No characters available for testing');
+                }
+                
+                await chatSystem.createChatSession(testCharacter);
+                updateTestStatus(`✅ Chat session created: ${chatSystem.currentSessionId}`, 'success');
+            } catch (error) {
+                updateTestStatus(`❌ Chat session creation failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testRunPodAPI() {
+            updateTestStatus('Testing RunPod API...', 'info');
+            try {
+                const testMessage = "Hello, how are you?";
+                
+                // Check if API key is set
+                if (chatSystem.runpodApiKey === 'YOUR_RUNPOD_API_KEY_HERE') {
+                    updateTestStatus('⚠️ RunPod API key not configured', 'error');
+                    return;
+                }
+                
+                const response = await chatSystem.getAIResponse(testMessage);
+                updateTestStatus(`✅ RunPod API response: "${response.substring(0, 50)}..."`, 'success');
+            } catch (error) {
+                updateTestStatus(`❌ RunPod API test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function simulateMessage() {
+            updateTestStatus('Simulating message...', 'info');
+            try {
+                if (!chatSystem.currentCharacter) {
+                    await testChatSession();
+                }
+                
+                chatSystem.showChatInterface();
+                await chatSystem.addMessage('user', 'Hello! This is a test message.', false);
+                await chatSystem.addMessage('assistant', 'Hi there! I received your test message. How can I help you today?', false);
+                
+                updateTestStatus('✅ Message simulation complete', 'success');
+            } catch (error) {
+                updateTestStatus(`❌ Message simulation failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function clearTestData() {
+            updateTestStatus('Clearing test data...', 'info');
+            try {
+                // Clear chat messages container
+                const messagesContainer = document.getElementById('chatMessages');
+                messagesContainer.innerHTML = '';
+                
+                // Reset chat system state
+                chatSystem.currentCharacter = null;
+                chatSystem.currentSessionId = null;
+                chatSystem.showCharacterSelection();
+                
+                updateTestStatus('✅ Test data cleared', 'success');
+            } catch (error) {
+                updateTestStatus(`❌ Failed to clear test data: ${error.message}`, 'error');
+            }
+        }
+        
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            updateTestStatus('Chat system initialized. Ready for testing!', 'success');
+        });
+    </script>
+</body>
+</html> 
