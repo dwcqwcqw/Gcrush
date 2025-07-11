@@ -392,7 +392,7 @@ function navigateToChat(characterName) {
         window.mainChatSystem.startChat(characterName);
     } else {
         console.error('Main chat system not available');
-        alert('聊天系统暂时不可用，请稍后重试。');
+        // Don't show alert, just log the error
     }
 }
 

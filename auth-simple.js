@@ -546,9 +546,8 @@ async function handleSocialAuth(provider) {
     }, 10000);
     
     try {
-        // BOTH Google and Twitter should use the Supabase callback URL
-        // This avoids issues with dynamic Cloudflare Pages URLs
-        const redirectUrl = 'https://kuflobojizyttadwcbhe.supabase.co/auth/v1/callback';
+        // Use the current page URL for redirect after OAuth
+        const redirectUrl = window.location.origin + '/';
         
         // Log current environment for debugging
         console.log(`OAuth Debug Info for ${provider}:`);

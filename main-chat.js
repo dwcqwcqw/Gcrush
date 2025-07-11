@@ -29,6 +29,11 @@ class MainChatSystem {
                 this.currentUser = session.user;
                 console.log('User signed in:', this.currentUser.email);
                 
+                // Create chat session if we're in a chat and don't have one
+                if (this.currentCharacter && !this.currentSessionId) {
+                    await this.createChatSession(this.currentCharacter);
+                }
+                
                 // If there's a pending message, send it now
                 if (this.pendingMessage) {
                     const message = this.pendingMessage;
@@ -78,15 +83,17 @@ class MainChatSystem {
             // Show chat interface
             this.showChatInterface();
             
-            // Create or load chat session
-            await this.createChatSession(character);
+            // Create or load chat session (only if user is logged in)
+            if (this.currentUser) {
+                await this.createChatSession(character);
+            }
             
             // Send initial messages
             await this.sendInitialMessages();
             
         } catch (error) {
             console.error('Error starting chat:', error);
-            alert('无法开始聊天，请稍后重试。');
+            alert('Unable to start chat. Please try again.');
         }
     }
     
@@ -107,7 +114,7 @@ class MainChatSystem {
     
     async createChatSession(character) {
         try {
-            const userId = this.currentUser ? this.currentUser.id : 'anonymous';
+            const userId = this.currentUser.id;
             
             const { data, error } = await this.supabase
                 .from('chat_sessions')
@@ -128,7 +135,7 @@ class MainChatSystem {
             
         } catch (error) {
             console.error('Error creating chat session:', error);
-            this.currentSessionId = 'temp_' + Date.now();
+            // Don't create temp session - wait for user to login
         }
     }
     
@@ -210,9 +217,15 @@ class MainChatSystem {
     }
     
     async saveMessageToDatabase(role, content) {
+        // Only save to database if user is logged in and has a session
+        if (!this.currentUser || !this.currentSessionId) {
+            console.log('Skipping database save - user not logged in or no session');
+            return;
+        }
+        
         try {
             const messageType = role === 'assistant' ? 'character' : role;
-            const userId = this.currentUser ? this.currentUser.id : 'anonymous';
+            const userId = this.currentUser.id;
             
             const { error } = await this.supabase
                 .from('chat_messages')
@@ -325,44 +338,44 @@ class MainChatSystem {
             <div id="chatLoginModal" class="auth-modal-overlay" style="display: none;">
                 <div class="auth-modal-content">
                     <div class="auth-modal-header">
-                        <h2>登录以继续聊天</h2>
+                        <h2>Login to Continue Chat</h2>
                         <button class="auth-modal-close" onclick="mainChatSystem.closeLoginModal()">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
                     
                     <div class="auth-modal-body">
-                        <p>请登录以保存您的聊天记录并继续对话。</p>
+                        <p>Please login to save your chat history and continue the conversation.</p>
                         
                         <div class="auth-tabs">
-                            <button class="auth-tab active" onclick="mainChatSystem.switchAuthTab('signin')">登录</button>
-                            <button class="auth-tab" onclick="mainChatSystem.switchAuthTab('signup')">注册</button>
+                            <button class="auth-tab active" onclick="mainChatSystem.switchAuthTab('signin')">Sign In</button>
+                            <button class="auth-tab" onclick="mainChatSystem.switchAuthTab('signup')">Sign Up</button>
                         </div>
                         
                         <form id="chatAuthForm" class="auth-form">
                             <div class="form-group">
-                                <label for="chatEmail">邮箱</label>
-                                <input type="email" id="chatEmail" required placeholder="请输入您的邮箱">
+                                <label for="chatEmail">Email</label>
+                                <input type="email" id="chatEmail" required placeholder="Enter your email">
                             </div>
                             
                             <div class="form-group">
-                                <label for="chatPassword">密码</label>
-                                <input type="password" id="chatPassword" required placeholder="请输入密码">
+                                <label for="chatPassword">Password</label>
+                                <input type="password" id="chatPassword" required placeholder="Enter your password">
                             </div>
                             
                             <button type="submit" class="auth-submit-btn">
-                                <span class="btn-text">登录</span>
+                                <span class="btn-text">Sign In</span>
                             </button>
                         </form>
                         
                         <div class="auth-divider">
-                            <span>或</span>
+                            <span>or</span>
                         </div>
                         
                         <div class="social-auth">
                             <button class="social-btn google-btn" onclick="mainChatSystem.handleSocialAuth('google')">
                                 <i class="fab fa-google"></i>
-                                使用 Google 登录
+                                Sign in with Google
                             </button>
                         </div>
                     </div>
@@ -387,12 +400,12 @@ class MainChatSystem {
         
         if (type === 'signin') {
             tabs[0].classList.add('active');
-            submitBtn.textContent = '登录';
-            passwordInput.placeholder = '请输入密码';
+            submitBtn.textContent = 'Sign In';
+            passwordInput.placeholder = 'Enter your password';
         } else {
             tabs[1].classList.add('active');
-            submitBtn.textContent = '注册';
-            passwordInput.placeholder = '请设置密码（至少6位）';
+            submitBtn.textContent = 'Sign Up';
+            passwordInput.placeholder = 'Create password (min 6 characters)';
         }
     }
     
@@ -401,12 +414,12 @@ class MainChatSystem {
         
         const email = document.getElementById('chatEmail').value;
         const password = document.getElementById('chatPassword').value;
-        const isSignUp = document.querySelector('.auth-tab.active').textContent === '注册';
+        const isSignUp = document.querySelector('.auth-tab.active').textContent === 'Sign Up';
         const submitBtn = document.querySelector('.auth-submit-btn');
         const btnText = submitBtn.querySelector('.btn-text');
         
         const originalText = btnText.textContent;
-        btnText.textContent = isSignUp ? '注册中...' : '登录中...';
+        btnText.textContent = isSignUp ? 'Signing up...' : 'Signing in...';
         submitBtn.disabled = true;
         
         try {
@@ -419,7 +432,7 @@ class MainChatSystem {
                 if (error) throw error;
                 
                 if (data.user && !data.session) {
-                    alert('注册成功！请检查您的邮箱并点击确认链接。');
+                    alert('Registration successful! Please check your email and click the confirmation link.');
                 } else {
                     console.log('Sign up and auto sign in successful');
                 }
@@ -435,14 +448,14 @@ class MainChatSystem {
             }
         } catch (error) {
             console.error('Auth error:', error);
-            let errorMessage = '认证失败';
+            let errorMessage = 'Authentication failed';
             
             if (error.message.includes('Invalid login credentials')) {
-                errorMessage = '邮箱或密码错误';
+                errorMessage = 'Invalid email or password';
             } else if (error.message.includes('Email not confirmed')) {
-                errorMessage = '请先确认您的邮箱';
+                errorMessage = 'Please confirm your email first';
             } else if (error.message.includes('User already registered')) {
-                errorMessage = '该邮箱已注册，请直接登录';
+                errorMessage = 'This email is already registered, please sign in';
             } else {
                 errorMessage = error.message;
             }
@@ -459,7 +472,7 @@ class MainChatSystem {
             const { data, error } = await this.supabase.auth.signInWithOAuth({
                 provider: provider,
                 options: {
-                    redirectTo: window.location.href
+                    redirectTo: window.location.origin + '/'
                 }
             });
             
@@ -468,7 +481,7 @@ class MainChatSystem {
             console.log(`${provider} auth initiated`);
         } catch (error) {
             console.error(`${provider} auth error:`, error);
-            alert(`${provider} 登录失败: ${error.message}`);
+            alert(`${provider} login failed: ${error.message}`);
         }
     }
 }
