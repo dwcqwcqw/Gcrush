@@ -72,7 +72,7 @@ class ChatSystem {
                         images
                     )
                 `)
-                .order('updated_at', { ascending: false });
+                .order('last_message_at', { ascending: false, nullsLast: true });
             
             if (error) throw error;
             
@@ -157,9 +157,9 @@ class ChatSystem {
                 (Array.isArray(character.images) ? character.images[0] : character.images) :
                 this.getCharacterImage(character);
             
-            const lastMessage = session.last_message || 'Start chatting...';
+            const lastMessage = session.session_name || `Chat with ${character?.name || 'Unknown'}`;
             const truncatedMessage = this.truncateText(lastMessage, 35);
-            const timeAgo = this.formatTimeAgo(session.updated_at);
+            const timeAgo = this.formatTimeAgo(session.last_message_at || session.updated_at);
             
             return `
                 <div class="chat-item ${session.id === this.currentSessionId ? 'active' : ''}" 
@@ -200,7 +200,7 @@ class ChatSystem {
                 .insert({
                     character_id: character.id,
                     user_id: 'anonymous', // Replace with actual user ID when auth is implemented
-                    last_message: '',
+                    session_name: `Chat with ${character.name}`,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 })
@@ -243,7 +243,7 @@ class ChatSystem {
             // Load messages
             const { data: messages, error: messagesError } = await this.supabase
                 .from('chat_messages')
-                .select('*')
+                .select('message_type, content, created_at')
                 .eq('session_id', sessionId)
                 .order('created_at', { ascending: true });
             
@@ -378,22 +378,25 @@ class ChatSystem {
     
     async saveMessageToDatabase(role, content) {
         try {
+            const messageType = role === 'assistant' ? 'character' : role;
             const { error } = await this.supabase
                 .from('chat_messages')
                 .insert({
                     session_id: this.currentSessionId,
-                    role: role,
+                    user_id: 'anonymous', // Replace with actual user ID when auth is implemented
+                    character_id: this.currentCharacter?.id,
+                    message_type: messageType,
                     content: content,
                     created_at: new Date().toISOString()
                 });
             
             if (error) throw error;
             
-            // Update session's last message and timestamp
+            // Update session's timestamp
             await this.supabase
                 .from('chat_sessions')
                 .update({
-                    last_message: content,
+                    last_message_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', this.currentSessionId);
@@ -497,14 +500,17 @@ class ChatSystem {
         try {
             const { data, error } = await this.supabase
                 .from('chat_messages')
-                .select('role, content')
+                .select('message_type, content')
                 .eq('session_id', this.currentSessionId)
                 .order('created_at', { ascending: false })
                 .limit(15);
             
             if (!error && data) {
-                // Reverse to get chronological order
-                const recentMessages = data.reverse();
+                // Reverse to get chronological order and convert message_type to role
+                const recentMessages = data.reverse().map(msg => ({
+                    role: msg.message_type === 'character' ? 'assistant' : msg.message_type,
+                    content: msg.content
+                }));
                 messages.push(...recentMessages);
             }
         } catch (error) {
@@ -595,7 +601,8 @@ class ChatSystem {
         messagesContainer.innerHTML = '';
         
         messages.forEach(message => {
-            const messageElement = this.createMessageElement(message.role, message.content);
+            const role = message.message_type === 'character' ? 'assistant' : message.message_type;
+            const messageElement = this.createMessageElement(role, message.content);
             messagesContainer.appendChild(messageElement);
         });
         

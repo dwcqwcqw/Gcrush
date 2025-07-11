@@ -6,8 +6,13 @@ const CONFIG = {
     
     // RunPod Configuration
     RUNPOD_TEXT_ENDPOINT_ID: '4cx6jtjdx6hdhr',
-    RUNPOD_API_URL: `https://api.runpod.ai/v2/${window.RUNPOD_TEXT_ENDPOINT_ID || '4cx6jtjdx6hdhr'}/`,
-    RUNPOD_API_KEY: window.RUNPOD_API_KEY || 'YOUR_RUNPOD_API_KEY_HERE',
+    get RUNPOD_API_URL() {
+        const endpointId = window.RUNPOD_TEXT_ENDPOINT_ID || this.RUNPOD_TEXT_ENDPOINT_ID;
+        return `https://api.runpod.ai/v2/${endpointId}/`;
+    },
+    get RUNPOD_API_KEY() {
+        return window.RUNPOD_API_KEY || 'YOUR_RUNPOD_API_KEY_HERE';
+    },
     MODEL_NAME: 'L3.2-8X4B.gguf',
     
     // Chat Configuration
