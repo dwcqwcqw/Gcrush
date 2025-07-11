@@ -41,6 +41,13 @@ logs/
 .env.test.local
 .env.production.local
 
+# Local configuration files with sensitive information
+config.local.js
+*.local.js
+
+# Generated environment configuration
+env-config.js
+
 # Resources folder (local assets only)
 Resources/
 Asset/

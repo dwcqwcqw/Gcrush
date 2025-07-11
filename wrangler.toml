@@ -1,0 +1,13 @@
+# Cloudflare Pages configuration
+name = "gcrush-chat-system"
+compatibility_date = "2024-01-01"
+
+[env.production]
+# Environment variables will be set in Cloudflare Pages dashboard
+# RUNPOD_API_KEY = "your-api-key-here"
+# RUNPOD_TEXT_ENDPOINT_ID = "4cx6jtjdx6hdhr"
+
+[build]
+command = "npm run build"
+cwd = "."
+publish = "." 
