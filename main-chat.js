@@ -78,6 +78,7 @@ class MainChatSystem {
         // Enter key to send message
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && document.getElementById('messageInput') === document.activeElement) {
+                console.log('Enter key pressed in message input');
                 e.preventDefault();
                 this.sendMessage();
             }
@@ -220,24 +221,36 @@ class MainChatSystem {
     }
     
     async sendMessage() {
+        console.log('[sendMessage] Called');
         const input = document.getElementById('messageInput');
         if (!input) {
-            console.error('Message input not found');
+            console.error('[sendMessage] Message input not found');
             return;
         }
         
         const message = input.value.trim();
+        console.log('[sendMessage] Message:', message);
         
-        if (!message || this.isTyping) return;
+        if (!message) {
+            console.log('[sendMessage] Empty message, returning');
+            return;
+        }
+        
+        if (this.isTyping) {
+            console.log('[sendMessage] Already typing, returning');
+            return;
+        }
         
         // Check if user is authenticated
         if (!this.currentUser) {
+            console.log('[sendMessage] No user, showing login modal');
             this.pendingMessage = message;
             input.value = '';
             this.showLoginModal();
             return;
         }
         
+        console.log('[sendMessage] Processing message...');
         await this.processMessage(message);
     }
     

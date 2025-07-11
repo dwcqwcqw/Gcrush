@@ -158,7 +158,7 @@
                         
                         <div class="chat-input-area">
                             <input type="text" id="messageInput" placeholder="Type your message..." maxlength="500">
-                            <button id="sendButton" onclick="sendMessage()">
+                            <button id="sendButton" onclick="console.log('onclick triggered'); sendMessage()">
                                 <i class="fas fa-paper-plane"></i>
                             </button>
                         </div>
@@ -340,6 +340,7 @@
     <script src="character-data-loader.js?v=2.0"></script>
     <script src="auth-simple.js?v=2.0"></script>
     <script src="main-chat.js?v=2.0"></script>
+    <script src="chat-debug.js"></script>
     
 
 </body>

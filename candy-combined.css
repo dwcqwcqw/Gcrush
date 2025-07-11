@@ -1327,7 +1327,7 @@ ul {
     height: 60px;
     background-color: var(--bg-color);
     border-bottom: 1px solid var(--border-color);
-    z-index: 100;
+    z-index: 1001;
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
 }
@@ -2826,10 +2826,11 @@ ul {
 /* Chat Interface - New Design */
 .chat-interface {
     width: 100%;
-    height: calc(100vh - 80px);
+    height: calc(100vh - 60px);
     display: flex;
     position: relative;
     overflow: hidden;
+    margin-top: 60px;
 }
 
 /* Character Background */
