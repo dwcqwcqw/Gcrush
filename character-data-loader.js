@@ -230,12 +230,6 @@ class CharacterDataLoader {
                     ${tagsHtml}
                     <p class="character-bio">${truncatedDescription}</p>
                 </div>
-                <div class="character-chat-overlay">
-                    <div class="chat-button">
-                        <i class="fas fa-comment"></i>
-                        <span>Chat Now</span>
-                    </div>
-                </div>
             </div>
         `;
     }

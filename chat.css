@@ -212,8 +212,8 @@ body {
     bottom: 0;
     background-image: var(--character-bg);
     background-size: cover;
-    background-position: center;
-    opacity: 0.1;
+    background-position: center top;
+    opacity: 0.15;
     z-index: -1;
 }
 
@@ -312,15 +312,10 @@ body {
 
 .message.user {
     align-self: flex-end;
-    flex-direction: row-reverse;
 }
 
 .message-avatar {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    object-fit: cover;
-    flex-shrink: 0;
+    display: none;
 }
 
 .message-content {
@@ -344,6 +339,17 @@ body {
     word-wrap: break-word;
 }
 
+/* Special text styling for actions and situations */
+.message-text .action-text {
+    color: #FFA500;
+    font-style: italic;
+}
+
+.message-text .situation-text {
+    color: #FFA500;
+    font-style: italic;
+}
+
 .message-time {
     font-size: 11px;
     color: rgba(255, 255, 255, 0.5);
@@ -356,6 +362,10 @@ body {
     gap: 12px;
     max-width: 70%;
     animation: messageSlideIn 0.3s ease;
+}
+
+.typing-indicator .message-avatar {
+    display: none;
 }
 
 .typing-content {

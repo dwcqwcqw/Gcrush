@@ -127,10 +127,10 @@ class ChatSystem {
             const character = session.characters;
             const imageUrl = character && character.images ? 
                 (Array.isArray(character.images) ? character.images[0] : character.images) :
-                'https://via.placeholder.com/40x40/ff6b9d/ffffff?text=' + (character?.name?.[0] || 'C');
+                this.getCharacterImage(character);
             
             const lastMessage = session.last_message || 'Start chatting...';
-            const truncatedMessage = this.truncateText(lastMessage, 40);
+            const truncatedMessage = this.truncateText(lastMessage, 35);
             const timeAgo = this.formatTimeAgo(session.updated_at);
             
             return `
@@ -158,7 +158,7 @@ class ChatSystem {
         // Create new chat session
         await this.createChatSession(character);
         
-        // Show chat interface
+        // Show chat interface directly (skip character selection)
         this.showChatInterface();
         
         // Send initial messages
@@ -270,11 +270,11 @@ class ChatSystem {
         
         const messages = [];
         
-        // Add situation message if available
+        // Add situation message if available (marked as situation text)
         if (this.currentCharacter.situation) {
             messages.push({
                 role: 'assistant',
-                content: this.currentCharacter.situation
+                content: `<${this.currentCharacter.situation}>`
             });
         }
         
@@ -336,12 +336,9 @@ class ChatSystem {
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}`;
         
-        const isUser = role === 'user';
-        const avatar = isUser ? this.userAvatar : this.getCharacterImage(this.currentCharacter);
         const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         
         messageDiv.innerHTML = `
-            <img class="message-avatar" src="${avatar}" alt="${isUser ? 'You' : this.currentCharacter?.name}">
             <div class="message-content">
                 <div class="message-text">${this.formatMessage(content)}</div>
                 <div class="message-time">${time}</div>
@@ -424,11 +421,47 @@ class ChatSystem {
     async buildConversationHistory(userMessage) {
         const messages = [];
         
-        // Add system prompt
-        if (this.currentCharacter && this.currentCharacter.system_prompt) {
+        // Add comprehensive system prompt with all character information
+        if (this.currentCharacter) {
+            let systemPrompt = '';
+            
+            // Add main system prompt
+            if (this.currentCharacter.system_prompt) {
+                systemPrompt += this.currentCharacter.system_prompt + '\n\n';
+            }
+            
+            // Add character details
+            systemPrompt += `Character Details:\n`;
+            systemPrompt += `Name: ${this.currentCharacter.name}\n`;
+            systemPrompt += `Age: ${this.currentCharacter.age}\n`;
+            systemPrompt += `Style: ${this.currentCharacter.style || 'N/A'}\n`;
+            
+            if (this.currentCharacter.description) {
+                systemPrompt += `Description: ${this.currentCharacter.description}\n`;
+            }
+            
+            // Add situation context
+            if (this.currentCharacter.situation) {
+                systemPrompt += `\nCurrent Situation: ${this.currentCharacter.situation}\n`;
+            }
+            
+            // Add greeting context
+            if (this.currentCharacter.greeting) {
+                systemPrompt += `Default Greeting: ${this.currentCharacter.greeting}\n`;
+            }
+            
+            // Add personality tags
+            const tags = [this.currentCharacter.tag1, this.currentCharacter.tag2, this.currentCharacter.tag3]
+                .filter(tag => tag && tag.trim() !== '');
+            if (tags.length > 0) {
+                systemPrompt += `Personality Tags: ${tags.join(', ')}\n`;
+            }
+            
+            systemPrompt += '\nPlease respond in character, maintaining consistency with these traits and the established conversation context.';
+            
             messages.push({
                 role: 'system',
-                content: this.currentCharacter.system_prompt
+                content: systemPrompt
             });
         }
         
@@ -439,7 +472,7 @@ class ChatSystem {
                 .select('role, content')
                 .eq('session_id', this.currentSessionId)
                 .order('created_at', { ascending: false })
-                .limit(10);
+                .limit(15);
             
             if (!error && data) {
                 // Reverse to get chronological order
@@ -479,10 +512,7 @@ class ChatSystem {
         typingDiv.className = 'typing-indicator';
         typingDiv.id = 'typingIndicator';
         
-        const avatar = this.getCharacterImage(this.currentCharacter);
-        
         typingDiv.innerHTML = `
-            <img class="message-avatar" src="${avatar}" alt="${this.currentCharacter?.name}">
             <div class="typing-content">
                 <div class="typing-dots">
                     <div class="typing-dot"></div>
@@ -574,7 +604,9 @@ class ChatSystem {
         return content
             .replace(/\n/g, '<br>')
             .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>');
+            .replace(/\*(.*?)\*/g, '<em>$1</em>')
+            .replace(/<([^>]+)>/g, '<span class="action-text">$1</span>')
+            .replace(/(^.*situation.*$)/gim, '<span class="situation-text">$1</span>');
     }
     
     formatTimeAgo(timestamp) {

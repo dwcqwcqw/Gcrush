@@ -6,7 +6,7 @@ const CONFIG = {
     
     // RunPod Configuration
     RUNPOD_API_URL: 'https://api.runpod.ai/v2/4cx6jtjdx6hdhr/',
-    RUNPOD_API_KEY: 'YOUR_RUNPOD_API_KEY_HERE', // Replace with actual API key
+    RUNPOD_API_KEY: 'YOUR_RUNPOD_API_KEY_HERE', // Replace with actual API key in production
     MODEL_NAME: 'L3.2-8X4B.gguf',
     
     // Chat Configuration
