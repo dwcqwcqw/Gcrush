@@ -67,7 +67,8 @@ export async function onRequestPost(context) {
                     prompt: prompt,
                     max_tokens: 300,
                     temperature: 0.8,
-                    top_p: 0.9
+                    top_p: 0.9,
+                    model: 'L3.2-8X4B.gguf'  // Specify the model
                 }
             })
         });

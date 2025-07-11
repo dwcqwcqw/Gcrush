@@ -217,9 +217,10 @@ class MainChatSystem {
             
         } catch (error) {
             console.error('Error creating chat session:', error);
-            // Create a temporary session ID for this chat
-            this.currentSessionId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-            console.log('Using temporary session ID:', this.currentSessionId);
+            // Don't set a session ID if we can't create one in the database
+            // This prevents UUID format errors
+            this.currentSessionId = null;
+            console.log('No session created - messages will not be persisted');
         }
     }
     
@@ -402,7 +403,7 @@ class MainChatSystem {
                 body: JSON.stringify({
                     character: this.currentCharacter,
                     message: userMessage,
-                    sessionId: this.currentSessionId
+                    sessionId: this.currentSessionId || undefined  // Don't send null/invalid session IDs
                 })
             });
             
