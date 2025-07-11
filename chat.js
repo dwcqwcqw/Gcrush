@@ -6,6 +6,8 @@ class ChatSystem {
         this.characters = [];
         this.chatSessions = [];
         this.isTyping = false;
+        this.currentUser = null;
+        this.pendingMessage = null; // Store message when user needs to login
         
         // Use configuration from config.js
         this.userAvatar = CONFIG.USER_AVATAR;
@@ -25,6 +27,9 @@ class ChatSystem {
     }
     
     async init() {
+        // Setup authentication first
+        await this.setupAuthentication();
+        
         await this.loadCharacters();
         await this.loadChatSessions();
         this.setupEventListeners();
@@ -63,6 +68,8 @@ class ChatSystem {
     
     async loadChatSessions() {
         try {
+            const userId = this.currentUser ? this.currentUser.id : 'anonymous';
+            
             const { data, error } = await this.supabase
                 .from('chat_sessions')
                 .select(`
@@ -72,6 +79,7 @@ class ChatSystem {
                         images
                     )
                 `)
+                .eq('user_id', userId)
                 .order('last_message_at', { ascending: false, nullsLast: true });
             
             if (error) throw error;
@@ -195,11 +203,13 @@ class ChatSystem {
     
     async createChatSession(character) {
         try {
+            const userId = this.currentUser ? this.currentUser.id : 'anonymous';
+            
             const { data, error } = await this.supabase
                 .from('chat_sessions')
                 .insert({
                     character_id: character.id,
-                    user_id: 'anonymous', // Replace with actual user ID when auth is implemented
+                    user_id: userId,
                     session_name: `Chat with ${character.name}`,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
@@ -327,6 +337,17 @@ class ChatSystem {
         
         if (!message || this.isTyping) return;
         
+        // Check if user is authenticated
+        if (!this.currentUser) {
+            // Store the pending message
+            this.pendingMessage = message;
+            // Clear input
+            input.value = '';
+            // Show login modal
+            this.showLoginModal();
+            return;
+        }
+        
         // Clear input
         input.value = '';
         
@@ -379,11 +400,13 @@ class ChatSystem {
     async saveMessageToDatabase(role, content) {
         try {
             const messageType = role === 'assistant' ? 'character' : role;
+            const userId = this.currentUser ? this.currentUser.id : 'anonymous';
+            
             const { error } = await this.supabase
                 .from('chat_messages')
                 .insert({
                     session_id: this.currentSessionId,
-                    user_id: 'anonymous', // Replace with actual user ID when auth is implemented
+                    user_id: userId,
                     character_id: this.currentCharacter?.id,
                     message_type: messageType,
                     content: content,
@@ -699,6 +722,237 @@ class ChatSystem {
         drawer.classList.remove('open');
         overlay.classList.remove('active');
         main.classList.remove('drawer-open');
+    }
+    
+    async setupAuthentication() {
+        // Setup auth state listener
+        this.supabase.auth.onAuthStateChange(async (event, session) => {
+            console.log('Auth state changed:', event, session);
+            
+            if (event === 'SIGNED_IN' && session) {
+                this.currentUser = session.user;
+                console.log('User signed in:', this.currentUser.email);
+                
+                // Reload chat sessions for this user
+                await this.loadChatSessions();
+                this.renderChatList();
+                
+                // If there's a pending message, send it now
+                if (this.pendingMessage) {
+                    const message = this.pendingMessage;
+                    this.pendingMessage = null;
+                    
+                    // Add user message
+                    await this.addMessage('user', message, true);
+                    
+                    // Show typing indicator
+                    this.showTypingIndicator();
+                    
+                    // Get AI response
+                    try {
+                        const response = await this.getAIResponse(message);
+                        this.hideTypingIndicator();
+                        await this.addMessage('assistant', response, true);
+                    } catch (error) {
+                        console.error('Error getting AI response:', error);
+                        this.hideTypingIndicator();
+                        await this.addMessage('assistant', 'Sorry, I encountered an error. Please try again.', true);
+                    }
+                }
+                
+                // Close login modal if open
+                this.closeLoginModal();
+                
+            } else if (event === 'SIGNED_OUT') {
+                this.currentUser = null;
+                console.log('User signed out');
+                
+                // Clear chat sessions
+                this.chatSessions = [];
+                this.renderChatList();
+            }
+        });
+        
+        // Check for existing session
+        const { data: { session } } = await this.supabase.auth.getSession();
+        if (session) {
+            this.currentUser = session.user;
+            console.log('Existing session found:', this.currentUser.email);
+        }
+    }
+    
+    showLoginModal() {
+        // Create login modal if it doesn't exist
+        let loginModal = document.getElementById('chatLoginModal');
+        if (!loginModal) {
+            this.createLoginModal();
+            loginModal = document.getElementById('chatLoginModal');
+        }
+        
+        loginModal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+    
+    closeLoginModal() {
+        const loginModal = document.getElementById('chatLoginModal');
+        if (loginModal) {
+            loginModal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+    }
+    
+    createLoginModal() {
+        const modalHTML = `
+            <div id="chatLoginModal" class="auth-modal-overlay" style="display: none;">
+                <div class="auth-modal-content">
+                    <div class="auth-modal-header">
+                        <h2>登录以继续聊天</h2>
+                        <button class="auth-modal-close" onclick="chatSystem.closeLoginModal()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="auth-modal-body">
+                        <p>请登录以保存您的聊天记录并继续对话。</p>
+                        
+                        <div class="auth-tabs">
+                            <button class="auth-tab active" onclick="chatSystem.switchAuthTab('signin')">登录</button>
+                            <button class="auth-tab" onclick="chatSystem.switchAuthTab('signup')">注册</button>
+                        </div>
+                        
+                        <form id="chatAuthForm" class="auth-form">
+                            <div class="form-group">
+                                <label for="chatEmail">邮箱</label>
+                                <input type="email" id="chatEmail" required placeholder="请输入您的邮箱">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="chatPassword">密码</label>
+                                <input type="password" id="chatPassword" required placeholder="请输入密码">
+                            </div>
+                            
+                            <button type="submit" class="auth-submit-btn">
+                                <span class="btn-text">登录</span>
+                            </button>
+                        </form>
+                        
+                        <div class="auth-divider">
+                            <span>或</span>
+                        </div>
+                        
+                        <div class="social-auth">
+                            <button class="social-btn google-btn" onclick="chatSystem.handleSocialAuth('google')">
+                                <i class="fab fa-google"></i>
+                                使用 Google 登录
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Setup form submission
+        document.getElementById('chatAuthForm').addEventListener('submit', (e) => {
+            this.handleAuthSubmit(e);
+        });
+    }
+    
+    switchAuthTab(type) {
+        const tabs = document.querySelectorAll('.auth-tab');
+        const submitBtn = document.querySelector('.auth-submit-btn .btn-text');
+        const passwordInput = document.getElementById('chatPassword');
+        
+        tabs.forEach(tab => tab.classList.remove('active'));
+        
+        if (type === 'signin') {
+            tabs[0].classList.add('active');
+            submitBtn.textContent = '登录';
+            passwordInput.placeholder = '请输入密码';
+        } else {
+            tabs[1].classList.add('active');
+            submitBtn.textContent = '注册';
+            passwordInput.placeholder = '请设置密码（至少6位）';
+        }
+    }
+    
+    async handleAuthSubmit(e) {
+        e.preventDefault();
+        
+        const email = document.getElementById('chatEmail').value;
+        const password = document.getElementById('chatPassword').value;
+        const isSignUp = document.querySelector('.auth-tab.active').textContent === '注册';
+        const submitBtn = document.querySelector('.auth-submit-btn');
+        const btnText = submitBtn.querySelector('.btn-text');
+        
+        const originalText = btnText.textContent;
+        btnText.textContent = isSignUp ? '注册中...' : '登录中...';
+        submitBtn.disabled = true;
+        
+        try {
+            if (isSignUp) {
+                const { data, error } = await this.supabase.auth.signUp({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                if (data.user && !data.session) {
+                    // Need email confirmation
+                    alert('注册成功！请检查您的邮箱并点击确认链接。');
+                } else {
+                    // Auto signed in
+                    console.log('Sign up and auto sign in successful');
+                }
+            } else {
+                const { data, error } = await this.supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+                
+                if (error) throw error;
+                
+                console.log('Sign in successful');
+            }
+        } catch (error) {
+            console.error('Auth error:', error);
+            let errorMessage = '认证失败';
+            
+            if (error.message.includes('Invalid login credentials')) {
+                errorMessage = '邮箱或密码错误';
+            } else if (error.message.includes('Email not confirmed')) {
+                errorMessage = '请先确认您的邮箱';
+            } else if (error.message.includes('User already registered')) {
+                errorMessage = '该邮箱已注册，请直接登录';
+            } else {
+                errorMessage = error.message;
+            }
+            
+            alert(errorMessage);
+        } finally {
+            btnText.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    }
+    
+    async handleSocialAuth(provider) {
+        try {
+            const { data, error } = await this.supabase.auth.signInWithOAuth({
+                provider: provider,
+                options: {
+                    redirectTo: window.location.href
+                }
+            });
+            
+            if (error) throw error;
+            
+            console.log(`${provider} auth initiated`);
+        } catch (error) {
+            console.error(`${provider} auth error:`, error);
+            alert(`${provider} 登录失败: ${error.message}`);
+        }
     }
 }
 

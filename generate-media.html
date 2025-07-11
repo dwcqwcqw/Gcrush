@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Generate Media - Gcrush</title>
+    <!-- Favicon from R2 -->
+    <link rel="icon" type="image/png" sizes="32x32" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
+    <link rel="shortcut icon" type="image/png" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
+    <meta name="theme-color" content="#A259FF">
+    <link rel="stylesheet" href="candy-combined.css">
+    <link rel="stylesheet" href="generate-media.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="site-header">
+        <div class="header-container">
+            <div class="header-left">
+                <button class="menu-toggle">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <div class="logo">
+                    <a href="index.html"><img src="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/logo.png" alt="Gcrush" class="logo-img"></a>
+                </div>
+            </div>
+            <div class="header-nav">
+            </div>
+            <div class="header-right">
+                <button class="premium-button" style="display: none;">
+                    <i class="fas fa-crown"></i>
+                    <span>Premium</span>
+                    <span class="discount">70% OFF</span>
+                </button>
+                <button class="auth-button create-account-btn">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+                <button class="auth-button login-btn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                <div class="user-profile" style="display: none;">
+                    <img src="" alt="User" class="profile-img">
+                    <span class="username-display">My Profile</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <div class="page-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <nav class="sidebar-nav">
+                <a href="index.html" class="sidebar-item">
+                    <i class="fas fa-compass"></i>
+                    <span>Explore</span>
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-comment"></i>
+                    <span>Chat</span>
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-user-circle"></i>
+                    <span>Create Character</span>
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-heart"></i>
+                    <span>My AI</span>
+                </a>
+                <a href="generate-media.html" class="sidebar-item active">
+                    <i class="fas fa-image"></i>
+                    <span>Generate Media</span>
+                </a>
+                <a href="#" class="sidebar-item">
+                    <i class="fas fa-layer-group"></i>
+                    <span>Collection</span>
+                </a>
+                <a href="#" class="sidebar-item premium">
+                    <i class="fas fa-gem"></i>
+                    <span>Become Premium</span>
+                </a>
+            </nav>
+            
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                <div class="sidebar-footer-item">
+                    <img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.6.6/flags/4x3/us.svg" alt="English" class="flag-icon">
+                    <span>English</span>
+                    <i class="fas fa-chevron-down"></i>
+                </div>
+                <div class="sidebar-footer-item">
+                    <i class="fab fa-discord"></i>
+                    <span>Discord</span>
+                </div>
+                <div class="sidebar-footer-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>Contact Us</span>
+                </div>
+                <div class="footer-legal">
+                    <a href="/privacy-policy.html">Privacy Policy</a>
+                    <span class="dot-separator">•</span>
+                    <a href="/terms-of-service.html">Terms of Service</a>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="generate-media-container glass-panel">
+                <div class="generate-header">
+                    <h1 class="page-title">Generate Your <span class="title-highlight">Fantasy</span></h1>
+                    <p class="subtitle">✨ Create stunning AI-generated images and videos ✨</p>
+                </div>
+
+                <div class="tab-container">
+                    <button class="tab-button active" data-tab="image">
+                        <svg class="tab-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                            <polyline points="21 15 16 10 5 21"></polyline>
+                        </svg>
+                        Image
+                    </button>
+                    <button class="tab-button" data-tab="video">
+                        <svg class="tab-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
+                            <line x1="7" y1="2" x2="7" y2="22"></line>
+                            <line x1="17" y1="2" x2="17" y2="22"></line>
+                            <line x1="2" y1="12" x2="22" y2="12"></line>
+                            <line x1="2" y1="7" x2="7" y2="7"></line>
+                            <line x1="2" y1="17" x2="7" y2="17"></line>
+                            <line x1="17" y1="17" x2="22" y2="17"></line>
+                            <line x1="17" y1="7" x2="22" y2="7"></line>
+                        </svg>
+                        Video
+                    </button>
+                </div>
+
+                <div class="content-area">
+                    <!-- Character Selection -->
+                    <div class="selection-box character-selection glass-card">
+                        <div class="selection-header">
+                            <svg class="selection-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                            <div>
+                                <h3>Select Character</h3>
+                                <span class="required">(required)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Optional Settings Grid -->
+                    <div class="settings-grid">
+                        <!-- Pose -->
+                        <div class="selection-box glass-card">
+                            <div class="selection-header">
+                                <svg class="selection-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <circle cx="12" cy="12" r="3"></circle>
+                                    <line x1="12" y1="1" x2="12" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="23"></line>
+                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                    <line x1="1" y1="12" x2="3" y2="12"></line>
+                                    <line x1="21" y1="12" x2="23" y2="12"></line>
+                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                </svg>
+                                <div>
+                                    <h3>Pose</h3>
+                                    <span class="optional">(optional)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Background -->
+                        <div class="selection-box glass-card">
+                            <div class="selection-header">
+                                <svg class="selection-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="9" y1="9" x2="15" y2="15"></line>
+                                    <line x1="15" y1="9" x2="9" y2="15"></line>
+                                </svg>
+                                <div>
+                                    <h3>Background</h3>
+                                    <span class="optional">(optional)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Outfit -->
+                        <div class="selection-box glass-card">
+                            <div class="selection-header">
+                                <svg class="selection-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"></path>
+                                </svg>
+                                <div>
+                                    <h3>Outfit</h3>
+                                    <span class="optional">(optional)</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Custom Prompt -->
+                    <div class="prompt-box">
+                        <label for="custom-prompt">Custom Prompt</label>
+                        <span class="optional">(optional)</span>
+                        <textarea 
+                            id="custom-prompt" 
+                            class="prompt-textarea" 
+                            placeholder="Describe your ideal scene..."
+                            rows="4"
+                        ></textarea>
+                    </div>
+
+                    <!-- Advanced Settings -->
+                    <details class="advanced-settings glass-card">
+                        <summary>Advanced Settings <span class="arrow">▼</span></summary>
+                        <div class="advanced-content">
+                            <!-- Negative Prompt -->
+                            <div class="prompt-box">
+                                <label for="negative-prompt">Negative Prompt</label>
+                                <span class="optional">(optional)</span>
+                                <textarea 
+                                    id="negative-prompt" 
+                                    class="prompt-textarea" 
+                                    placeholder="What to avoid in the generation..."
+                                    rows="3"
+                                ></textarea>
+                            </div>
+                        </div>
+                    </details>
+
+                    <!-- Number of Images -->
+                    <div class="number-selector">
+                        <label>Number of Images</label>
+                        <div class="number-buttons">
+                            <button class="number-button active" data-value="1">1</button>
+                            <button class="number-button" data-value="2">2</button>
+                            <button class="number-button" data-value="3">3</button>
+                            <button class="number-button" data-value="4">4</button>
+                            <button class="number-button" data-value="5">5</button>
+                        </div>
+                    </div>
+
+                    <!-- Generate Button -->
+                    <button class="generate-button">
+                        <svg class="generate-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        Generate
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Auth Modal with Supabase Auth UI -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal-content auth-modal">
+            <button class="modal-close">&times;</button>
+            <div id="auth-container"></div>
+            <p class="auth-disclaimer">
+                By signing up you confirm that you are over 18 years old and agree to the <a href="/terms-of-service.html">Terms of Service</a>.
+            </p>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="inline-debug.js"></script>
+    <script src="candy-combined.js"></script>
+    <script src="auth-simple.js"></script>
+    <script src="generate-media.js"></script>
+</body>
+</html>
