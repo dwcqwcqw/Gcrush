@@ -97,6 +97,23 @@ class ChatSystem {
         window.addEventListener('resize', () => {
             this.scrollToBottom();
         });
+        
+        // Handle drawer toggle
+        document.getElementById('drawerToggle').addEventListener('click', () => {
+            this.toggleDrawer();
+        });
+        
+        // Handle drawer overlay click
+        document.getElementById('drawerOverlay').addEventListener('click', () => {
+            this.closeDrawer();
+        });
+        
+        // Handle escape key to close drawer
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                this.closeDrawer();
+            }
+        });
     }
     
     renderCharacterSelection() {
@@ -639,6 +656,42 @@ class ChatSystem {
     
     delay(ms) {
         return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    toggleDrawer() {
+        const drawer = document.getElementById('chatDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        const main = document.querySelector('.chat-main');
+        
+        if (drawer.classList.contains('open')) {
+            this.closeDrawer();
+        } else {
+            this.openDrawer();
+        }
+    }
+    
+    openDrawer() {
+        const drawer = document.getElementById('chatDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        const main = document.querySelector('.chat-main');
+        
+        drawer.classList.add('open');
+        overlay.classList.add('active');
+        
+        // On desktop, adjust main content margin
+        if (window.innerWidth > 768) {
+            main.classList.add('drawer-open');
+        }
+    }
+    
+    closeDrawer() {
+        const drawer = document.getElementById('chatDrawer');
+        const overlay = document.getElementById('drawerOverlay');
+        const main = document.querySelector('.chat-main');
+        
+        drawer.classList.remove('open');
+        overlay.classList.remove('active');
+        main.classList.remove('drawer-open');
     }
 }
 

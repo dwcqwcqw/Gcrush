@@ -9,11 +9,26 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
+    <!-- Top Header Bar (same as main page) -->
+    <header class="top-header">
+        <div class="header-content">
+            <button class="drawer-toggle" id="drawerToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+            <h1 class="site-title">Gcrush</h1>
+            <div class="header-actions">
+                <button class="header-btn" onclick="window.location.href='index.html'">
+                    <i class="fas fa-home"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
     <div class="chat-container">
-        <!-- Left Sidebar - Chat History -->
-        <div class="chat-sidebar">
-            <div class="sidebar-header">
-                <h2>Recent Chats</h2>
+        <!-- Left Drawer - Navigation -->
+        <div class="chat-drawer" id="chatDrawer">
+            <div class="drawer-header">
+                <h3>Recent Chats</h3>
                 <button class="new-chat-btn" onclick="startNewChat()">
                     <i class="fas fa-plus"></i>
                 </button>
@@ -23,6 +38,9 @@
                 <!-- Chat history will be populated here -->
             </div>
         </div>
+
+        <!-- Overlay for mobile drawer -->
+        <div class="drawer-overlay" id="drawerOverlay"></div>
 
         <!-- Main Chat Area -->
         <div class="chat-main">
