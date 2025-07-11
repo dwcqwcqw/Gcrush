@@ -114,7 +114,21 @@
         <main class="main-content">
             <!-- Chat Interface (hidden by default) -->
             <div id="chatInterface" class="chat-interface" style="display: none;">
-                <div class="chat-container">
+                <!-- Character Background -->
+                <div id="chatBackground" class="chat-background"></div>
+                
+                <!-- Chat Sidebar -->
+                <div class="chat-sidebar">
+                    <div class="chat-sidebar-header">
+                        <h3 class="chat-sidebar-title">Recent Chats</h3>
+                    </div>
+                    <div class="chat-list" id="chatList">
+                        <!-- Chat items will be dynamically added here -->
+                    </div>
+                </div>
+                
+                <!-- Main Chat Area -->
+                <div class="chat-main">
                     <div class="chat-header">
                         <button class="back-to-explore" onclick="backToExplore()">
                             <i class="fas fa-arrow-left"></i>

@@ -120,6 +120,9 @@ class MainChatSystem {
         
         // Show chat interface
         document.getElementById('chatInterface').style.display = 'flex';
+        
+        // Load and render chat list
+        this.renderChatList();
     }
     
     updateCharacterInfo() {
@@ -127,8 +130,12 @@ class MainChatSystem {
             const avatar = this.currentCharacter.images ? this.currentCharacter.images[0] : 
                           `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${this.currentCharacter.name}/${this.currentCharacter.name}1.png`;
             
+            // Update character info in header
             document.getElementById('chatCharacterAvatar').src = avatar;
             document.getElementById('chatCharacterName').textContent = this.currentCharacter.name;
+            
+            // Set character image as background
+            document.getElementById('chatBackground').style.backgroundImage = `url(${avatar})`;
         }
     }
     
@@ -233,7 +240,9 @@ class MainChatSystem {
         messageContent.className = 'message-content';
         
         // Process content for orange text formatting
-        const processedContent = content.replace(/<([^>]+)>/g, '<span class="orange-text">$1</span>');
+        const processedContent = content
+            .replace(/<([^>]+)>/g, '<span class="orange-text">&lt;$1&gt;</span>')
+            .replace(/\*([^*]+)\*/g, '<span class="orange-text">$1</span>');
         messageContent.innerHTML = processedContent;
         
         messageDiv.appendChild(messageContent);
@@ -516,6 +525,164 @@ class MainChatSystem {
             alert(`${provider} login failed: ${error.message}`);
         }
     }
+
+    async renderChatList() {
+        try {
+            // Get all chat sessions for current user or all sessions if no user
+            let query = this.supabase
+                .from('chat_sessions')
+                .select(`
+                    id,
+                    character_name,
+                    created_at,
+                    updated_at,
+                    chat_messages!inner(content, created_at)
+                `)
+                .order('updated_at', { ascending: false });
+
+            if (this.currentUser) {
+                query = query.eq('user_id', this.currentUser.id);
+            }
+
+            const { data: sessions, error } = await query;
+
+            if (error) {
+                console.warn('Failed to load chat sessions:', error);
+                this.renderFallbackChatList();
+                return;
+            }
+
+            const chatListContainer = document.getElementById('chatList');
+            
+            if (!sessions || sessions.length === 0) {
+                chatListContainer.innerHTML = `
+                    <div style="text-align: center; padding: 40px 20px; color: rgba(255, 255, 255, 0.5);">
+                        <i class="fas fa-comments" style="font-size: 48px; margin-bottom: 15px; opacity: 0.3;"></i>
+                        <p>No chat history yet</p>
+                        <p style="font-size: 12px;">Start chatting with characters to see them here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group sessions by character and get the most recent message
+            const characterChats = {};
+            
+            sessions.forEach(session => {
+                const characterName = session.character_name;
+                if (!characterChats[characterName] || 
+                    new Date(session.updated_at) > new Date(characterChats[characterName].updated_at)) {
+                    
+                    // Get most recent message
+                    const recentMessage = session.chat_messages
+                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+                    
+                    characterChats[characterName] = {
+                        ...session,
+                        recent_message: recentMessage ? recentMessage.content : 'No messages yet',
+                        recent_time: recentMessage ? recentMessage.created_at : session.created_at
+                    };
+                }
+            });
+
+            // Render chat items
+            const chatItems = Object.values(characterChats)
+                .sort((a, b) => new Date(b.recent_time) - new Date(a.recent_time))
+                .map(chat => this.createChatItem(chat))
+                .join('');
+
+            chatListContainer.innerHTML = chatItems;
+
+        } catch (error) {
+            console.error('Error rendering chat list:', error);
+            this.renderFallbackChatList();
+        }
+    }
+
+    renderFallbackChatList() {
+        // Show available characters as potential chats
+        const characters = this.characters || this.getFallbackCharacters();
+        const chatListContainer = document.getElementById('chatList');
+        
+        const chatItems = characters.slice(0, 6).map(character => {
+            return `
+                <div class="chat-item" onclick="mainChatSystem.startChat('${character.name}')">
+                    <img class="chat-item-avatar" 
+                         src="${character.images ? character.images[0] : `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${character.name}/${character.name}1.png`}" 
+                         alt="${character.name}">
+                    <div class="chat-item-info">
+                        <div class="chat-item-name">${character.name}</div>
+                        <div class="chat-item-preview">Start a conversation...</div>
+                    </div>
+                    <div class="chat-item-time">New</div>
+                </div>
+            `;
+        }).join('');
+        
+        chatListContainer.innerHTML = chatItems;
+    }
+
+    getFallbackCharacters() {
+        return [
+            { name: 'Ethan', images: null },
+            { name: 'Marco', images: null },
+            { name: 'Phoenix', images: null },
+            { name: 'Stefan', images: null },
+            { name: 'Caleb Crimson', images: null },
+            { name: 'Orion', images: null }
+        ];
+    }
+
+    createChatItem(chat) {
+        const characterName = chat.character_name;
+        const character = this.characters?.find(c => c.name === characterName);
+        const avatar = character?.images?.[0] || 
+                      `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${characterName}/${characterName}1.png`;
+        
+        // Format time
+        const timeAgo = this.formatTimeAgo(chat.recent_time);
+        
+        // Truncate message preview
+        let preview = chat.recent_message || 'No messages yet';
+        if (preview.length > 50) {
+            preview = preview.substring(0, 50) + '...';
+        }
+        
+        const isActive = this.currentCharacter?.name === characterName ? 'active' : '';
+        
+        return `
+            <div class="chat-item ${isActive}" onclick="mainChatSystem.startChat('${characterName}')">
+                <img class="chat-item-avatar" src="${avatar}" alt="${characterName}">
+                <div class="chat-item-info">
+                    <div class="chat-item-name">${characterName}</div>
+                    <div class="chat-item-preview">${preview}</div>
+                </div>
+                <div class="chat-item-time">${timeAgo}</div>
+            </div>
+        `;
+    }
+
+    formatTimeAgo(dateString) {
+        const now = new Date();
+        const date = new Date(dateString);
+        const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+        
+        if (diffInMinutes < 1) return 'Now';
+        if (diffInMinutes < 60) return `${diffInMinutes}m`;
+        
+        const diffInHours = Math.floor(diffInMinutes / 60);
+        if (diffInHours < 24) return `${diffInHours}h`;
+        
+        const diffInDays = Math.floor(diffInHours / 24);
+        if (diffInDays < 7) return `${diffInDays}d`;
+        
+        // For older messages, show date
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    clearMessages() {
+        document.getElementById('chatMessages').innerHTML = '';
+    }
 }
 
 // Global functions
@@ -529,8 +696,12 @@ function backToExplore() {
     document.getElementById('characterLobby').style.display = 'block';
     document.querySelector('.faq-section').style.display = 'block';
     
-    // Clear chat messages
-    document.getElementById('chatMessages').innerHTML = '';
+    // Clear current chat
+    if (window.mainChatSystem) {
+        window.mainChatSystem.currentCharacter = null;
+        window.mainChatSystem.currentSessionId = null;
+        window.mainChatSystem.clearMessages();
+    }
 }
 
 function sendMessage() {
