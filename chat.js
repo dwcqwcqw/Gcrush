@@ -28,8 +28,19 @@ class ChatSystem {
         await this.loadCharacters();
         await this.loadChatSessions();
         this.setupEventListeners();
-        this.renderCharacterSelection();
         this.renderChatList();
+        
+        // Check if a character is specified in URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const characterName = urlParams.get('character');
+        
+        if (characterName) {
+            // Direct chat with specified character
+            await this.selectCharacter(characterName);
+        } else {
+            // Show character selection if no character specified
+            this.renderCharacterSelection();
+        }
     }
     
     async loadCharacters() {
@@ -633,6 +644,18 @@ class ChatSystem {
 
 // Global functions for HTML onclick handlers
 function showCharacterSelection() {
+    // Only show character selection if no character is currently selected via URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const characterName = urlParams.get('character');
+    
+    if (!characterName) {
+        chatSystem.showCharacterSelection();
+    }
+}
+
+function startNewChat() {
+    // Clear URL parameters and show character selection
+    window.history.replaceState({}, document.title, window.location.pathname);
     chatSystem.showCharacterSelection();
 }
 
