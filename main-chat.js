@@ -68,6 +68,11 @@ class MainChatSystem {
     }
     
     async startChat(characterName) {
+        console.log('Starting chat with:', characterName);
+        
+        // Always show chat interface first
+        this.showChatInterface();
+        
         try {
             // Load character data
             const { data: character, error } = await this.supabase
@@ -76,16 +81,20 @@ class MainChatSystem {
                 .eq('name', characterName)
                 .single();
             
-            if (error) throw error;
+            if (error) {
+                console.error('Database error:', error);
+                // Use fallback character data
+                this.currentCharacter = this.getFallbackCharacter(characterName);
+            } else {
+                this.currentCharacter = character;
+            }
             
-            this.currentCharacter = character;
-            
-            // Show chat interface
-            this.showChatInterface();
+            // Update character info in UI
+            this.updateCharacterInfo();
             
             // Create or load chat session (only if user is logged in)
             if (this.currentUser) {
-                await this.createChatSession(character);
+                await this.createChatSession(this.currentCharacter);
             }
             
             // Send initial messages
@@ -93,7 +102,12 @@ class MainChatSystem {
             
         } catch (error) {
             console.error('Error starting chat:', error);
-            alert('Unable to start chat. Please try again.');
+            // Use fallback character and continue
+            this.currentCharacter = this.getFallbackCharacter(characterName);
+            this.updateCharacterInfo();
+            
+            // Add a system message about the error
+            await this.addMessage('assistant', 'Hi! I\'m having some technical difficulties, but I\'m here to chat with you!', false);
         }
     }
     
@@ -106,10 +120,28 @@ class MainChatSystem {
         
         // Show chat interface
         document.getElementById('chatInterface').style.display = 'flex';
-        
-        // Update character info
-        document.getElementById('chatCharacterAvatar').src = this.currentCharacter.images[0];
-        document.getElementById('chatCharacterName').textContent = this.currentCharacter.name;
+    }
+    
+    updateCharacterInfo() {
+        if (this.currentCharacter) {
+            const avatar = this.currentCharacter.images ? this.currentCharacter.images[0] : 
+                          `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${this.currentCharacter.name}/${this.currentCharacter.name}1.png`;
+            
+            document.getElementById('chatCharacterAvatar').src = avatar;
+            document.getElementById('chatCharacterName').textContent = this.currentCharacter.name;
+        }
+    }
+    
+    getFallbackCharacter(characterName) {
+        return {
+            id: 'fallback',
+            name: characterName,
+            images: [`https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${characterName}/${characterName}1.png`],
+            personality: 'Friendly and helpful',
+            background: 'I\'m an AI companion here to chat with you.',
+            situation: `<You are chatting with ${characterName}>`,
+            greeting: `Hey there! I'm ${characterName}. How are you doing today?`
+        };
     }
     
     async createChatSession(character) {
