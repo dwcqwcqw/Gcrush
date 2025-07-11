@@ -349,10 +349,10 @@ async function handleForgotPasswordSubmit(e) {
         // Update loading text
         submitBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span class="btn-text">Sending...</span>`;
         
-        // Use Supabase's password reset feature with explicit redirect URL
-        // Use the full URL including protocol to ensure proper redirect
+        // Use Supabase's password reset feature with redirect to main page
+        // Redirect back to main page instead of reset password page
         const currentOrigin = window.location.origin;
-        const redirectUrl = `${currentOrigin}/reset-password.html`;
+        const redirectUrl = `${currentOrigin}/`;
         console.log('Password reset redirect URL:', redirectUrl);
         
         const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
