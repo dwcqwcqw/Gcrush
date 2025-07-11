@@ -1449,6 +1449,7 @@ ul {
     display: flex;
     align-items: center;
     gap: 20px;
+    margin-left: auto;  /* Ensure it stays on the right */
 }
 
 .premium-button {
@@ -2831,6 +2832,13 @@ ul {
     position: relative;
     overflow: hidden;
     margin-top: 60px;
+}
+
+/* Ensure header buttons stay in correct position when in chat interface */
+.chat-interface ~ .site-header .header-right,
+body:has(.chat-interface:not([style*="display: none"])) .header-right {
+    margin-left: auto !important;
+    order: 3;
 }
 
 /* Character Background */

@@ -477,21 +477,35 @@ class MainChatSystem {
     }
     
     showLoginModal() {
-        let loginModal = document.getElementById('chatLoginModal');
-        if (!loginModal) {
-            this.createLoginModal();
-            loginModal = document.getElementById('chatLoginModal');
+        console.log('[showLoginModal] Called');
+        // Use the existing auth modal from the main page
+        const authModal = document.getElementById('authModal');
+        if (authModal) {
+            authModal.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+            console.log('[showLoginModal] Auth modal displayed');
+        } else {
+            console.error('[showLoginModal] Auth modal not found!');
+            // Fallback: try to trigger the login button click
+            const loginBtn = document.querySelector('.login-btn');
+            if (loginBtn) {
+                loginBtn.click();
+                console.log('[showLoginModal] Triggered login button click');
+            }
         }
-        
-        loginModal.style.display = 'flex';
-        document.body.style.overflow = 'hidden';
     }
     
     closeLoginModal() {
+        // Close the main auth modal
+        const authModal = document.getElementById('authModal');
+        if (authModal) {
+            authModal.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+        // Also try old modal in case it exists
         const loginModal = document.getElementById('chatLoginModal');
         if (loginModal) {
             loginModal.style.display = 'none';
-            document.body.style.overflow = '';
         }
     }
     
