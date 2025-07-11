@@ -292,6 +292,33 @@ class CharacterDataLoader {
         return truncated + '...';
     }
 
+    // Generate skeleton loading cards
+    generateSkeletonCards(count = 12) {
+        const skeletonCards = [];
+        for (let i = 0; i < count; i++) {
+            skeletonCards.push(`
+                <div class="character-card glass-card skeleton-card">
+                    <div class="character-image skeleton-image">
+                        <div class="skeleton-placeholder"></div>
+                    </div>
+                    <div class="character-info">
+                        <div class="skeleton-name"></div>
+                        <div class="skeleton-tags">
+                            <div class="skeleton-tag"></div>
+                            <div class="skeleton-tag"></div>
+                            <div class="skeleton-tag"></div>
+                        </div>
+                        <div class="skeleton-bio">
+                            <div class="skeleton-line"></div>
+                            <div class="skeleton-line short"></div>
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
+        return skeletonCards.join('');
+    }
+
     // Render all character cards
     async renderCharacterCards() {
         const characterGrid = document.querySelector('.character-grid');
@@ -301,8 +328,8 @@ class CharacterDataLoader {
             return;
         }
 
-        // Show loading state
-        characterGrid.innerHTML = '<div class="loading-message">Loading character data...</div>';
+        // Show skeleton loading state
+        characterGrid.innerHTML = this.generateSkeletonCards();
 
         try {
             // Load character data

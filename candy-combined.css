@@ -2740,3 +2740,83 @@ ul {
     -webkit-text-fill-color: transparent;
     background-clip: text;
 } 
+/* Skeleton Loading Styles */
+.skeleton-card {
+    pointer-events: none;
+    user-select: none;
+}
+
+.skeleton-placeholder,
+.skeleton-name,
+.skeleton-tag,
+.skeleton-line {
+    background: linear-gradient(90deg, 
+        rgba(255, 255, 255, 0.1) 25%, 
+        rgba(255, 255, 255, 0.2) 50%, 
+        rgba(255, 255, 255, 0.1) 75%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s infinite;
+    border-radius: 4px;
+}
+
+@keyframes skeleton-loading {
+    0% {
+        background-position: 200% 0;
+    }
+    100% {
+        background-position: -200% 0;
+    }
+}
+
+.skeleton-image {
+    position: relative;
+    overflow: hidden;
+}
+
+.skeleton-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 15px;
+}
+
+.skeleton-name {
+    height: 24px;
+    width: 70%;
+    margin-bottom: 10px;
+    border-radius: 6px;
+}
+
+.skeleton-tags {
+    display: flex;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.skeleton-tag {
+    height: 20px;
+    width: 50px;
+    border-radius: 12px;
+}
+
+.skeleton-tag:nth-child(2) {
+    width: 60px;
+}
+
+.skeleton-tag:nth-child(3) {
+    width: 45px;
+}
+
+.skeleton-bio {
+    margin-top: 10px;
+}
+
+.skeleton-line {
+    height: 14px;
+    margin-bottom: 6px;
+    border-radius: 3px;
+}
+
+.skeleton-line.short {
+    width: 80%;
+}
