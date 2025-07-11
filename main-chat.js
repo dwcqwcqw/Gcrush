@@ -176,7 +176,7 @@ class MainChatSystem {
             const { data, error } = await this.supabase
                 .from('chat_sessions')
                 .insert({
-                    character_name: character.name,
+                    character_id: character.id,
                     user_id: userId,
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString()
@@ -297,6 +297,15 @@ class MainChatSystem {
                 });
             
             if (error) throw error;
+            
+            // Update session timestamp
+            await this.supabase
+                .from('chat_sessions')
+                .update({
+                    last_message_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', this.currentSessionId);
             
         } catch (error) {
             console.error('Error saving message to database:', error);
@@ -550,10 +559,12 @@ class MainChatSystem {
                 .from('chat_sessions')
                 .select(`
                     id,
-                    character_name,
+                    character_id,
                     created_at,
                     updated_at,
-                    chat_messages!inner(content, created_at)
+                    last_message_at,
+                    characters!inner(name, images),
+                    chat_messages(content, created_at)
                 `)
                 .order('updated_at', { ascending: false });
 
@@ -586,17 +597,20 @@ class MainChatSystem {
             const characterChats = {};
             
             sessions.forEach(session => {
-                const characterName = session.character_name;
+                const characterName = session.characters?.name;
+                if (!characterName) return;
+                
                 if (!characterChats[characterName] || 
                     new Date(session.updated_at) > new Date(characterChats[characterName].updated_at)) {
                     
                     // Get most recent message
-                    const recentMessage = session.chat_messages
-                        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0];
+                    const recentMessage = session.chat_messages && session.chat_messages.length > 0 ?
+                        session.chat_messages.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))[0] : null;
                     
                     characterChats[characterName] = {
                         ...session,
-                        recent_message: recentMessage ? recentMessage.content : 'No messages yet',
+                        character_name: characterName,
+                        recent_message: recentMessage ? recentMessage.content : 'Start chatting...',
                         recent_time: recentMessage ? recentMessage.created_at : session.created_at
                     };
                 }
@@ -652,15 +666,21 @@ class MainChatSystem {
 
     createChatItem(chat) {
         const characterName = chat.character_name;
-        const character = this.characters?.find(c => c.name === characterName);
-        const avatar = character?.images?.[0] || 
-                      `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${characterName}/${characterName}1.png`;
+        const characterData = chat.characters || this.characters?.find(c => c.name === characterName);
+        
+        // Get avatar from character data
+        let avatar;
+        if (characterData?.images) {
+            avatar = Array.isArray(characterData.images) ? characterData.images[0] : characterData.images;
+        } else {
+            avatar = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${characterName}/${characterName}1.png`;
+        }
         
         // Format time
         const timeAgo = this.formatTimeAgo(chat.recent_time);
         
         // Truncate message preview
-        let preview = chat.recent_message || 'No messages yet';
+        let preview = chat.recent_message || 'Start chatting...';
         if (preview.length > 50) {
             preview = preview.substring(0, 50) + '...';
         }

@@ -2826,10 +2826,15 @@ ul {
 /* Chat Interface - New Design */
 .chat-interface {
     width: 100%;
-    height: calc(100vh - 80px);
+    height: 100vh;
     display: flex;
-    position: relative;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
     overflow: hidden;
+    z-index: 1000;
 }
 
 /* Character Background */
@@ -2840,7 +2845,7 @@ ul {
     right: 0;
     bottom: 0;
     background-size: cover;
-    background-position: center;
+    background-position: center top;
     background-repeat: no-repeat;
     filter: brightness(0.3);
     z-index: 1;
@@ -2946,22 +2951,6 @@ ul {
     background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(10px);
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.back-to-explore {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 18px;
-    cursor: pointer;
-    margin-right: 15px;
-    padding: 10px;
-    border-radius: 50%;
-    transition: all 0.3s ease;
-}
-
-.back-to-explore:hover {
-    background: rgba(255, 255, 255, 0.1);
 }
 
 .chat-character-info {
