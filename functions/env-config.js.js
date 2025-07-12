@@ -26,21 +26,15 @@ export async function onRequestGet(context) {
         ])
     ));
     
-    // Check specific variables
-    console.log('RUNPOD_API_KEY exists:', !!env.RUNPOD_API_KEY);
-    console.log('RUNPOD_API_KEY length:', env.RUNPOD_API_KEY ? env.RUNPOD_API_KEY.length : 0);
-    console.log('RUNPOD_TEXT_ENDPOINT_ID exists:', !!env.RUNPOD_TEXT_ENDPOINT_ID);
-    console.log('NEXT_PUBLIC_SUPABASE_URL exists:', !!env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('NEXT_PUBLIC_SUPABASE_ANON_KEY exists:', !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-    
-    // Get environment variables with proper fallbacks
+    // Check specific variables with potential whitespace issues
     const runpodApiKey = env.RUNPOD_API_KEY || '';
-    const runpodEndpointId = env.RUNPOD_TEXT_ENDPOINT_ID || '4cx6jtjdx6hdhr';
+    const runpodEndpointId = env.RUNPOD_TEXT_ENDPOINT_ID || env['RUNPOD_TEXT_ENDPOINT_ID '] || '4cx6jtjdx6hdhr'; // Handle space issue
     const supabaseUrl = env.NEXT_PUBLIC_SUPABASE_URL || 'https://kuflobojizyttadwcbhe.supabase.co';
     const supabaseKey = env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
     
     console.log('Final values (first 10 chars):');
     console.log('- runpodApiKey:', runpodApiKey.substring(0, 10) + '...');
+    console.log('- runpodApiKey length:', runpodApiKey.length);
     console.log('- runpodEndpointId:', runpodEndpointId);
     console.log('- supabaseUrl:', supabaseUrl.substring(0, 20) + '...');
     console.log('=== End Debug Info ===');

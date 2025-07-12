@@ -17,6 +17,11 @@ export async function onRequestGet(context) {
                 exists: !!env.RUNPOD_TEXT_ENDPOINT_ID,
                 value: env.RUNPOD_TEXT_ENDPOINT_ID || 'NOT SET'
             },
+            'RUNPOD_TEXT_ENDPOINT_ID ': {
+                exists: !!env['RUNPOD_TEXT_ENDPOINT_ID '],
+                value: env['RUNPOD_TEXT_ENDPOINT_ID '] || 'NOT SET',
+                note: 'This key has a trailing space'
+            },
             NEXT_PUBLIC_SUPABASE_URL: {
                 exists: !!env.NEXT_PUBLIC_SUPABASE_URL,
                 value: env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET'
@@ -25,6 +30,11 @@ export async function onRequestGet(context) {
                 exists: !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
                 length: env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length : 0
             }
+        },
+        resolvedValues: {
+            runpodApiKey: env.RUNPOD_API_KEY || '',
+            runpodEndpointId: env.RUNPOD_TEXT_ENDPOINT_ID || env['RUNPOD_TEXT_ENDPOINT_ID '] || '4cx6jtjdx6hdhr',
+            note: 'These are the actual values that will be used'
         }
     };
     
