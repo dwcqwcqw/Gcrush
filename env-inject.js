@@ -111,18 +111,34 @@
         console.error('Failed to load environment variables from any source');
     }
     
-    // Try to load env-config.js from Cloudflare Function
+    // Try to load env-config.js from Cloudflare Function with proper validation
     function loadEnvConfigFromFunction() {
         return fetch('/env-config.js')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
+                
+                // Check if the response is actually JavaScript
+                const contentType = response.headers.get('Content-Type') || '';
+                if (!contentType.includes('javascript')) {
+                    throw new Error(`Invalid content type: ${contentType} (expected JavaScript)`);
+                }
+                
                 return response.text();
             })
             .then(code => {
+                // Additional validation - check if the code looks like JavaScript
+                if (code.trim().startsWith('<')) {
+                    throw new Error('Response appears to be HTML, not JavaScript');
+                }
+                
+                if (!code.includes('window.RUNPOD_API_KEY')) {
+                    throw new Error('Response does not contain expected environment variables');
+                }
+                
                 console.log('Successfully loaded env-config.js from Cloudflare Function');
-                // Execute the code
+                // Execute the code safely
                 try {
                     const script = document.createElement('script');
                     script.type = 'text/javascript';
