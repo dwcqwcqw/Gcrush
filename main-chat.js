@@ -217,6 +217,7 @@ class MainChatSystem {
                 if (sessionTime > oneHourAgo) {
                     console.log('Using existing recent session:', existingSession.id);
                     this.currentSessionId = existingSession.id;
+                    this.sessionCreatedSuccessfully = true;
                     return;
                 }
             }
@@ -259,19 +260,32 @@ class MainChatSystem {
                 }
                 
                 this.currentSessionId = fallbackResult.id;
+                this.sessionCreatedSuccessfully = true;
                 console.log('Chat session created with fallback method:', this.currentSessionId);
             } else {
                 this.currentSessionId = data.id;
+                this.sessionCreatedSuccessfully = true;
                 console.log('Chat session created successfully:', this.currentSessionId);
             }
             
         } catch (error) {
             console.error('Error creating chat session:', error);
             
-            // Generate a temporary session ID for this session only
-            this.currentSessionId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            // Generate a valid UUID format for temporary session ID
+            this.currentSessionId = this.generateTempUUID();
+            this.sessionCreatedSuccessfully = false;
             console.log('Using temporary session ID - messages will not be persisted:', this.currentSessionId);
         }
+    }
+    
+    // Generate a valid UUID format for temporary sessions
+    generateTempUUID() {
+        // Generate a UUID v4-like format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+            const r = Math.random() * 16 | 0;
+            const v = c === 'x' ? r : (r & 0x3 | 0x8);
+            return v.toString(16);
+        });
     }
     
     async sendInitialMessages() {
@@ -403,6 +417,13 @@ class MainChatSystem {
         // Only save to database if user is logged in and has a session
         if (!this.currentUser || !this.currentSessionId) {
             console.log('Skipping database save - user not logged in or no session');
+            return;
+        }
+        
+        // Don't save to database if using a temporary session ID 
+        // (either old temp_ format or if session creation failed)
+        if (this.currentSessionId.startsWith('temp_') || !this.sessionCreatedSuccessfully) {
+            console.log('Skipping database save - using temporary session or session creation failed');
             return;
         }
         

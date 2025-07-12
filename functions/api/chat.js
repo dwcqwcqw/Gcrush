@@ -56,18 +56,55 @@ export async function onRequestPost(context) {
             });
         }
         
-        // Build the prompt
-        let prompt = `You are ${character.name}. `;
+        // Build comprehensive character prompt
+        console.log('Building prompt for character:', character);
         
+        let prompt = `You are ${character.name || 'Assistant'}`;
+        
+        // Add age if available
+        if (character.age) {
+            prompt += `, a ${character.age}-year-old`;
+        }
+        
+        prompt += `. `;
+        
+        // Add personality traits
         if (character.personality) {
             prompt += `Your personality: ${character.personality}. `;
         }
         
+        // Add background/description
         if (character.background) {
             prompt += `Your background: ${character.background}. `;
         }
         
-        prompt += `User says: "${message}"\n\nRespond as ${character.name} in a natural, conversational way:`;
+        if (character.description) {
+            prompt += `About you: ${character.description}. `;
+        }
+        
+        // Add style if available
+        if (character.style) {
+            prompt += `Your speaking style: ${character.style}. `;
+        }
+        
+        // Add current situation
+        if (character.situation) {
+            prompt += `Current situation: ${character.situation}. `;
+        }
+        
+        // Add personality tags
+        const tags = [character.tag1, character.tag2, character.tag3].filter(tag => tag && tag.trim() !== '');
+        if (tags.length > 0) {
+            prompt += `Your personality traits include: ${tags.join(', ')}. `;
+        }
+        
+        // Add conversation context
+        prompt += `\n\nIMPORTANT: Stay in character as ${character.name}. Respond naturally and conversationally. `;
+        prompt += `Keep your response concise (1-3 sentences) and engaging. `;
+        prompt += `Use first person ("I", "me", "my") and respond as if you are having a real conversation.\n\n`;
+        prompt += `User: "${message}"\n\n${character.name}:`;
+        
+        console.log('Generated prompt:', prompt.substring(0, 200) + '...');
         
         // Call RunPod API
         const runpodUrl = `https://api.runpod.ai/v2/${endpointId}/runsync`;
@@ -97,34 +134,72 @@ export async function onRequestPost(context) {
         }
         
         const data = await response.json();
-        console.log('RunPod response:', data);
+        console.log('=== RunPod Response Analysis ===');
+        console.log('Full RunPod response:', JSON.stringify(data, null, 2));
+        console.log('Response type:', typeof data);
+        console.log('Has output:', !!data.output);
+        console.log('Output type:', typeof data.output);
         
         // Extract the generated text from various possible response formats
         let generatedText = '';
+        let extractionMethod = 'none';
+        
         if (data.output) {
             if (typeof data.output === 'string') {
                 generatedText = data.output;
+                extractionMethod = 'output_string';
             } else if (data.output.generated_text) {
                 generatedText = data.output.generated_text;
+                extractionMethod = 'output.generated_text';
             } else if (data.output.choices && data.output.choices[0]) {
-                generatedText = data.output.choices[0].text || data.output.choices[0].message?.content;
+                const choice = data.output.choices[0];
+                generatedText = choice.text || choice.message?.content || choice.content;
+                extractionMethod = 'output.choices[0]';
             } else if (data.output.text) {
                 generatedText = data.output.text;
+                extractionMethod = 'output.text';
+            } else if (data.output.content) {
+                generatedText = data.output.content;
+                extractionMethod = 'output.content';
             }
         }
         
+        // Try direct properties
         if (!generatedText && data.generated_text) {
             generatedText = data.generated_text;
+            extractionMethod = 'data.generated_text';
         }
         
+        if (!generatedText && data.text) {
+            generatedText = data.text;
+            extractionMethod = 'data.text';
+        }
+        
+        if (!generatedText && data.content) {
+            generatedText = data.content;
+            extractionMethod = 'data.content';
+        }
+        
+        console.log('Text extraction result:');
+        console.log('- Method used:', extractionMethod);
+        console.log('- Generated text length:', generatedText ? generatedText.length : 0);
+        console.log('- Generated text preview:', generatedText ? generatedText.substring(0, 100) + '...' : 'NONE');
+        console.log('=== End Response Analysis ===');
+        
         if (!generatedText) {
-            console.error('Could not extract text from RunPod response:', data);
+            console.error('Could not extract text from RunPod response. Full response:', data);
             generatedText = 'Sorry, I could not generate a response. Please try again.';
+            extractionMethod = 'fallback';
         }
         
         return new Response(JSON.stringify({ 
             response: generatedText.trim(),
-            sessionId: sessionId 
+            sessionId: sessionId,
+            debug: {
+                extractionMethod: extractionMethod,
+                hasOutput: !!data.output,
+                responseLength: generatedText.length
+            }
         }), {
             headers: { 
                 'Content-Type': 'application/json',
