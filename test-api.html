@@ -69,6 +69,7 @@
         <h2>2. Test env-config.js Loading</h2>
         <button onclick="testEnvConfig()">Test env-config.js</button>
         <button onclick="testEnvConfigAPI()">Test /api/env-config</button>
+        <button onclick="testEnvDebug()">Test /api/env-debug</button>
         <div id="envConfigResult"></div>
     </div>
     
@@ -181,6 +182,40 @@ Response Data:
 ${JSON.stringify(data, null, 2)}</div>`;
             } catch (error) {
                 resultDiv.innerHTML = `<div class="result error">API Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testEnvDebug() {
+            const resultDiv = document.getElementById('envConfigResult');
+            try {
+                const response = await fetch('/api/env-debug');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `<div class="result ${response.ok ? 'success' : 'error'}">
+Debug API Status: ${response.status} ${response.statusText}
+Content-Type: ${response.headers.get('Content-Type')}
+
+Response Data:
+${JSON.stringify(data, null, 2)}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">Debug API Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testEnvDebug() {
+            const resultDiv = document.getElementById('envConfigResult');
+            try {
+                const response = await fetch('/api/env-debug');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `<div class="result ${response.ok ? 'success' : 'error'}">
+Debug API Status: ${response.status} ${response.statusText}
+Content-Type: ${response.headers.get('Content-Type')}
+
+Response Data:
+${JSON.stringify(data, null, 2)}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">Debug API Error: ${error.message}</div>`;
             }
         }
         
