@@ -1,14 +1,11 @@
-// Cloudflare Pages Worker to inject environment variables and serve files properly
+// Cloudflare Function to serve env-config.js dynamically
 
-export default {
-  async fetch(request, env, ctx) {
-    const url = new URL(request.url);
+export async function onRequestGet(context) {
+    const { env } = context;
     
-    // Handle env-config.js requests specially
-    if (url.pathname === '/env-config.js') {
-      // Generate the environment configuration dynamically
-      const configContent = `// Auto-generated environment configuration
-// Generated at runtime by Cloudflare Pages Worker
+    // Generate the environment configuration dynamically
+    const configContent = `// Auto-generated environment configuration
+// Generated at runtime by Cloudflare Pages
 
 window.RUNPOD_API_KEY = '${env.RUNPOD_API_KEY || ''}';
 window.RUNPOD_TEXT_ENDPOINT_ID = '${env.RUNPOD_TEXT_ENDPOINT_ID || '4cx6jtjdx6hdhr'}';
@@ -22,15 +19,11 @@ console.log('Environment configuration loaded:', {
     hasSupabaseKey: !!window.NEXT_PUBLIC_SUPABASE_ANON_KEY
 });`;
 
-      return new Response(configContent, {
+    return new Response(configContent, {
         headers: {
-          'Content-Type': 'application/javascript',
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-        },
-      });
-    }
-    
-    // For all other requests, pass through to the default handler
-    return env.ASSETS.fetch(request);
-  },
-};
+            'Content-Type': 'application/javascript',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Access-Control-Allow-Origin': '*'
+        }
+    });
+}
