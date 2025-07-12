@@ -41,44 +41,146 @@
         }
         .success { border-left: 4px solid #4caf50; }
         .error { border-left: 4px solid #f44336; }
+        .warning { border-left: 4px solid #ff9800; }
+        .info { border-left: 4px solid #2196f3; }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 5px;
+        }
+        .status-success { background-color: #4caf50; }
+        .status-error { background-color: #f44336; }
+        .status-warning { background-color: #ff9800; }
     </style>
 </head>
 <body>
-    <h1>API Test Page</h1>
+    <h1>🔧 API Test & Diagnostics</h1>
     
     <div class="test-section">
-        <h2>1. Test env-config.js</h2>
+        <h2>1. Environment Variables Status</h2>
+        <button onclick="checkEnvVars()">Check Environment Variables</button>
+        <button onclick="reloadEnvVars()">Reload Environment Variables</button>
+        <div id="envVarsResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Test env-config.js Loading</h2>
         <button onclick="testEnvConfig()">Test env-config.js</button>
+        <button onclick="testEnvConfigAPI()">Test /api/env-config</button>
         <div id="envConfigResult"></div>
     </div>
     
     <div class="test-section">
-        <h2>2. Test Chat API</h2>
+        <h2>3. Test Chat API</h2>
         <button onclick="testChatAPI()">Test POST /api/chat</button>
         <button onclick="testChatOptions()">Test OPTIONS /api/chat</button>
         <div id="chatApiResult"></div>
     </div>
-    
+
     <div class="test-section">
-        <h2>3. Environment Variables</h2>
-        <button onclick="checkEnvVars()">Check Environment Variables</button>
-        <div id="envVarsResult"></div>
+        <h2>4. System Diagnostics</h2>
+        <button onclick="runDiagnostics()">Run Full Diagnostics</button>
+        <div id="diagnosticsResult"></div>
     </div>
 
     <script>
+        // Global variables to track state
+        let envConfigLoaded = false;
+        
+        // Listen for environment config loaded events
+        window.addEventListener('envConfigLoaded', function(event) {
+            console.log('Environment config loaded event:', event.detail);
+            envConfigLoaded = true;
+            updateEnvStatus();
+        });
+        
+        function updateEnvStatus() {
+            const statusDiv = document.getElementById('envStatus');
+            if (statusDiv) {
+                const hasApiKey = !!window.RUNPOD_API_KEY && window.RUNPOD_API_KEY !== '';
+                const status = hasApiKey ? 'success' : 'error';
+                const statusText = hasApiKey ? 'API Key Loaded' : 'API Key Missing';
+                statusDiv.innerHTML = `<span class="status-indicator status-${status}"></span>${statusText}`;
+            }
+        }
+        
+        function checkEnvVars() {
+            const resultDiv = document.getElementById('envVarsResult');
+            const vars = {
+                RUNPOD_API_KEY: window.RUNPOD_API_KEY || 'NOT SET',
+                RUNPOD_TEXT_ENDPOINT_ID: window.RUNPOD_TEXT_ENDPOINT_ID || 'NOT SET',
+                NEXT_PUBLIC_SUPABASE_URL: window.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET',
+                NEXT_PUBLIC_SUPABASE_ANON_KEY: window.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'NOT SET'
+            };
+            
+            const hasApiKey = vars.RUNPOD_API_KEY !== 'NOT SET' && vars.RUNPOD_API_KEY !== '';
+            const resultClass = hasApiKey ? 'success' : 'error';
+            
+            resultDiv.innerHTML = `<div class="result ${resultClass}">
+Environment Variables Status:
+${Object.entries(vars).map(([key, value]) => {
+    const isSet = value !== 'NOT SET' && value !== '';
+    const status = isSet ? '✅' : '❌';
+    const displayValue = isSet ? `${value.substring(0, 20)}...` : value;
+    return `${status} ${key}: ${displayValue}`;
+}).join('\n')}
+
+Environment Config Loaded: ${envConfigLoaded ? '✅' : '❌'}
+Timestamp: ${new Date().toISOString()}</div>`;
+        }
+        
+        function reloadEnvVars() {
+            const resultDiv = document.getElementById('envVarsResult');
+            resultDiv.innerHTML = '<div class="result info">Reloading environment variables...</div>';
+            
+            // Try to reload environment variables
+            if (window.initializeEnvironment) {
+                window.initializeEnvironment().then(() => {
+                    setTimeout(() => checkEnvVars(), 500);
+                });
+            } else {
+                setTimeout(() => checkEnvVars(), 500);
+            }
+        }
+        
         async function testEnvConfig() {
             const resultDiv = document.getElementById('envConfigResult');
             try {
                 const response = await fetch('/env-config.js');
                 const text = await response.text();
                 
-                resultDiv.innerHTML = `<div class="result ${response.ok ? 'success' : 'error'}">
+                const isJS = response.headers.get('Content-Type')?.includes('javascript');
+                const resultClass = response.ok && isJS ? 'success' : 'error';
+                
+                resultDiv.innerHTML = `<div class="result ${resultClass}">
 Status: ${response.status} ${response.statusText}
 Content-Type: ${response.headers.get('Content-Type')}
-Response:
-${text.substring(0, 500)}...</div>`;
+Content-Length: ${text.length} bytes
+Is JavaScript: ${isJS ? '✅' : '❌'}
+
+Response Preview:
+${text.substring(0, 500)}${text.length > 500 ? '...' : ''}</div>`;
             } catch (error) {
                 resultDiv.innerHTML = `<div class="result error">Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testEnvConfigAPI() {
+            const resultDiv = document.getElementById('envConfigResult');
+            try {
+                const response = await fetch('/api/env-config');
+                const data = await response.json();
+                
+                resultDiv.innerHTML = `<div class="result ${response.ok ? 'success' : 'error'}">
+API Status: ${response.status} ${response.statusText}
+Content-Type: ${response.headers.get('Content-Type')}
+
+Response Data:
+${JSON.stringify(data, null, 2)}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">API Error: ${error.message}</div>`;
             }
         }
         
@@ -128,25 +230,61 @@ CORS Headers:
             }
         }
         
-        function checkEnvVars() {
-            const resultDiv = document.getElementById('envVarsResult');
-            const vars = {
-                RUNPOD_API_KEY: window.RUNPOD_API_KEY || 'NOT SET',
-                RUNPOD_TEXT_ENDPOINT_ID: window.RUNPOD_TEXT_ENDPOINT_ID || 'NOT SET',
-                NEXT_PUBLIC_SUPABASE_URL: window.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET',
-                NEXT_PUBLIC_SUPABASE_ANON_KEY: window.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'NOT SET'
+        async function runDiagnostics() {
+            const resultDiv = document.getElementById('diagnosticsResult');
+            resultDiv.innerHTML = '<div class="result info">Running diagnostics...</div>';
+            
+            const diagnostics = {
+                userAgent: navigator.userAgent,
+                url: window.location.href,
+                timestamp: new Date().toISOString(),
+                environmentVariables: {
+                    RUNPOD_API_KEY: !!window.RUNPOD_API_KEY && window.RUNPOD_API_KEY !== '',
+                    RUNPOD_TEXT_ENDPOINT_ID: window.RUNPOD_TEXT_ENDPOINT_ID || 'NOT SET',
+                    NEXT_PUBLIC_SUPABASE_URL: !!window.NEXT_PUBLIC_SUPABASE_URL,
+                    NEXT_PUBLIC_SUPABASE_ANON_KEY: !!window.NEXT_PUBLIC_SUPABASE_ANON_KEY
+                },
+                globalObjects: {
+                    supabase: typeof window.supabase !== 'undefined',
+                    CONFIG: typeof window.CONFIG !== 'undefined',
+                    injectEnvironmentVariables: typeof window.injectEnvironmentVariables !== 'undefined',
+                    initializeEnvironment: typeof window.initializeEnvironment !== 'undefined'
+                }
             };
             
-            resultDiv.innerHTML = `<div class="result success">
-Environment Variables:
-${Object.entries(vars).map(([key, value]) => `${key}: ${value.substring(0, 20)}...`).join('\n')}</div>`;
+            // Test network connectivity
+            try {
+                const envConfigResponse = await fetch('/env-config.js');
+                diagnostics.networkTests = {
+                    envConfigJs: {
+                        status: envConfigResponse.status,
+                        contentType: envConfigResponse.headers.get('Content-Type'),
+                        ok: envConfigResponse.ok
+                    }
+                };
+            } catch (error) {
+                diagnostics.networkTests = {
+                    envConfigJs: {
+                        error: error.message
+                    }
+                };
+            }
+            
+            resultDiv.innerHTML = `<div class="result info">
+System Diagnostics:
+${JSON.stringify(diagnostics, null, 2)}</div>`;
         }
         
-        // Load env-config.js
-        const script = document.createElement('script');
-        script.src = '/env-config.js';
-        script.onerror = () => console.error('Failed to load env-config.js');
-        document.head.appendChild(script);
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Test page loaded, checking environment variables...');
+            setTimeout(() => {
+                checkEnvVars();
+            }, 1000);
+        });
     </script>
+    
+    <!-- Load environment scripts -->
+    <script src="env-inject.js"></script>
 </body>
 </html>
