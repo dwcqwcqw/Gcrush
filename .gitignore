@@ -45,8 +45,10 @@ logs/
 config.local.js
 *.local.js
 
-# Generated environment configuration
-env-config.js
+# Generated environment configuration (only root)
+/env-config.js
+/public/env-config.js
+/frontend/public/env-config.js
 
 # Resources folder (local assets only)
 Resources/

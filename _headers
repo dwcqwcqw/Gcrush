@@ -1,0 +1,6 @@
+/env-config.js
+  Content-Type: application/javascript
+  Cache-Control: no-cache
+
+/*.js
+  Content-Type: application/javascript
