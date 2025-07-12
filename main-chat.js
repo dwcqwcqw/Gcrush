@@ -195,32 +195,82 @@ class MainChatSystem {
                 user_id: userId
             });
             
+            // First, check if there's an existing active session for this user and character
+            const { data: existingSessions, error: searchError } = await this.supabase
+                .from('chat_sessions')
+                .select('id, created_at')
+                .eq('user_id', userId)
+                .eq('character_id', characterId)
+                .order('created_at', { ascending: false })
+                .limit(1);
+            
+            if (searchError) {
+                console.warn('Error searching for existing sessions:', searchError);
+            }
+            
+            // If there's a recent session (within the last hour), use it instead of creating a new one
+            if (existingSessions && existingSessions.length > 0) {
+                const existingSession = existingSessions[0];
+                const sessionTime = new Date(existingSession.created_at);
+                const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                
+                if (sessionTime > oneHourAgo) {
+                    console.log('Using existing recent session:', existingSession.id);
+                    this.currentSessionId = existingSession.id;
+                    return;
+                }
+            }
+            
+            // Create a new session with upsert to handle potential conflicts
+            const sessionData = {
+                character_id: characterId,
+                user_id: userId,
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                last_message_at: new Date().toISOString()
+            };
+            
             const { data, error } = await this.supabase
                 .from('chat_sessions')
-                .insert({
-                    character_id: characterId,
-                    user_id: userId,
-                    created_at: new Date().toISOString(),
-                    updated_at: new Date().toISOString(),
-                    last_message_at: new Date().toISOString()
+                .upsert(sessionData, { 
+                    onConflict: 'user_id,character_id',
+                    ignoreDuplicates: false 
                 })
                 .select()
                 .single();
             
             if (error) {
                 console.error('Supabase error creating session:', error);
-                throw error;
+                
+                // If upsert fails, try a simple insert with a timestamp suffix
+                const fallbackData = {
+                    ...sessionData,
+                    created_at: new Date().toISOString()
+                };
+                
+                const { data: fallbackResult, error: fallbackError } = await this.supabase
+                    .from('chat_sessions')
+                    .insert(fallbackData)
+                    .select()
+                    .single();
+                
+                if (fallbackError) {
+                    throw fallbackError;
+                }
+                
+                this.currentSessionId = fallbackResult.id;
+                console.log('Chat session created with fallback method:', this.currentSessionId);
+            } else {
+                this.currentSessionId = data.id;
+                console.log('Chat session created successfully:', this.currentSessionId);
             }
-            
-            this.currentSessionId = data.id;
-            console.log('Chat session created successfully:', this.currentSessionId);
             
         } catch (error) {
             console.error('Error creating chat session:', error);
-            // Don't set a session ID if we can't create one in the database
-            // This prevents UUID format errors
-            this.currentSessionId = null;
-            console.log('No session created - messages will not be persisted');
+            
+            // Generate a temporary session ID for this session only
+            this.currentSessionId = `temp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            console.log('Using temporary session ID - messages will not be persisted:', this.currentSessionId);
         }
     }
     

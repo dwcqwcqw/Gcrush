@@ -1,51 +1,47 @@
-// Debug endpoint to check environment variables
+// Debug endpoint to check environment variables on Cloudflare Pages
 export async function onRequestGet(context) {
     const { env } = context;
     
-    // Create a safe debug response (don't expose actual secrets)
-    const debugInfo = {
+    // Create a safe representation of environment variables
+    const envInfo = {
         timestamp: new Date().toISOString(),
-        envKeysCount: Object.keys(env || {}).length,
-        envKeys: Object.keys(env || {}),
-        envVariables: {
-            RUNPOD_API_KEY: {
-                exists: !!env.RUNPOD_API_KEY,
-                length: env.RUNPOD_API_KEY ? env.RUNPOD_API_KEY.length : 0,
-                prefix: env.RUNPOD_API_KEY ? env.RUNPOD_API_KEY.substring(0, 10) + '...' : 'NOT SET'
-            },
-            RUNPOD_TEXT_ENDPOINT_ID: {
-                exists: !!env.RUNPOD_TEXT_ENDPOINT_ID,
-                value: env.RUNPOD_TEXT_ENDPOINT_ID || 'NOT SET'
-            },
-            'RUNPOD_TEXT_ENDPOINT_ID ': {
-                exists: !!env['RUNPOD_TEXT_ENDPOINT_ID '],
-                value: env['RUNPOD_TEXT_ENDPOINT_ID '] || 'NOT SET',
-                note: 'This key has a trailing space'
-            },
-            NEXT_PUBLIC_SUPABASE_URL: {
-                exists: !!env.NEXT_PUBLIC_SUPABASE_URL,
-                value: env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET'
-            },
-            NEXT_PUBLIC_SUPABASE_ANON_KEY: {
-                exists: !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-                length: env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length : 0
-            }
+        availableKeys: Object.keys(env || {}),
+        runpodConfig: {
+            hasApiKey: !!env.RUNPOD_API_KEY,
+            apiKeyLength: env.RUNPOD_API_KEY ? env.RUNPOD_API_KEY.length : 0,
+            apiKeyPrefix: env.RUNPOD_API_KEY ? env.RUNPOD_API_KEY.substring(0, 8) + '...' : 'NOT SET',
+            endpointId: env.RUNPOD_TEXT_ENDPOINT_ID || 'NOT SET'
         },
-        resolvedValues: {
-            runpodApiKey: env.RUNPOD_API_KEY || '',
-            runpodEndpointId: env.RUNPOD_TEXT_ENDPOINT_ID || env['RUNPOD_TEXT_ENDPOINT_ID '] || '4cx6jtjdx6hdhr',
-            note: 'These are the actual values that will be used'
-        }
+        supabaseConfig: {
+            hasUrl: !!env.NEXT_PUBLIC_SUPABASE_URL,
+            url: env.NEXT_PUBLIC_SUPABASE_URL || 'NOT SET',
+            hasAnonKey: !!env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+            anonKeyLength: env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? env.NEXT_PUBLIC_SUPABASE_ANON_KEY.length : 0
+        },
+        allEnvVars: {}
     };
     
-    // Log to Cloudflare console for debugging
-    console.log('Environment Debug Info:', debugInfo);
+    // Add first 10 characters of each environment variable (safe for debugging)
+    Object.keys(env || {}).forEach(key => {
+        const value = env[key];
+        if (typeof value === 'string') {
+            envInfo.allEnvVars[key] = {
+                length: value.length,
+                preview: value.length > 10 ? value.substring(0, 10) + '...' : value,
+                type: 'string'
+            };
+        } else {
+            envInfo.allEnvVars[key] = {
+                type: typeof value,
+                value: value
+            };
+        }
+    });
     
-    return new Response(JSON.stringify(debugInfo, null, 2), {
+    return new Response(JSON.stringify(envInfo, null, 2), {
         headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Cache-Control': 'no-cache'
+            'Access-Control-Allow-Origin': '*'
         }
     });
 }
@@ -59,4 +55,4 @@ export async function onRequestOptions() {
             'Access-Control-Allow-Headers': 'Content-Type'
         }
     });
-} 
+}

@@ -14,15 +14,32 @@ export async function onRequestPost(context) {
             });
         }
         
-        // Check if environment variables are available
+        // Enhanced debugging for environment variables
+        console.log('=== Chat API Environment Check ===');
+        console.log('All available env keys:', Object.keys(env || {}));
+        
         const apiKey = env.RUNPOD_API_KEY;
         const endpointId = env.RUNPOD_TEXT_ENDPOINT_ID || env.RUNPOD_ENDPOINT_ID;
+        
+        console.log('Environment variables check:');
+        console.log('- RUNPOD_API_KEY exists:', !!apiKey);
+        console.log('- RUNPOD_API_KEY length:', apiKey ? apiKey.length : 0);
+        console.log('- RUNPOD_API_KEY first 10 chars:', apiKey ? apiKey.substring(0, 10) + '...' : 'NOT SET');
+        console.log('- RUNPOD_TEXT_ENDPOINT_ID:', endpointId);
+        console.log('- All env vars (first 10 chars):', Object.fromEntries(
+            Object.entries(env || {}).map(([key, value]) => [
+                key, 
+                typeof value === 'string' ? value.substring(0, 10) + '...' : value
+            ])
+        ));
+        console.log('=== End Environment Check ===');
         
         if (!apiKey || !endpointId) {
             console.error('Missing environment variables:', { 
                 hasApiKey: !!apiKey, 
                 hasEndpointId: !!endpointId,
-                envKeys: Object.keys(env || {})
+                envKeys: Object.keys(env || {}),
+                apiKeyLength: apiKey ? apiKey.length : 0
             });
             
             // Fallback to mock response if no API credentials
