@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Flow Test - Gcrush</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        button {
+            background: #ff6b9d;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #ff5a8a;
+        }
+        .result {
+            background: #333;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .success { border-left: 4px solid #4caf50; }
+        .error { border-left: 4px solid #f44336; }
+        .warning { border-left: 4px solid #ff9800; }
+        .info { border-left: 4px solid #2196f3; }
+        input[type="text"] {
+            width: 300px;
+            padding: 8px;
+            margin: 5px;
+            background: #333;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Chat Flow Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Character Data Loading</h2>
+        <input type="text" id="characterName" placeholder="Enter character name (e.g., Cruz)" value="Cruz">
+        <button onclick="testCharacterLoading()">Load Character</button>
+        <div id="characterResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Test Enhanced Chat API</h2>
+        <input type="text" id="testMessage" placeholder="Enter test message" value="Hello, how are you?">
+        <button onclick="testEnhancedChatAPI()">Test Enhanced API</button>
+        <div id="enhancedChatResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test Full Chat Flow</h2>
+        <button onclick="testFullChatFlow()">Test Complete Flow</button>
+        <div id="fullFlowResult"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="env-inject.js"></script>
+    <script src="config.js"></script>
+    
+    <script>
+        let supabase;
+        let testCharacter = null;
+        
+        // Initialize Supabase
+        function initSupabase() {
+            const supabaseUrl = window.NEXT_PUBLIC_SUPABASE_URL || 'https://kuflobojizyttadwcbhe.supabase.co';
+            const supabaseKey = window.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+            
+            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            console.log('Supabase initialized');
+        }
+        
+        async function testCharacterLoading() {
+            const resultDiv = document.getElementById('characterResult');
+            const characterName = document.getElementById('characterName').value;
+            
+            if (!supabase) {
+                initSupabase();
+            }
+            
+            try {
+                resultDiv.innerHTML = '<div class="result info">Loading character data...</div>';
+                
+                const { data: character, error } = await supabase
+                    .from('characters')
+                    .select('*')
+                    .eq('name', characterName)
+                    .single();
+                
+                if (error) {
+                    throw error;
+                }
+                
+                testCharacter = character;
+                
+                resultDiv.innerHTML = `<div class="result success">
+Character loaded successfully:
+Name: ${character.name}
+Age: ${character.age || 'N/A'}
+Has system_prompt: ${!!character.system_prompt}
+System prompt length: ${character.system_prompt ? character.system_prompt.length : 0} chars
+Personality: ${character.personality || 'N/A'}
+Background: ${character.background || 'N/A'}
+Tags: ${[character.tag1, character.tag2, character.tag3].filter(t => t).join(', ') || 'N/A'}
+</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">Error loading character: ${error.message}</div>`;
+            }
+        }
+        
+        async function testEnhancedChatAPI() {
+            const resultDiv = document.getElementById('enhancedChatResult');
+            const message = document.getElementById('testMessage').value;
+            
+            if (!testCharacter) {
+                resultDiv.innerHTML = '<div class="result warning">Please load a character first</div>';
+                return;
+            }
+            
+            try {
+                resultDiv.innerHTML = '<div class="result info">Calling enhanced chat API...</div>';
+                
+                const response = await fetch('/api/chat-enhanced', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        character: testCharacter,
+                        message: message,
+                        sessionId: 'test-session-' + Date.now(),
+                        userId: 'test-user'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                const resultClass = response.ok ? 'success' : 'error';
+                
+                resultDiv.innerHTML = `<div class="result ${resultClass}">
+API Response:
+Status: ${response.status} ${response.statusText}
+Success: ${response.ok ? '✅' : '❌'}
+
+Response Data:
+${JSON.stringify(data, null, 2)}
+
+Generated Response:
+"${data.response || 'NO RESPONSE'}"
+
+Debug Info:
+- Extraction Method: ${data.debug?.extractionMethod || 'N/A'}
+- Has System Prompt: ${data.debug?.hasSystemPrompt ? '✅' : '❌'}
+- Prompt Length: ${data.debug?.promptLength || 'N/A'}
+- Response Length: ${data.debug?.responseLength || 'N/A'}
+- Is Mock: ${data.mock ? '✅' : '❌'}
+</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">Error calling API: ${error.message}</div>`;
+            }
+        }
+        
+        async function testFullChatFlow() {
+            const resultDiv = document.getElementById('fullFlowResult');
+            
+            try {
+                resultDiv.innerHTML = '<div class="result info">Testing full chat flow...</div>';
+                
+                // Step 1: Load character
+                await testCharacterLoading();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                // Step 2: Test API
+                await testEnhancedChatAPI();
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                resultDiv.innerHTML = '<div class="result success">✅ Full chat flow test completed! Check results above.</div>';
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">Error in full flow test: ${error.message}</div>`;
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Wait for environment variables to load
+            setTimeout(() => {
+                initSupabase();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

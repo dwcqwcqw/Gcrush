@@ -1060,9 +1060,8 @@ async function updateUIForLoggedInUser(user, username = null) {
         let displayName = null;
         
         if (!username) {
-            // Debug user metadata
-            console.log('User metadata:', user.user_metadata);
-            console.log('App metadata:', user.app_metadata);
+            // Debug user metadata (minimal logging)
+            console.log('User provider:', user.app_metadata?.provider || 'email');
             
             // Check for display_name in user metadata first
             if (user.user_metadata && user.user_metadata.display_name) {
@@ -1071,8 +1070,6 @@ async function updateUIForLoggedInUser(user, username = null) {
             // Check if user logged in with OAuth provider
             else if (user.app_metadata && user.app_metadata.provider) {
                 const provider = user.app_metadata.provider;
-                console.log('User logged in with provider:', provider);
-                console.log('Full user object:', JSON.stringify(user, null, 2));
                 
                 if (provider === 'google' && user.user_metadata) {
                     // For Google, use full_name or name
@@ -1114,7 +1111,7 @@ async function updateUIForLoggedInUser(user, username = null) {
                                      null;
                     }
                     
-                    console.log('Twitter/X display name found:', displayName);
+                    // Display name found
                 }
             }
             
