@@ -982,12 +982,16 @@ function setupProfileDropdown() {
     // Setup user profile click handler
     const userProfile = document.querySelector('.user-profile');
     if (userProfile) {
-        userProfile.addEventListener('click', (e) => {
+        // Remove any existing click listeners by cloning
+        const newUserProfile = userProfile.cloneNode(true);
+        userProfile.parentNode.replaceChild(newUserProfile, userProfile);
+        
+        newUserProfile.addEventListener('click', (e) => {
             e.stopPropagation();
             const dropdown = document.getElementById('profileDropdown');
             if (dropdown) {
                 // Position dropdown below user profile
-                const rect = userProfile.getBoundingClientRect();
+                const rect = newUserProfile.getBoundingClientRect();
                 dropdown.style.top = (rect.bottom + 10) + 'px';
                 dropdown.style.right = (window.innerWidth - rect.right) + 'px';
                 
@@ -1011,10 +1015,16 @@ function setupProfileDropdown() {
     setTimeout(() => {
         const logoutBtn = document.getElementById('logoutBtn');
         if (logoutBtn) {
-            logoutBtn.addEventListener('click', (e) => {
+            // Remove any existing listeners by cloning
+            const newLogoutBtn = logoutBtn.cloneNode(true);
+            logoutBtn.parentNode.replaceChild(newLogoutBtn, logoutBtn);
+            
+            newLogoutBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
+                e.preventDefault();
+                console.log('Logout button clicked');
                 hideDropdown();
-                logout();
+                await logout();
             });
             console.log('Logout button event listener attached');
         } else {

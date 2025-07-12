@@ -104,7 +104,19 @@
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="env-config.js"></script>
+    <!-- Environment Variables -->
+    <script>
+        // Fallback for env-config.js if it fails to load
+        window.addEventListener('error', function(e) {
+            if (e.target.tagName === 'SCRIPT' && e.target.src.includes('env-config.js')) {
+                console.warn('env-config.js failed to load, using fallback');
+                window.RUNPOD_API_KEY = window.RUNPOD_API_KEY || '';
+                window.RUNPOD_TEXT_ENDPOINT_ID = window.RUNPOD_TEXT_ENDPOINT_ID || '4cx6jtjdx6hdhr';
+            }
+        }, true);
+    </script>
+    <script src="env-config.js" onerror="console.warn('env-config.js not found')"></script>
+    <script src="env-inject.js"></script>
     <script src="env-loader.js"></script>
     <script src="config.js"></script>
     <script src="config.local.js"></script>

@@ -431,42 +431,45 @@ class ChatSystem {
     
     async getAIResponse(userMessage) {
         try {
-            // Build conversation history
-            const messages = await this.buildConversationHistory(userMessage);
+            console.log('Calling chat API with message:', userMessage);
             
-            // Call RunPod API
-            const response = await fetch(this.runpodApiUrl + 'runsync', {
+            // Call through Cloudflare Worker endpoint
+            const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${this.runpodApiKey}`
                 },
                 body: JSON.stringify({
-                    input: {
-                        model: this.modelName,
-                        messages: messages,
-                        max_tokens: CONFIG.MAX_TOKENS,
-                        temperature: CONFIG.TEMPERATURE,
-                        top_p: CONFIG.TOP_P,
-                        stop: CONFIG.STOP_SEQUENCES
-                    }
+                    character: this.currentCharacter,
+                    message: userMessage,
+                    sessionId: this.currentSessionId || undefined  // Don't send null/invalid session IDs
                 })
             });
             
-            if (!response.ok) {
-                throw new Error(`RunPod API error: ${response.status}`);
-            }
-            
             const data = await response.json();
+            console.log('Chat API response:', data);
             
-            if (data.status === 'COMPLETED' && data.output) {
-                return data.output.choices[0].message.content;
-            } else {
-                throw new Error('Invalid response from RunPod API');
+            if (!response.ok) {
+                console.error('Chat API error:', data);
+                
+                // Check if it's a mock response due to missing env vars
+                if (data.mock) {
+                    console.warn('Using mock response - RunPod API not configured on server');
+                    return data.response;
+                }
+                
+                throw new Error(data.error || `API request failed: ${response.status}`);
             }
+            
+            // Check if we got a mock response
+            if (data.mock) {
+                console.warn('Received mock response - RunPod API not configured on server');
+            }
+            
+            return data.response || this.getFallbackResponse();
             
         } catch (error) {
-            console.error('RunPod API error:', error);
+            console.error('Chat API error:', error);
             // Fallback response
             return this.getFallbackResponse();
         }
