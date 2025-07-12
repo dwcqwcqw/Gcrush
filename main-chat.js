@@ -227,13 +227,34 @@ class MainChatSystem {
     async sendInitialMessages() {
         if (!this.currentCharacter.situation || !this.currentCharacter.greeting) return;
         
-        // Send situation message
-        await this.addMessage('assistant', this.currentCharacter.situation, false);
+        // Check if this character has been chatted with before
+        const chatHistoryKey = `gcrush_chat_history_${this.currentCharacter.name}`;
+        const hasChattedBefore = localStorage.getItem(chatHistoryKey);
         
-        // Send greeting message after a delay
-        setTimeout(async () => {
-            await this.addMessage('assistant', this.currentCharacter.greeting, false);
-        }, 1000);
+        if (!hasChattedBefore) {
+            // First time chatting with this character
+            // Send situation message
+            await this.addMessage('assistant', this.currentCharacter.situation, false);
+            
+            // Send greeting message after a delay
+            setTimeout(async () => {
+                await this.addMessage('assistant', this.currentCharacter.greeting, false);
+                
+                // Mark that we've chatted with this character
+                localStorage.setItem(chatHistoryKey, 'true');
+            }, 1000);
+        } else {
+            // Already chatted before - just send a welcome back message
+            const welcomeBackMessages = [
+                `Welcome back! I've missed chatting with you.`,
+                `Hey there! Good to see you again.`,
+                `Oh, you're back! How have you been?`,
+                `*smiles* I was hoping you'd come back to chat!`,
+                `Great to see you again! What's on your mind today?`
+            ];
+            const randomWelcome = welcomeBackMessages[Math.floor(Math.random() * welcomeBackMessages.length)];
+            await this.addMessage('assistant', `[${this.currentCharacter.name}] ${randomWelcome}`, false);
+        }
     }
     
     async sendMessage() {
@@ -687,6 +708,13 @@ class MainChatSystem {
 
     clearMessages() {
         document.getElementById('chatMessages').innerHTML = '';
+    }
+    
+    // Method to reset first-time chat status (useful for testing)
+    resetCharacterFirstChat(characterName) {
+        const chatHistoryKey = `gcrush_chat_history_${characterName || this.currentCharacter?.name}`;
+        localStorage.removeItem(chatHistoryKey);
+        console.log('Reset first chat status for:', characterName || this.currentCharacter?.name);
     }
 }
 

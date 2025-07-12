@@ -120,14 +120,14 @@
             let envInfo = '<span class="info">Environment Variables Check:</span>\n\n';
             
             // Check window variables
-            envInfo += `Window.RUNPOD_API_KEY: ${window.RUNPOD_API_KEY ? '<span class="success">Set (hidden)</span>' : '<span class="error">Not found</span>'}\n`;
-            envInfo += `Window.RUNPOD_TEXT_ENDPOINT_ID: ${window.RUNPOD_TEXT_ENDPOINT_ID ? `<span class="success">${window.RUNPOD_TEXT_ENDPOINT_ID}</span>` : '<span class="error">Not found</span>'}\n\n';
+            envInfo += 'Window.RUNPOD_API_KEY: ' + (window.RUNPOD_API_KEY ? '<span class="success">Set (hidden)</span>' : '<span class="error">Not found</span>') + '\\n';
+            envInfo += 'Window.RUNPOD_TEXT_ENDPOINT_ID: ' + (window.RUNPOD_TEXT_ENDPOINT_ID ? '<span class="success">' + window.RUNPOD_TEXT_ENDPOINT_ID + '</span>' : '<span class="error">Not found</span>') + '\\n\\n';
             
             // Check if running on Cloudflare Pages
             envInfo += `<span class="info">Deployment Info:</span>\n`;
             envInfo += `Location: ${window.location.hostname}\n`;
             envInfo += `Protocol: ${window.location.protocol}\n`;
-            envInfo += `Is Cloudflare Pages: ${window.location.hostname.includes('pages.dev') ? '<span class="success">Yes</span>' : '<span class="warning">No (local or custom domain)</span>'}\n`;
+            envInfo += 'Is Cloudflare Pages: ' + (window.location.hostname.includes('pages.dev') ? '<span class="success">Yes</span>' : '<span class="warning">No (local or custom domain)</span>') + '\\n';
             
             responseBox.innerHTML = envInfo;
         }
