@@ -95,10 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const img = card.querySelector('.character-image img');
             
             if (video && img) {
-                // Ensure image is visible by default
-                img.style.opacity = '1';
-                img.style.visibility = 'visible';
-                img.style.display = 'block';
+                // Ensure image is visible by default with !important
+                img.style.setProperty('opacity', '1', 'important');
+                img.style.setProperty('visibility', 'visible', 'important');
+                img.style.setProperty('display', 'block', 'important');
                 let isHovered = false;
                 let videoReady = false;
                 let isLoading = false;
@@ -133,10 +133,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         video.currentTime = 0;
                         video.play().then(() => {
                             // Only hide image AFTER video successfully starts playing
-                            img.style.opacity = '0';
+                            img.style.setProperty('opacity', '0', 'important');
                         }).catch(error => {
                             console.log('Video playback failed:', error);
-                            img.style.opacity = '1';
+                            img.style.setProperty('opacity', '1', 'important');
                             video.classList.remove('playing');
                         });
                     }
@@ -160,10 +160,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         video.currentTime = 0;
                         video.play().then(() => {
                             // Only hide image AFTER video successfully starts playing
-                            img.style.opacity = '0';
+                            img.style.setProperty('opacity', '0', 'important');
                         }).catch(error => {
                             console.log('Video playback failed:', error);
-                            img.style.opacity = '1';
+                            img.style.setProperty('opacity', '1', 'important');
                             video.classList.remove('playing');
                         });
                     } else {
@@ -178,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     video.pause();
                     video.currentTime = 0;
                     video.classList.remove('playing');
-                    img.style.opacity = '1';
+                    img.style.setProperty('opacity', '1', 'important');
                 });
                 
                 // Ensure video loops properly when hovered
@@ -188,7 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         video.play().catch(error => {
                             console.log('Video loop failed:', error);
                             // If loop fails, show image again
-                            img.style.opacity = '1';
+                            img.style.setProperty('opacity', '1', 'important');
                             video.classList.remove('playing');
                         });
                     }
