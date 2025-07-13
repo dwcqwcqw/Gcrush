@@ -187,6 +187,16 @@ class VoiceFeatures {
             return;
         }
 
+        // Check local cache first
+        const cacheKey = `tts_${this.currentCharacter.id}_${this.hashText(text)}`;
+        const cachedUrl = localStorage.getItem(cacheKey);
+        
+        if (cachedUrl && cachedUrl.startsWith('https://')) {
+            console.log('🎯 Using cached audio URL:', cachedUrl);
+            await this.playAudio(cachedUrl, button);
+            return;
+        }
+
         // Show loading state
         this.updatePlayButton(button, 'loading');
 
@@ -252,9 +262,21 @@ class VoiceFeatures {
                     return;
                 }
                 
+                // Cache the audio URL for future use (only if it's a proper HTTPS URL)
+                if (audioUrl.startsWith('https://')) {
+                    const cacheKey = `tts_${this.currentCharacter.id}_${this.hashText(text)}`;
+                    localStorage.setItem(cacheKey, audioUrl);
+                    console.log('💾 Cached audio URL for future use');
+                }
+
                 // Play the audio
                 await this.playAudio(audioUrl, button);
                 console.log('✅ Text-to-speech successful');
+                
+                // Log if this was from cache
+                if (result.cached) {
+                    console.log('🎯 This audio was served from R2 cache');
+                }
             } else {
                 console.error('Text-to-speech failed:', result.error);
                 alert('Voice generation failed. Please try again.');
@@ -384,6 +406,18 @@ class VoiceFeatures {
     updateContext(user, character) {
         this.currentUser = user;
         this.currentCharacter = character;
+    }
+    
+    // Simple hash function for text caching
+    hashText(text) {
+        let hash = 0;
+        if (text.length === 0) return hash;
+        for (let i = 0; i < text.length; i++) {
+            const char = text.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash; // Convert to 32bit integer
+        }
+        return Math.abs(hash).toString(16);
     }
 }
 

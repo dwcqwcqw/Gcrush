@@ -32,6 +32,41 @@ export async function onRequestPost(context) {
 
             console.log('Processing text-to-speech for character:', characterId, 'user:', userId);
             
+            // Create cache key based on text and character
+            const textHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+            const hashArray = Array.from(new Uint8Array(textHash));
+            const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+            const cacheKey = `gcrush/Sound/cache/${characterId}/${hashHex.substring(0, 16)}.mp3`;
+            
+            console.log('Checking cache for:', cacheKey);
+            
+            // Check if audio already exists in R2 cache
+            if (env.R2_BUCKET) {
+                try {
+                    const cachedAudio = await env.R2_BUCKET.get(cacheKey);
+                    if (cachedAudio) {
+                        console.log('✅ Found cached audio, returning cached URL');
+                        const cachedUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${cacheKey}`;
+                        return new Response(JSON.stringify({
+                            success: true,
+                            audioUrl: cachedUrl,
+                            r2Key: cacheKey,
+                            cached: true
+                        }), {
+                            status: 200,
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            }
+                        });
+                    }
+                } catch (cacheError) {
+                    console.log('Cache check failed, proceeding with API call:', cacheError.message);
+                }
+            }
+            
+            console.log('No cached audio found, calling MiniMax API...');
+            
             // Check if MiniMax API credentials are available
             if (!env.MINIMAX_API_KEY || !env.MINIMAX_GROUP_ID) {
                 console.error('MiniMax API credentials not configured');
@@ -54,6 +89,7 @@ export async function onRequestPost(context) {
                 const supabaseUrl = 'https://kuflobojizyttadwcbhe.supabase.co';
                 const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
                 
+                console.log('🔍 Fetching character voice_id from database for character:', characterId);
                 const characterResponse = await fetch(`${supabaseUrl}/rest/v1/characters?id=eq.${characterId}&select=voice_id,name`, {
                     headers: {
                         'apikey': supabaseKey,
@@ -75,18 +111,15 @@ export async function onRequestPost(context) {
 
                 const characters = await characterResponse.json();
                 if (characters.length === 0) {
-                    return new Response(JSON.stringify({ error: 'Character not found in database' }), {
-                        status: 404,
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Access-Control-Allow-Origin': '*'
-                        }
-                    });
+                    console.warn('Character not found in database, using default voice');
+                    // Don't return error for missing character, use default voice instead
+                    characterName = `Character ${characterId}`;
+                } else {
+                    const character = characters[0];
+                    voiceId = character.voice_id || 'male-qn-qingse';
+                    characterName = character.name;
+                    console.log('✅ Found character in database:', characterName, 'voice_id:', voiceId);
                 }
-                
-                const character = characters[0];
-                voiceId = character.voice_id || 'male-qn-qingse';
-                characterName = character.name;
             } else {
                 console.log('Using test character, skipping database lookup');
             }
@@ -176,8 +209,8 @@ export async function onRequestPost(context) {
                 
                 console.log('Converted audio buffer size:', audioBuffer.length);
                 
-                const audioFileName = `tts_${characterId}_${Date.now()}.mp3`;
-                const r2Key = `gcrush/Sound/${userId}/${audioFileName}`;
+                // Use the cache key for storage
+                const r2Key = cacheKey;
                 
                 console.log('R2 bucket available:', !!env.R2_BUCKET);
                 console.log('About to upload TTS audio to R2 with key:', r2Key);
