@@ -146,16 +146,33 @@ export async function onRequestPost(context) {
             const ttsResult = await minimaxResponse.json();
             console.log('Minimax TTS result:', ttsResult);
 
-            // Check for MiniMax t2a_v2 response format: audio_file (hex string)
-            if (ttsResult.audio_file) {
-                console.log('Got hex audio data from MiniMax, length:', ttsResult.audio_file.length);
+            // Check for MiniMax t2a_v2 response format: multiple possible formats
+            let hexAudio = null;
+            
+            if (ttsResult.data && ttsResult.data.audio) {
+                hexAudio = ttsResult.data.audio;
+                console.log('Found hex audio in data.audio, length:', hexAudio.length);
+            } else if (ttsResult.audio_file) {
+                hexAudio = ttsResult.audio_file;
+                console.log('Found hex audio in audio_file, length:', hexAudio.length);
+            } else if (ttsResult.audio) {
+                hexAudio = ttsResult.audio;
+                console.log('Found hex audio in audio, length:', hexAudio.length);
+            }
+            
+            if (hexAudio) {
+                console.log('Converting hex to bytes...');
                 
-                // Convert hex string to byte array
-                const hexString = ttsResult.audio_file;
-                const audioBuffer = new Uint8Array(hexString.length / 2);
-                for (let i = 0; i < hexString.length; i += 2) {
-                    audioBuffer[i / 2] = parseInt(hexString.substr(i, 2), 16);
+                // Convert hex string to byte array using your provided method
+                function hexToBytes(hexString) {
+                    const bytes = new Uint8Array(hexString.length / 2);
+                    for (let i = 0; i < hexString.length; i += 2) {
+                        bytes[i / 2] = parseInt(hexString.substr(i, 2), 16);
+                    }
+                    return bytes;
                 }
+                
+                const audioBuffer = hexToBytes(hexAudio);
                 
                 console.log('Converted audio buffer size:', audioBuffer.length);
                 
@@ -178,19 +195,30 @@ export async function onRequestPost(context) {
                         r2AudioUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${r2Key}`;
                     } catch (r2Error) {
                         console.error('R2 upload failed for TTS:', r2Error);
-                        console.warn('Returning original MiniMax URL...');
-                        r2AudioUrl = audioUrl; // Use original MiniMax URL
+                        console.warn('Creating temporary blob URL...');
+                        // Create a temporary blob URL since R2 failed
+                        const audioBlob = new Blob([audioBuffer], { type: 'audio/mp3' });
+                        r2AudioUrl = 'blob-data-available-but-r2-failed';
                     }
                 } else {
-                    console.warn('R2 storage not configured, returning original MiniMax URL');
-                    r2AudioUrl = audioUrl; // Use original MiniMax URL
+                    console.warn('R2 storage not configured, creating temporary blob URL');
+                    // Without R2, we'll return the raw data and let frontend handle it
+                    r2AudioUrl = 'blob-data-available-no-r2';
                 }
 
-                return new Response(JSON.stringify({
+                const responseData = {
                     success: true,
                     audioUrl: r2AudioUrl,
                     r2Key: r2Key
-                }), {
+                };
+                
+                // If R2 failed or not configured, also send hex data for frontend processing
+                if (r2AudioUrl.includes('blob-data-available')) {
+                    responseData.hexAudio = hexAudio;
+                    responseData.note = 'R2 storage not available, use hexAudio for blob creation';
+                }
+                
+                return new Response(JSON.stringify(responseData), {
                     status: 200,
                     headers: {
                         'Content-Type': 'application/json',

@@ -205,9 +205,31 @@ class VoiceFeatures {
 
             const result = await response.json();
 
-            if (result.success && result.audioUrl) {
+            if (result.success) {
+                let audioUrl = result.audioUrl;
+                
+                // If hex audio data is provided, create blob URL
+                if (result.hexAudio) {
+                    console.log('Creating blob URL from hex audio data...');
+                    
+                    // Convert hex string to bytes
+                    function hexToBytes(hexString) {
+                        const bytes = new Uint8Array(hexString.length / 2);
+                        for (let i = 0; i < hexString.length; i += 2) {
+                            bytes[i / 2] = parseInt(hexString.substr(i, 2), 16);
+                        }
+                        return bytes;
+                    }
+                    
+                    const audioBytes = hexToBytes(result.hexAudio);
+                    const audioBlob = new Blob([audioBytes], { type: 'audio/mp3' });
+                    audioUrl = URL.createObjectURL(audioBlob);
+                    
+                    console.log('Created blob URL:', audioUrl);
+                }
+                
                 // Play the audio
-                await this.playAudio(result.audioUrl, button);
+                await this.playAudio(audioUrl, button);
                 console.log('✅ Text-to-speech successful');
             } else {
                 console.error('Text-to-speech failed:', result.error);
