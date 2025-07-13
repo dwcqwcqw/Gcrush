@@ -26,8 +26,20 @@ class MainChatSystem {
         await this.setupAuthentication();
         this.setupEventListeners();
         this.checkUrlParameters();
+        this.initializeVoiceFeatures();
     }
 
+    initializeVoiceFeatures() {
+        // Wait for voice features to be loaded, then initialize
+        if (window.voiceFeatures) {
+            console.log('🎤 Voice features available, initializing...');
+        } else {
+            console.log('🎤 Waiting for voice features to load...');
+            // Wait and try again
+            setTimeout(() => this.initializeVoiceFeatures(), 100);
+        }
+    }
+    
     checkUrlParameters() {
         const urlParams = new URLSearchParams(window.location.search);
         const characterName = urlParams.get('character');
@@ -57,6 +69,11 @@ class MainChatSystem {
                     const message = this.pendingMessage;
                     this.pendingMessage = null;
                     await this.processMessage(message);
+                }
+                
+                // Update voice features with new user context
+                if (window.voiceFeatures && this.currentCharacter) {
+                    window.voiceFeatures.updateContext(this.currentUser, this.currentCharacter);
                 }
                 
                 this.closeLoginModal();
@@ -159,6 +176,9 @@ class MainChatSystem {
             // Update character info in UI
             this.updateCharacterInfo();
             
+            // Initialize voice features for this character
+            this.initializeVoiceFeaturesForChat();
+            
             let hasExistingMessages = false;
             
             // Create or load chat session (only if user is logged in)
@@ -246,6 +266,15 @@ class MainChatSystem {
             
             // Set character image as background
             document.getElementById('chatBackground').style.backgroundImage = `url(${avatar})`;
+        }
+    }
+    
+    initializeVoiceFeaturesForChat() {
+        if (window.voiceFeatures && this.currentCharacter) {
+            console.log('🎤 Initializing voice features for chat with', this.currentCharacter.name);
+            window.voiceFeatures.init(this.currentUser, this.currentCharacter);
+        } else {
+            console.log('🎤 Voice features not available or no character selected');
         }
     }
     
@@ -541,6 +570,11 @@ class MainChatSystem {
         
         messageDiv.appendChild(messageContent);
         messagesContainer.appendChild(messageDiv);
+        
+        // Add voice play button for assistant messages
+        if (role === 'assistant' && window.voiceFeatures) {
+            window.voiceFeatures.addPlayButtonToMessage(messageDiv, content);
+        }
         
         // Scroll to bottom
         messagesContainer.scrollTop = messagesContainer.scrollHeight;

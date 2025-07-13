@@ -3409,3 +3409,113 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
         max-height: min(50vh, 350px);
     }
 }
+
+/* Voice Features Styles */
+.voice-input-btn {
+    background: rgba(162, 89, 255, 0.2);
+    border: 1px solid rgba(162, 89, 255, 0.4);
+    color: #A259FF;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    margin-right: 8px;
+}
+
+.voice-input-btn:hover {
+    background: rgba(162, 89, 255, 0.3);
+    border-color: #A259FF;
+    transform: scale(1.05);
+}
+
+.voice-input-btn.recording {
+    background: rgba(255, 89, 89, 0.3);
+    border-color: #FF5959;
+    color: #FF5959;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(1.1);
+    }
+}
+
+.play-voice-btn {
+    background: rgba(162, 89, 255, 0.2);
+    border: 1px solid rgba(162, 89, 255, 0.4);
+    color: #A259FF;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    margin-left: 8px;
+    font-size: 12px;
+    vertical-align: middle;
+}
+
+.play-voice-btn:hover {
+    background: rgba(162, 89, 255, 0.3);
+    border-color: #A259FF;
+    transform: scale(1.05);
+}
+
+.play-voice-btn.loading {
+    color: #FFA500;
+    border-color: rgba(255, 165, 0, 0.4);
+    background: rgba(255, 165, 0, 0.2);
+}
+
+.play-voice-btn.playing {
+    color: #4CAF50;
+    border-color: rgba(76, 175, 80, 0.4);
+    background: rgba(76, 175, 80, 0.2);
+}
+
+.play-voice-btn.error {
+    color: #FF5959;
+    border-color: rgba(255, 89, 89, 0.4);
+    background: rgba(255, 89, 89, 0.2);
+}
+
+.play-voice-btn i.fa-spin {
+    animation: fa-spin 1s infinite linear;
+}
+
+/* Ensure voice buttons fit well in chat input area */
+.chat-input-area {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Mobile adjustments for voice buttons */
+@media (max-width: 768px) {
+    .voice-input-btn {
+        width: 36px;
+        height: 36px;
+        margin-right: 6px;
+    }
+    
+    .play-voice-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 10px;
+        margin-left: 6px;
+    }
+}
