@@ -8,6 +8,7 @@ class VoiceFeatures {
         this.currentCharacter = null;
         this.currentAudio = null;
         this.currentPlayButton = null;
+        this.playingButtons = new Set(); // Track all buttons that might be in playing state
         
         console.log('🎤 Voice Features initialized');
     }
@@ -63,6 +64,9 @@ class VoiceFeatures {
             e.stopPropagation();
             this.handlePlayButtonClick(text, playButton);
         });
+
+        // Add to tracking set when created
+        this.playingButtons.add(playButton);
 
         // Add to message content
         const messageContent = messageElement.querySelector('.message-content');
@@ -196,9 +200,10 @@ class VoiceFeatures {
         if (this.currentAudio) {
             this.currentAudio.pause();
             this.currentAudio.currentTime = 0;
-            if (this.currentPlayButton) {
-                this.updatePlayButton(this.currentPlayButton, 'ready');
-            }
+            
+            // Reset all tracked buttons to ready state
+            this.resetAllButtons();
+            
             this.currentAudio = null;
             this.currentPlayButton = null;
         }
@@ -212,6 +217,16 @@ class VoiceFeatures {
                 this.updatePlayButton(this.currentPlayButton, 'ready');
             }
         }
+    }
+
+    // Reset all buttons to ready state
+    resetAllButtons() {
+        this.playingButtons.forEach(button => {
+            if (button && button.parentNode) { // Check if button still exists in DOM
+                this.updatePlayButton(button, 'ready');
+            }
+        });
+        this.playingButtons.clear();
     }
 
     // Handle text to speech
@@ -335,12 +350,15 @@ class VoiceFeatures {
     // Play audio
     async playAudio(audioUrl, button) {
         try {
-            // Stop any currently playing audio
+            // Stop any currently playing audio and reset all buttons
             this.stopCurrentAudio();
             
             const audio = new Audio(audioUrl);
             this.currentAudio = audio;
             this.currentPlayButton = button;
+            
+            // Add this button to the tracking set
+            this.playingButtons.add(button);
             
             audio.onloadstart = () => {
                 this.updatePlayButton(button, 'loading');
@@ -360,6 +378,7 @@ class VoiceFeatures {
             
             audio.onended = () => {
                 this.updatePlayButton(button, 'ready');
+                this.playingButtons.delete(button);
                 this.currentAudio = null;
                 this.currentPlayButton = null;
             };
@@ -367,6 +386,7 @@ class VoiceFeatures {
             audio.onerror = () => {
                 console.error('Audio playback error');
                 this.updatePlayButton(button, 'error');
+                this.playingButtons.delete(button);
                 this.currentAudio = null;
                 this.currentPlayButton = null;
             };
@@ -376,6 +396,7 @@ class VoiceFeatures {
         } catch (error) {
             console.error('Error playing audio:', error);
             this.updatePlayButton(button, 'error');
+            this.playingButtons.delete(button);
             this.currentAudio = null;
             this.currentPlayButton = null;
         }
@@ -399,7 +420,7 @@ class VoiceFeatures {
 
     // Update play button state
     updatePlayButton(button, state) {
-        if (!button) return;
+        if (!button || !button.parentNode) return; // Check if button still exists in DOM
 
         button.classList.remove('loading', 'playing', 'error');
         
@@ -413,13 +434,17 @@ class VoiceFeatures {
                 button.innerHTML = '<i class="fas fa-pause"></i>';
                 button.classList.add('playing');
                 button.disabled = false;
+                // Ensure only this button shows as playing
+                this.ensureOnlyOnePlayingButton(button);
                 break;
             case 'error':
                 button.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
                 button.classList.add('error');
                 button.disabled = false;
                 setTimeout(() => {
-                    this.updatePlayButton(button, 'ready');
+                    if (button.parentNode) { // Check if button still exists
+                        this.updatePlayButton(button, 'ready');
+                    }
                 }, 2000);
                 break;
             case 'ready':
@@ -428,6 +453,29 @@ class VoiceFeatures {
                 button.disabled = false;
                 break;
         }
+    }
+
+    // Ensure only one button shows as playing
+    ensureOnlyOnePlayingButton(activeButton) {
+        this.playingButtons.forEach(button => {
+            if (button !== activeButton && button.parentNode) {
+                // Reset all other buttons to ready state
+                button.classList.remove('loading', 'playing', 'error');
+                button.innerHTML = '<i class="fas fa-play"></i>';
+                button.disabled = false;
+            }
+        });
+        
+        // Clean up buttons that no longer exist in DOM
+        const buttonsToRemove = [];
+        this.playingButtons.forEach(button => {
+            if (!button.parentNode) {
+                buttonsToRemove.push(button);
+            }
+        });
+        buttonsToRemove.forEach(button => {
+            this.playingButtons.delete(button);
+        });
     }
 
     // Show voice processing state
