@@ -82,6 +82,52 @@ export async function onRequestPost(context) {
                 r2Key = 'r2-not-configured';
             }
 
+            // Check for region restrictions first
+            console.log('🌍 Checking OpenAI region support...');
+            
+            try {
+                // Test API availability with a simple request
+                const testResponse = await fetch('https://api.openai.com/v1/models', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${env.OPENAI_API_KEY}`
+                    }
+                });
+                
+                if (!testResponse.ok) {
+                    const testError = await testResponse.text();
+                    console.log('OpenAI API test failed:', testResponse.status, testError);
+                    
+                    if (testResponse.status === 403 || testError.includes('unsupported_country_region_territory')) {
+                        return new Response(JSON.stringify({ 
+                            error: 'OpenAI services not available in this region',
+                            details: 'Speech-to-text service is restricted in your location. Please use a VPN or try from a supported region.',
+                            fallback: 'Consider using alternative speech recognition services.'
+                        }), {
+                            status: 403,
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Access-Control-Allow-Origin': '*'
+                            }
+                        });
+                    }
+                }
+                
+                console.log('✅ OpenAI API region check passed');
+            } catch (regionError) {
+                console.error('Region check failed:', regionError);
+                return new Response(JSON.stringify({ 
+                    error: 'Unable to verify OpenAI API availability',
+                    details: regionError.message
+                }), {
+                    status: 500,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
+            }
+            
             // Convert to OpenAI Whisper API
             console.log('🚀 Calling OpenAI Whisper API...');
             

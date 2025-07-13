@@ -146,20 +146,18 @@ export async function onRequestPost(context) {
             const ttsResult = await minimaxResponse.json();
             console.log('Minimax TTS result:', ttsResult);
 
-            // Check for MiniMax response format: task.audios[0].audio_url
-            if (ttsResult.task && ttsResult.task.status === 'TASK_STATUS_SUCCEED' && 
-                ttsResult.audios && ttsResult.audios.length > 0 && ttsResult.audios[0].audio_url) {
+            // Check for MiniMax t2a_v2 response format: audio_file (hex string)
+            if (ttsResult.audio_file) {
+                console.log('Got hex audio data from MiniMax, length:', ttsResult.audio_file.length);
                 
-                const audioUrl = ttsResult.audios[0].audio_url;
-                console.log('Got audio URL from MiniMax:', audioUrl);
-                
-                // Download the audio file from MiniMax
-                const audioResponse = await fetch(audioUrl);
-                if (!audioResponse.ok) {
-                    throw new Error('Failed to download audio from MiniMax');
+                // Convert hex string to byte array
+                const hexString = ttsResult.audio_file;
+                const audioBuffer = new Uint8Array(hexString.length / 2);
+                for (let i = 0; i < hexString.length; i += 2) {
+                    audioBuffer[i / 2] = parseInt(hexString.substr(i, 2), 16);
                 }
                 
-                const audioBuffer = await audioResponse.arrayBuffer();
+                console.log('Converted audio buffer size:', audioBuffer.length);
                 
                 const audioFileName = `tts_${characterId}_${Date.now()}.mp3`;
                 const r2Key = `gcrush/Sound/${userId}/${audioFileName}`;
@@ -199,11 +197,55 @@ export async function onRequestPost(context) {
                         'Access-Control-Allow-Origin': '*'
                     }
                 });
+            } else if (ttsResult.task && ttsResult.task.status === 'TASK_STATUS_SUCCEED' && 
+                       ttsResult.audios && ttsResult.audios.length > 0 && ttsResult.audios[0].audio_url) {
+                // Fallback: Old format with audio_url
+                const audioUrl = ttsResult.audios[0].audio_url;
+                console.log('Got audio URL from MiniMax (old format):', audioUrl);
+                
+                // Download the audio file from MiniMax
+                const audioResponse = await fetch(audioUrl);
+                if (!audioResponse.ok) {
+                    throw new Error('Failed to download audio from MiniMax');
+                }
+                
+                const audioBuffer = await audioResponse.arrayBuffer();
+                const audioFileName = `tts_${characterId}_${Date.now()}.mp3`;
+                const r2Key = `gcrush/Sound/${userId}/${audioFileName}`;
+                
+                // Upload to R2 (same as above)
+                let r2AudioUrl;
+                if (env.R2_BUCKET) {
+                    try {
+                        await env.R2_BUCKET.put(r2Key, audioBuffer, {
+                            httpMetadata: { contentType: 'audio/mpeg' }
+                        });
+                        r2AudioUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${r2Key}`;
+                    } catch (r2Error) {
+                        console.warn('R2 upload failed, using original URL');
+                        r2AudioUrl = audioUrl;
+                    }
+                } else {
+                    r2AudioUrl = audioUrl;
+                }
+                
+                return new Response(JSON.stringify({
+                    success: true,
+                    audioUrl: r2AudioUrl,
+                    r2Key: r2Key
+                }), {
+                    status: 200,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
             } else {
                 console.error('Unexpected Minimax response format:', ttsResult);
                 return new Response(JSON.stringify({ 
                     error: 'Unexpected API response format',
-                    details: JSON.stringify(ttsResult)
+                    details: JSON.stringify(ttsResult),
+                    expected: 'Either audio_file (hex) or task.audios[0].audio_url'
                 }), {
                     status: 500,
                     headers: {
