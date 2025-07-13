@@ -29,6 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Store sidebar state in local storage
                     const isCollapsed = sidebar.classList.contains('collapsed');
                     localStorage.setItem('sidebarCollapsed', isCollapsed);
+                    
+                    // If in chat interface, adjust chat sidebar position
+                    const chatInterface = document.getElementById('chatInterface');
+                    const chatSidebar = document.querySelector('.chat-sidebar');
+                    if (chatInterface && chatInterface.style.display === 'flex' && chatSidebar) {
+                        chatSidebar.style.marginLeft = isCollapsed ? '60px' : '240px';
+                    }
                 }
             });
             

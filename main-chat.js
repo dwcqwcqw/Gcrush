@@ -107,6 +107,25 @@ class MainChatSystem {
                     }
                 }
             });
+            
+            // Also listen for manual toggle via menu button
+            const menuToggle = document.querySelector('.menu-toggle');
+            if (menuToggle) {
+                // Add a mutation observer to watch for changes to sidebar class
+                const observer = new MutationObserver((mutations) => {
+                    mutations.forEach((mutation) => {
+                        if (mutation.type === 'attributes' && mutation.attributeName === 'class') {
+                            const chatSidebar = document.querySelector('.chat-sidebar');
+                            if (chatSidebar) {
+                                const isCollapsed = mainSidebar.classList.contains('collapsed');
+                                chatSidebar.style.marginLeft = isCollapsed ? '60px' : '240px';
+                            }
+                        }
+                    });
+                });
+                
+                observer.observe(mainSidebar, { attributes: true, attributeFilter: ['class'] });
+            }
         }
     }
     

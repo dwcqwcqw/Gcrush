@@ -218,9 +218,13 @@ class CharacterDataLoader {
         return `
             <div class="character-card glass-card" data-character="${character.name}" onclick="navigateToChat('${character.name}')">
                 <div class="character-image">
-                    <img src="${imageUrl}" alt="${character.name}" loading="lazy" onload="this.style.opacity='1'" onerror="this.style.opacity='1'; console.error('Failed to load image:', this.src)">
+                    <img src="${imageUrl}" alt="${character.name}" loading="lazy" 
+                         onload="this.style.opacity='1'; this.parentElement.classList.add('image-loaded')" 
+                         onerror="this.style.opacity='1'; console.error('Failed to load image:', this.src)">
                     ${videoUrl ? `
-                        <video class="character-video" loop muted preload="none">
+                        <video class="character-video" loop muted preload="none" 
+                               onloadeddata="this.classList.add('loaded')" 
+                               oncanplay="console.log('Video ready for ${character.name}')">
                             <source src="${videoUrl}" type="video/mp4">
                         </video>
                     ` : ''}

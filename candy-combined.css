@@ -3144,7 +3144,7 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     background: none;
     border: none;
     backdrop-filter: none;
-    max-width: 350px; /* Match video max-width */
+    max-width: min(80vw, 280px); /* Responsive width for mobile */
     width: 100%;
 }
 
@@ -3156,13 +3156,12 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     backdrop-filter: blur(10px);
     position: relative;
     width: 100%;
-    max-width: 350px; /* Match video size */
+    max-width: min(80vw, 280px); /* Responsive max-width */
 }
 
 .character-video {
     width: 100%;
     height: auto;
-    max-width: 350px; /* Limit max width for better proportions */
     aspect-ratio: 3/4; /* Maintain 3:4 aspect ratio */
     object-fit: cover;
     display: block !important;
@@ -3171,6 +3170,8 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     visibility: visible !important;
     opacity: 1 !important;
     z-index: 10;
+    min-height: 200px; /* Ensure minimum visible height */
+    max-height: min(60vh, 400px); /* Limit height for mobile screens */
 }
 
 /* Video loading and error states */
