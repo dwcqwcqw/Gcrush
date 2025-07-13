@@ -11,8 +11,8 @@ export async function onRequestOptions() {
 
 export async function onRequestPost(context) {
     const { request, env } = context;
-
-        try {
+    
+    try {
             const formData = await request.formData();
             const audioFile = formData.get('audio');
             const userId = formData.get('userId');
@@ -109,5 +109,4 @@ export async function onRequestPost(context) {
                 }
             });
         }
-    }
 }

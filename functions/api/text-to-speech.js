@@ -11,8 +11,8 @@ export async function onRequestOptions() {
 
 export async function onRequestPost(context) {
     const { request, env } = context;
-
-        try {
+    
+    try {
             const { text, characterId, userId } = await request.json();
 
             if (!text || !characterId || !userId) {
@@ -170,5 +170,4 @@ export async function onRequestPost(context) {
                 }
             });
         }
-    }
 }
