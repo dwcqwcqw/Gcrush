@@ -256,11 +256,12 @@ class MainChatSystem {
         return {
             id: fallbackId,
             name: characterName,
+            description: `I'm ${characterName}, a friendly and engaging AI companion who loves connecting with people. I'm here to have meaningful conversations and share experiences with you.`,
             images: [`https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${characterName}/${characterName}1.png`],
             personality: 'Friendly and helpful',
             background: 'I\'m an AI companion here to chat with you.',
-            situation: `You are chatting with ${characterName} in a friendly environment.`,
-            greeting: `Hey there! I'm ${characterName}. How are you doing today?`,
+            situation: `Welcome to our private chat space! This is where you and ${characterName} can have open, honest conversations about anything that interests you.`,
+            greeting: `Hey there! I'm ${characterName}. I'm really excited to meet you and get to know you better. How are you doing today?`,
             system_prompt: `You are ${characterName}, a friendly and helpful AI companion. You are warm, engaging, and genuinely interested in conversation. Respond naturally and keep your answers concise (1-3 sentences). Use first person and stay in character.`
         };
     }
@@ -403,28 +404,44 @@ class MainChatSystem {
     }
     
     async sendInitialMessages() {
-        if (!this.currentCharacter.situation || !this.currentCharacter.greeting) return;
-        
         // Check if there are already messages in the chat (indicating we have chat history)
         const messagesContainer = document.getElementById('chatMessages');
         const hasExistingMessages = messagesContainer && messagesContainer.children.length > 0;
         
         if (!hasExistingMessages) {
-            // First time chatting with this character - send initial messages and SAVE them
-            console.log('Sending initial messages for first-time chat');
+            // First time chatting with this character - send initial messages in order
+            console.log('Sending initial messages for first-time chat with', this.currentCharacter.name);
             
-            // Send situation message and save it
-            await this.addMessage('assistant', this.currentCharacter.situation, true);
+            let delay = 0;
             
-            // Send greeting message and save it
+            // 1. Send description (character introduction) first
+            if (this.currentCharacter.description) {
+                setTimeout(async () => {
+                    await this.addMessage('assistant', this.currentCharacter.description, true);
+                }, delay);
+                delay += 800;
+            }
+            
+            // 2. Send situation (context/setting) second  
+            if (this.currentCharacter.situation) {
+                setTimeout(async () => {
+                    await this.addMessage('assistant', this.currentCharacter.situation, true);
+                }, delay);
+                delay += 800;
+            }
+            
+            // 3. Send greeting (personal hello) third
+            if (this.currentCharacter.greeting) {
+                setTimeout(async () => {
+                    await this.addMessage('assistant', this.currentCharacter.greeting, true);
+                }, delay);
+                delay += 800;
+            }
+            
+            // 4. Send character video last (visual introduction)
             setTimeout(async () => {
-                await this.addMessage('assistant', this.currentCharacter.greeting, true);
-            }, 500);
-            
-            // Send character video and save it as a special message type
-            setTimeout(async () => {
-                await this.addVideoMessage(this.currentCharacter.name, true); // Add save parameter
-            }, 1500);
+                await this.addVideoMessage(this.currentCharacter.name, true);
+            }, delay);
         }
         // If there are existing messages, we don't send initial messages again
         // as they should already be loaded from history
