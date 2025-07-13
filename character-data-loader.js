@@ -218,9 +218,6 @@ class CharacterDataLoader {
         return `
             <div class="character-card glass-card" data-character="${character.name}" onclick="navigateToChat('${character.name}')">
                 <div class="character-image">
-                    <img src="${imageUrl}" alt="${character.name}" loading="eager" 
-                         onload="console.log('Image loaded for ${character.name}');" 
-                         onerror="console.error('Failed to load image for ${character.name}:', this.src);">
                     ${videoUrl ? `
                         <video class="character-video" loop muted preload="none" 
                                onloadeddata="this.classList.add('loaded')" 
@@ -377,10 +374,9 @@ class CharacterDataLoader {
                 attributeFilter: ['style', 'class', 'src']
             });
 
-            // NUCLEAR OPTION: Manually create and inject images with JavaScript
-            console.log('🚀 NUCLEAR OPTION: Manually creating images via JavaScript...');
+            // Create images via JavaScript (reliable method)
+            console.log('🎯 Creating character images via JavaScript...');
             const characterCards = document.querySelectorAll('.character-card');
-            console.log(`Found ${characterCards.length} character cards for image injection`);
             
             characterCards.forEach((card, index) => {
                 const character = this.characters[index];
@@ -389,17 +385,13 @@ class CharacterDataLoader {
                 const imageContainer = card.querySelector('.character-image');
                 if (!imageContainer) return;
                 
-                // Remove any existing images
-                const existingImages = imageContainer.querySelectorAll('img');
-                existingImages.forEach(img => img.remove());
-                
-                // Create new image element via JavaScript
+                // Create image element via JavaScript
                 const img = document.createElement('img');
                 img.src = this.getImageUrl(character);
                 img.alt = character.name;
                 img.loading = 'eager';
                 
-                // Force styles immediately with maximum priority
+                // Apply force-visible styles
                 img.style.cssText = `
                     width: 100% !important;
                     height: 100% !important;
@@ -413,19 +405,16 @@ class CharacterDataLoader {
                     display: block !important;
                 `;
                 
-                // Add load event listener
                 img.addEventListener('load', () => {
-                    console.log(`✅ JS-created image loaded for ${character.name}`);
-                    img.style.setProperty('opacity', '1', 'important');
+                    console.log(`✅ Image loaded: ${character.name}`);
                 });
                 
                 img.addEventListener('error', () => {
-                    console.error(`❌ JS-created image failed for ${character.name}:`, img.src);
+                    console.error(`❌ Image failed: ${character.name}`);
                 });
                 
                 // Insert the image
                 imageContainer.appendChild(img);
-                console.log(`🎯 Injected JS image for ${character.name}: ${img.src}`);
             });
 
             // Re-initialize video hover effects
