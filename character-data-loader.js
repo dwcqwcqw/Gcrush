@@ -347,12 +347,18 @@ class CharacterDataLoader {
             // Insert into page
             characterGrid.innerHTML = characterCardsHtml;
 
+            // Ensure all images are immediately visible
+            const allImages = document.querySelectorAll('.character-image img');
+            allImages.forEach(img => {
+                img.style.opacity = '1';
+                img.style.visibility = 'visible';
+                img.style.display = 'block';
+            });
+
             // Re-initialize video hover effects
             if (typeof initCharacterVideoHover === 'function') {
                 initCharacterVideoHover();
             }
-
-            // Images now show immediately - no loading handlers needed
 
             console.log('Character cards rendered successfully');
             
@@ -391,7 +397,19 @@ document.addEventListener('DOMContentLoaded', () => {
     characterLoader.renderCharacterCards();
 });
 
-// Images now display immediately - no force loading needed
+// Final insurance - ensure all images are visible after window load
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        console.log('Final check: ensuring all character images are visible...');
+        const allImages = document.querySelectorAll('.character-image img');
+        allImages.forEach((img, index) => {
+            img.style.opacity = '1';
+            img.style.visibility = 'visible';
+            img.style.display = 'block';
+            console.log(`Ensured image ${index + 1} is visible`);
+        });
+    }, 100);
+});
 
 // Navigation function for chat
 function navigateToChat(characterName) {

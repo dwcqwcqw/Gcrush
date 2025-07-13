@@ -95,6 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const img = card.querySelector('.character-image img');
             
             if (video && img) {
+                // Ensure image is visible by default
+                img.style.opacity = '1';
+                img.style.visibility = 'visible';
+                img.style.display = 'block';
                 let isHovered = false;
                 let videoReady = false;
                 let isLoading = false;
