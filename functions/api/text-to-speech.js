@@ -85,14 +85,14 @@ export async function onRequestPost(context) {
             
             if (!voiceId) {
                 console.log('No voice_id found for character, using default voice');
-                // Use a default voice if character doesn't have voice_id
-                voiceId = 'default-voice-id';
+                // Use MiniMax default voice if character doesn't have voice_id
+                voiceId = 'male-qn-qingse';
             }
 
             console.log('Using voice_id:', voiceId, 'for character:', character.name);
 
-            // Call Minimax TTS API - correct format
-            const minimaxResponse = await fetch('https://api.minimaxi.chat/v1/text_to_speech', {
+            // Call Minimax TTS API - correct format 
+            const minimaxResponse = await fetch('https://api.minimaxi.chat/v1/text_to_audio', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${env.MINIMAX_API_KEY}`,
