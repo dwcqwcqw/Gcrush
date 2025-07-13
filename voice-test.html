@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>语音功能测试页面 - Voice Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .test-section h2 {
+            color: #A259FF;
+            margin-top: 0;
+        }
+        
+        button {
+            background: #A259FF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        button:hover {
+            background: #8a47e8;
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .recording {
+            background: #ff4444 !important;
+        }
+        
+        .log-area {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin: 10px 0;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #666;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            margin: 5px 0;
+        }
+        
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        
+        .status.success {
+            background: rgba(76, 175, 80, 0.2);
+            border: 1px solid #4CAF50;
+        }
+        
+        .status.error {
+            background: rgba(244, 67, 54, 0.2);
+            border: 1px solid #f44336;
+        }
+        
+        .status.info {
+            background: rgba(33, 150, 243, 0.2);
+            border: 1px solid #2196F3;
+        }
+        
+        audio {
+            width: 100%;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎤 语音功能全面测试页面</h1>
+    
+    <!-- 环境检查 -->
+    <div class="test-section">
+        <h2>1. 环境检查</h2>
+        <button onclick="checkEnvironment()">检查浏览器环境</button>
+        <div id="envStatus"></div>
+    </div>
+    
+    <!-- API端点测试 -->
+    <div class="test-section">
+        <h2>2. API端点连通性测试</h2>
+        <button onclick="testSpeechToTextEndpoint()">测试语音转文字端点</button>
+        <button onclick="testTextToSpeechEndpoint()">测试文字转语音端点</button>
+        <div id="apiStatus"></div>
+    </div>
+    
+    <!-- 语音录制测试 -->
+    <div class="test-section">
+        <h2>3. 语音录制测试</h2>
+        <button id="recordBtn" onclick="toggleRecording()">开始录制</button>
+        <button onclick="playRecording()" disabled id="playBtn">播放录制</button>
+        <div id="recordStatus"></div>
+        <audio id="recordedAudio" controls style="display: none;"></audio>
+    </div>
+    
+    <!-- 语音转文字测试 -->
+    <div class="test-section">
+        <h2>4. 语音转文字完整测试</h2>
+        <p>用户ID（测试用）：</p>
+        <input type="text" id="testUserId" value="test-user-123" placeholder="输入测试用户ID">
+        <button onclick="testSpeechToText()" id="sttBtn">上传音频并转换为文字</button>
+        <div id="sttStatus"></div>
+        <div id="sttResult"></div>
+    </div>
+    
+    <!-- 文字转语音测试 -->
+    <div class="test-section">
+        <h2>5. 文字转语音完整测试</h2>
+        <p>测试文本：</p>
+        <textarea id="testText" rows="3" placeholder="输入要转换为语音的文字">你好，这是一个语音测试。Hello, this is a voice test.</textarea>
+        <p>角色ID（测试用）：</p>
+        <input type="text" id="testCharacterId" value="test-character-456" placeholder="输入测试角色ID">
+        <p>用户ID（测试用）：</p>
+        <input type="text" id="testUserIdTts" value="test-user-123" placeholder="输入测试用户ID">
+        <button onclick="testTextToSpeech()" id="ttsBtn">转换为语音</button>
+        <div id="ttsStatus"></div>
+        <audio id="ttsResult" controls style="display: none;"></audio>
+    </div>
+    
+    <!-- 详细日志 -->
+    <div class="test-section">
+        <h2>6. 详细日志</h2>
+        <button onclick="clearLogs()">清空日志</button>
+        <div id="logArea" class="log-area"></div>
+    </div>
+
+    <script>
+        let mediaRecorder = null;
+        let recordedChunks = [];
+        let recordedBlob = null;
+        
+        function log(message) {
+            const logArea = document.getElementById('logArea');
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.textContent += `[${timestamp}] ${message}\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+            console.log(message);
+        }
+        
+        function showStatus(elementId, message, type = 'info') {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div class="status ${type}">${message}</div>`;
+            log(`${type.toUpperCase()}: ${message}`);
+        }
+        
+        function clearLogs() {
+            document.getElementById('logArea').textContent = '';
+        }
+        
+        // 1. 环境检查
+        function checkEnvironment() {
+            log('开始环境检查...');
+            
+            const checks = [];
+            
+            // 检查浏览器支持
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                checks.push('✅ 浏览器支持 getUserMedia');
+            } else {
+                checks.push('❌ 浏览器不支持 getUserMedia');
+            }
+            
+            if (window.MediaRecorder) {
+                checks.push('✅ 浏览器支持 MediaRecorder');
+            } else {
+                checks.push('❌ 浏览器不支持 MediaRecorder');
+            }
+            
+            if (window.FormData) {
+                checks.push('✅ 浏览器支持 FormData');
+            } else {
+                checks.push('❌ 浏览器不支持 FormData');
+            }
+            
+            if (window.fetch) {
+                checks.push('✅ 浏览器支持 fetch API');
+            } else {
+                checks.push('❌ 浏览器不支持 fetch API');
+            }
+            
+            // 检查 HTTPS
+            if (location.protocol === 'https:' || location.hostname === 'localhost') {
+                checks.push('✅ 运行在安全环境 (HTTPS/localhost)');
+            } else {
+                checks.push('❌ 未运行在安全环境，getUserMedia 可能被阻止');
+            }
+            
+            showStatus('envStatus', checks.join('<br>'), 'info');
+        }
+        
+        // 2. API端点测试
+        async function testSpeechToTextEndpoint() {
+            log('测试语音转文字端点连通性...');
+            try {
+                const response = await fetch('/api/speech-to-text', {
+                    method: 'OPTIONS'
+                });
+                
+                if (response.ok) {
+                    showStatus('apiStatus', '✅ 语音转文字端点连通正常', 'success');
+                } else {
+                    showStatus('apiStatus', `❌ 语音转文字端点异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showStatus('apiStatus', `❌ 语音转文字端点连接失败: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testTextToSpeechEndpoint() {
+            log('测试文字转语音端点连通性...');
+            try {
+                const response = await fetch('/api/text-to-speech', {
+                    method: 'OPTIONS'
+                });
+                
+                if (response.ok) {
+                    showStatus('apiStatus', '✅ 文字转语音端点连通正常', 'success');
+                } else {
+                    showStatus('apiStatus', `❌ 文字转语音端点异常: ${response.status}`, 'error');
+                }
+            } catch (error) {
+                showStatus('apiStatus', `❌ 文字转语音端点连接失败: ${error.message}`, 'error');
+            }
+        }
+        
+        // 3. 语音录制测试
+        async function toggleRecording() {
+            const recordBtn = document.getElementById('recordBtn');
+            
+            if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+        
+        async function startRecording() {
+            log('开始录制音频...');
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm'
+                });
+                
+                recordedChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                        log(`录制数据块: ${event.data.size} bytes`);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    recordedBlob = new Blob(recordedChunks, { type: 'audio/webm' });
+                    log(`录制完成，总大小: ${recordedBlob.size} bytes`);
+                    
+                    const audioUrl = URL.createObjectURL(recordedBlob);
+                    const audioElement = document.getElementById('recordedAudio');
+                    audioElement.src = audioUrl;
+                    audioElement.style.display = 'block';
+                    
+                    document.getElementById('playBtn').disabled = false;
+                    showStatus('recordStatus', `✅ 录制完成，音频大小: ${recordedBlob.size} bytes`, 'success');
+                };
+                
+                mediaRecorder.start(1000); // 每秒生成一个数据块
+                
+                document.getElementById('recordBtn').textContent = '停止录制';
+                document.getElementById('recordBtn').classList.add('recording');
+                showStatus('recordStatus', '🎤 正在录制...', 'info');
+                
+            } catch (error) {
+                log(`录制失败: ${error.message}`);
+                showStatus('recordStatus', `❌ 录制失败: ${error.message}`, 'error');
+            }
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                
+                document.getElementById('recordBtn').textContent = '开始录制';
+                document.getElementById('recordBtn').classList.remove('recording');
+                log('录制已停止');
+            }
+        }
+        
+        function playRecording() {
+            const audioElement = document.getElementById('recordedAudio');
+            audioElement.play();
+            log('播放录制的音频');
+        }
+        
+        // 4. 语音转文字测试
+        async function testSpeechToText() {
+            if (!recordedBlob) {
+                showStatus('sttStatus', '❌ 请先录制音频', 'error');
+                return;
+            }
+            
+            const userId = document.getElementById('testUserId').value;
+            if (!userId) {
+                showStatus('sttStatus', '❌ 请输入用户ID', 'error');
+                return;
+            }
+            
+            log('开始语音转文字测试...');
+            document.getElementById('sttBtn').disabled = true;
+            
+            try {
+                const formData = new FormData();
+                formData.append('audio', recordedBlob, 'recording.webm');
+                formData.append('userId', userId);
+                
+                log(`上传音频文件大小: ${recordedBlob.size} bytes`);
+                log(`用户ID: ${userId}`);
+                
+                const response = await fetch('/api/speech-to-text', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                log(`API响应状态: ${response.status} ${response.statusText}`);
+                
+                const result = await response.text();
+                log(`API原始响应: ${result}`);
+                
+                let jsonResult;
+                try {
+                    jsonResult = JSON.parse(result);
+                } catch (parseError) {
+                    log(`JSON解析错误: ${parseError.message}`);
+                    showStatus('sttStatus', `❌ 响应格式错误: ${result}`, 'error');
+                    return;
+                }
+                
+                if (response.ok && jsonResult.success) {
+                    showStatus('sttStatus', '✅ 语音转文字成功', 'success');
+                    document.getElementById('sttResult').innerHTML = `
+                        <div class="status success">
+                            <strong>转换结果:</strong> ${jsonResult.text}<br>
+                            <strong>音频存储:</strong> ${jsonResult.audioUrl}
+                        </div>
+                    `;
+                } else {
+                    showStatus('sttStatus', `❌ 语音转文字失败: ${jsonResult.error}`, 'error');
+                    if (jsonResult.details) {
+                        log(`错误详情: ${jsonResult.details}`);
+                    }
+                    if (jsonResult.stack) {
+                        log(`错误堆栈: ${jsonResult.stack}`);
+                    }
+                }
+                
+            } catch (error) {
+                log(`语音转文字请求失败: ${error.message}`);
+                showStatus('sttStatus', `❌ 请求失败: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('sttBtn').disabled = false;
+            }
+        }
+        
+        // 5. 文字转语音测试
+        async function testTextToSpeech() {
+            const text = document.getElementById('testText').value;
+            const characterId = document.getElementById('testCharacterId').value;
+            const userId = document.getElementById('testUserIdTts').value;
+            
+            if (!text || !characterId || !userId) {
+                showStatus('ttsStatus', '❌ 请填写所有必需字段', 'error');
+                return;
+            }
+            
+            log('开始文字转语音测试...');
+            document.getElementById('ttsBtn').disabled = true;
+            
+            try {
+                const requestData = {
+                    text: text,
+                    characterId: characterId,
+                    userId: userId
+                };
+                
+                log(`请求数据: ${JSON.stringify(requestData, null, 2)}`);
+                
+                const response = await fetch('/api/text-to-speech', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                log(`API响应状态: ${response.status} ${response.statusText}`);
+                
+                const result = await response.text();
+                log(`API原始响应: ${result}`);
+                
+                let jsonResult;
+                try {
+                    jsonResult = JSON.parse(result);
+                } catch (parseError) {
+                    log(`JSON解析错误: ${parseError.message}`);
+                    showStatus('ttsStatus', `❌ 响应格式错误: ${result}`, 'error');
+                    return;
+                }
+                
+                if (response.ok && jsonResult.success) {
+                    showStatus('ttsStatus', '✅ 文字转语音成功', 'success');
+                    
+                    const audioElement = document.getElementById('ttsResult');
+                    audioElement.src = jsonResult.audioUrl;
+                    audioElement.style.display = 'block';
+                    
+                    log(`生成的音频URL: ${jsonResult.audioUrl}`);
+                } else {
+                    showStatus('ttsStatus', `❌ 文字转语音失败: ${jsonResult.error}`, 'error');
+                    if (jsonResult.details) {
+                        log(`错误详情: ${jsonResult.details}`);
+                    }
+                    if (jsonResult.stack) {
+                        log(`错误堆栈: ${jsonResult.stack}`);
+                    }
+                }
+                
+            } catch (error) {
+                log(`文字转语音请求失败: ${error.message}`);
+                showStatus('ttsStatus', `❌ 请求失败: ${error.message}`, 'error');
+            } finally {
+                document.getElementById('ttsBtn').disabled = false;
+            }
+        }
+        
+        // 页面加载时自动检查环境
+        window.onload = function() {
+            log('语音功能测试页面已加载');
+            checkEnvironment();
+        };
+    </script>
+</body>
+</html>
