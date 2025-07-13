@@ -145,6 +145,12 @@ class MainChatSystem {
         // Show chat interface
         document.getElementById('chatInterface').style.display = 'flex';
         
+        // Auto-collapse chat sidebar when entering chat
+        const chatSidebar = document.getElementById('chatSidebar');
+        if (chatSidebar) {
+            chatSidebar.classList.add('collapsed');
+        }
+        
         // Update sidebar active state
         const sidebarItems = document.querySelectorAll('.sidebar-item');
         sidebarItems.forEach(item => item.classList.remove('active'));
@@ -747,14 +753,16 @@ class MainChatSystem {
         const chatItems = characters.slice(0, 6).map(character => {
             return `
                 <div class="chat-item" onclick="mainChatSystem.startChat('${character.name}')">
-                    <img class="chat-item-avatar" 
-                         src="${character.images ? character.images[0] : `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${character.name}/${character.name}1.png`}" 
-                         alt="${character.name}">
-                    <div class="chat-item-info">
-                        <div class="chat-item-name">${character.name}</div>
-                        <div class="chat-item-preview">Start a conversation...</div>
+                    <div class="chat-item-header">
+                        <img class="chat-item-avatar" 
+                             src="${character.images ? character.images[0] : `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${character.name}/${character.name}1.png`}" 
+                             alt="${character.name}">
+                        <div class="chat-item-info">
+                            <div class="chat-item-name">${character.name}</div>
+                        </div>
+                        <div class="chat-item-time">New</div>
                     </div>
-                    <div class="chat-item-time">New</div>
+                    <div class="chat-item-preview">Start a conversation...</div>
                 </div>
             `;
         }).join('');
@@ -798,12 +806,14 @@ class MainChatSystem {
         
         return `
             <div class="chat-item ${isActive}" onclick="mainChatSystem.startChat('${characterName}')">
-                <img class="chat-item-avatar" src="${avatar}" alt="${characterName}">
-                <div class="chat-item-info">
-                    <div class="chat-item-name">${characterName}</div>
-                    <div class="chat-item-preview">${preview}</div>
+                <div class="chat-item-header">
+                    <img class="chat-item-avatar" src="${avatar}" alt="${characterName}">
+                    <div class="chat-item-info">
+                        <div class="chat-item-name">${characterName}</div>
+                    </div>
+                    <div class="chat-item-time">${timeAgo}</div>
                 </div>
-                <div class="chat-item-time">${timeAgo}</div>
+                <div class="chat-item-preview">${preview}</div>
             </div>
         `;
     }
@@ -848,17 +858,38 @@ function backToExplore() {
     // Hide chat interface
     document.getElementById('chatInterface').style.display = 'none';
     
+    // Reset chat sidebar to expanded state when returning to main page
+    const chatSidebar = document.getElementById('chatSidebar');
+    if (chatSidebar) {
+        chatSidebar.classList.remove('collapsed');
+    }
+    
     // Show main content
     document.getElementById('heroSection').style.display = 'block';
     document.getElementById('titleSection').style.display = 'block';
     document.getElementById('characterLobby').style.display = 'block';
     document.querySelector('.faq-section').style.display = 'block';
     
+    // Force refresh of banner centering by triggering a reflow
+    const heroBanner = document.querySelector('.hero-banner');
+    if (heroBanner) {
+        heroBanner.style.display = 'none';
+        heroBanner.offsetHeight; // Force reflow
+        heroBanner.style.display = '';
+    }
+    
     // Clear current chat
     if (window.mainChatSystem) {
         window.mainChatSystem.currentCharacter = null;
         window.mainChatSystem.currentSessionId = null;
         window.mainChatSystem.clearMessages();
+    }
+}
+
+function toggleChatSidebar() {
+    const chatSidebar = document.getElementById('chatSidebar');
+    if (chatSidebar) {
+        chatSidebar.classList.toggle('collapsed');
     }
 }
 
