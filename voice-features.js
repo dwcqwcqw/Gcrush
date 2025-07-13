@@ -6,6 +6,8 @@ class VoiceFeatures {
         this.audioChunks = [];
         this.currentUser = null;
         this.currentCharacter = null;
+        this.currentAudio = null;
+        this.currentPlayButton = null;
         
         console.log('🎤 Voice Features initialized');
     }
@@ -59,7 +61,7 @@ class VoiceFeatures {
         
         playButton.addEventListener('click', (e) => {
             e.stopPropagation();
-            this.handleTextToSpeech(text, playButton);
+            this.handlePlayButtonClick(text, playButton);
         });
 
         // Add to message content
@@ -169,6 +171,46 @@ class VoiceFeatures {
             alert('Error processing speech. Please try again.');
         } finally {
             this.showVoiceProcessing(false);
+        }
+    }
+
+    // Handle play button click (play/pause)
+    async handlePlayButtonClick(text, button) {
+        // If same button is playing, pause it
+        if (this.currentAudio && this.currentPlayButton === button && !this.currentAudio.paused) {
+            this.pauseCurrentAudio();
+            return;
+        }
+        
+        // If different audio is playing, stop it first
+        if (this.currentAudio && !this.currentAudio.paused) {
+            this.stopCurrentAudio();
+        }
+        
+        // Start new audio
+        await this.handleTextToSpeech(text, button);
+    }
+
+    // Stop current audio
+    stopCurrentAudio() {
+        if (this.currentAudio) {
+            this.currentAudio.pause();
+            this.currentAudio.currentTime = 0;
+            if (this.currentPlayButton) {
+                this.updatePlayButton(this.currentPlayButton, 'ready');
+            }
+            this.currentAudio = null;
+            this.currentPlayButton = null;
+        }
+    }
+
+    // Pause current audio
+    pauseCurrentAudio() {
+        if (this.currentAudio && !this.currentAudio.paused) {
+            this.currentAudio.pause();
+            if (this.currentPlayButton) {
+                this.updatePlayButton(this.currentPlayButton, 'ready');
+            }
         }
     }
 
@@ -293,7 +335,12 @@ class VoiceFeatures {
     // Play audio
     async playAudio(audioUrl, button) {
         try {
+            // Stop any currently playing audio
+            this.stopCurrentAudio();
+            
             const audio = new Audio(audioUrl);
+            this.currentAudio = audio;
+            this.currentPlayButton = button;
             
             audio.onloadstart = () => {
                 this.updatePlayButton(button, 'loading');
@@ -307,13 +354,21 @@ class VoiceFeatures {
                 this.updatePlayButton(button, 'playing');
             };
             
+            audio.onpause = () => {
+                this.updatePlayButton(button, 'ready');
+            };
+            
             audio.onended = () => {
                 this.updatePlayButton(button, 'ready');
+                this.currentAudio = null;
+                this.currentPlayButton = null;
             };
             
             audio.onerror = () => {
                 console.error('Audio playback error');
                 this.updatePlayButton(button, 'error');
+                this.currentAudio = null;
+                this.currentPlayButton = null;
             };
 
             await audio.play();
@@ -321,6 +376,8 @@ class VoiceFeatures {
         } catch (error) {
             console.error('Error playing audio:', error);
             this.updatePlayButton(button, 'error');
+            this.currentAudio = null;
+            this.currentPlayButton = null;
         }
     }
 

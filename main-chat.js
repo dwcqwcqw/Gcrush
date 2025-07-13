@@ -1018,16 +1018,19 @@ class MainChatSystem {
         const chatItems = characters.slice(0, 6).map(character => {
             return `
                 <div class="chat-item" onclick="mainChatSystem.startChat('${character.name}')">
-                    <div class="chat-item-header">
-                        <img class="chat-item-avatar" 
-                             src="${character.images ? character.images[0] : `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${character.name}/${character.name}1.png`}" 
-                             alt="${character.name}">
-                        <div class="chat-item-info">
+                    <img class="chat-item-avatar" 
+                         src="${character.images ? character.images[0] : `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${character.name}/${character.name}1.png`}" 
+                         alt="${character.name}">
+                    <div class="chat-item-content">
+                        <div class="chat-item-header">
                             <div class="chat-item-name">${character.name}</div>
+                            <div class="chat-item-time">New</div>
                         </div>
-                        <div class="chat-item-time">New</div>
+                        <div class="chat-item-preview">Start a conversation...</div>
                     </div>
-                    <div class="chat-item-preview">Start a conversation...</div>
+                    <button class="chat-item-delete" onclick="event.stopPropagation(); mainChatSystem.deleteChatHistory('${character.name}')" title="Delete chat history">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             `;
         }).join('');
@@ -1071,38 +1074,148 @@ class MainChatSystem {
         
         return `
             <div class="chat-item ${isActive}" onclick="mainChatSystem.startChat('${characterName}')">
-                <div class="chat-item-header">
-                    <img class="chat-item-avatar" src="${avatar}" alt="${characterName}">
-                    <div class="chat-item-info">
+                <img class="chat-item-avatar" src="${avatar}" alt="${characterName}">
+                <div class="chat-item-content">
+                    <div class="chat-item-header">
                         <div class="chat-item-name">${characterName}</div>
+                        <div class="chat-item-time">${timeAgo}</div>
                     </div>
-                    <div class="chat-item-time">${timeAgo}</div>
+                    <div class="chat-item-preview">${preview}</div>
                 </div>
-                <div class="chat-item-preview">${preview}</div>
+                <button class="chat-item-delete" onclick="event.stopPropagation(); mainChatSystem.deleteChatHistory('${characterName}')" title="Delete chat history">
+                    <i class="fas fa-trash"></i>
+                </button>
             </div>
         `;
     }
 
     formatTimeAgo(dateString) {
-        const now = new Date();
+        if (!dateString) return 'New';
+        
         const date = new Date(dateString);
-        const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+        const month = date.getMonth() + 1; // 1-12
+        const day = date.getDate();
+        const hours = date.getHours();
+        const minutes = date.getMinutes().toString().padStart(2, '0');
         
-        if (diffInMinutes < 1) return 'Now';
-        if (diffInMinutes < 60) return `${diffInMinutes}m`;
-        
-        const diffInHours = Math.floor(diffInMinutes / 60);
-        if (diffInHours < 24) return `${diffInHours}h`;
-        
-        const diffInDays = Math.floor(diffInHours / 24);
-        if (diffInDays < 7) return `${diffInDays}d`;
-        
-        // For older messages, show date
-        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return `${month}/${day}/${hours}:${minutes}`;
     }
 
     clearMessages() {
         document.getElementById('chatMessages').innerHTML = '';
+    }
+
+    // Delete all chat history for a specific character
+    async deleteChatHistory(characterName) {
+        // Show confirmation dialog
+        const confirmMessage = `Are you sure you want to delete all chat history with ${characterName}?\n\nThis action cannot be undone.`;
+        
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        try {
+            if (this.currentUser && this.supabase) {
+                // Delete from database for logged-in users
+                console.log(`🗑️ Deleting chat history for ${characterName} from database...`);
+                
+                const { error } = await this.supabase
+                    .from('chat_messages')
+                    .delete()
+                    .eq('user_id', this.currentUser.id)
+                    .eq('character_name', characterName);
+
+                if (error) {
+                    console.error('Error deleting chat history from database:', error);
+                    alert('Error deleting chat history. Please try again.');
+                    return;
+                }
+
+                console.log(`✅ Successfully deleted chat history for ${characterName} from database`);
+            }
+
+            // Delete from localStorage
+            const storageKey = `gcrush_chat_messages_${characterName}`;
+            localStorage.removeItem(storageKey);
+            console.log(`✅ Deleted chat history for ${characterName} from localStorage`);
+
+            // If this is the current character, clear the chat interface
+            if (this.currentCharacter?.name === characterName) {
+                this.clearMessages();
+                console.log('🧹 Cleared current chat interface');
+            }
+
+            // Refresh the recent chats list
+            await this.refreshChatSidebar();
+            console.log('🔄 Refreshed recent chats list');
+
+            // Show success message
+            this.showTemporaryMessage(`Chat history with ${characterName} has been deleted.`, 'success');
+
+        } catch (error) {
+            console.error('Error deleting chat history:', error);
+            alert('Error deleting chat history. Please try again.');
+        }
+    }
+
+    // Show temporary message to user
+    showTemporaryMessage(message, type = 'info') {
+        // Create a temporary notification
+        const notification = document.createElement('div');
+        notification.className = `chat-notification ${type}`;
+        notification.style.cssText = `
+            position: fixed;
+            top: 80px;
+            right: 20px;
+            background: ${type === 'success' ? 'rgba(76, 175, 80, 0.9)' : 'rgba(255, 193, 7, 0.9)'};
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            font-size: 14px;
+            max-width: 300px;
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        `;
+        notification.textContent = message;
+        document.body.appendChild(notification);
+
+        // Animate in
+        setTimeout(() => {
+            notification.style.opacity = '1';
+            notification.style.transform = 'translateX(0)';
+        }, 100);
+
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    // Refresh the chat sidebar after changes
+    async refreshChatSidebar() {
+        try {
+            if (this.currentUser && this.supabase) {
+                // Load recent chats from database
+                await this.loadChatHistory();
+            } else {
+                // Show fallback characters list
+                this.renderFallbackChatList();
+            }
+        } catch (error) {
+            console.error('Error refreshing chat sidebar:', error);
+            // Fallback to character list
+            this.renderFallbackChatList();
+        }
     }
     
     // Save message to localStorage for non-logged in users
