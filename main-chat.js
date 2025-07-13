@@ -405,39 +405,29 @@ class MainChatSystem {
     async sendInitialMessages() {
         if (!this.currentCharacter.situation || !this.currentCharacter.greeting) return;
         
-        // Check if this character has been chatted with before
-        const chatHistoryKey = `gcrush_chat_history_${this.currentCharacter.name}`;
-        const hasChattedBefore = localStorage.getItem(chatHistoryKey);
+        // Check if there are already messages in the chat (indicating we have chat history)
+        const messagesContainer = document.getElementById('chatMessages');
+        const hasExistingMessages = messagesContainer && messagesContainer.children.length > 0;
         
-        if (!hasChattedBefore) {
-            // First time chatting with this character
-            // Send situation message
-            await this.addMessage('assistant', this.currentCharacter.situation, false);
+        if (!hasExistingMessages) {
+            // First time chatting with this character - send initial messages and SAVE them
+            console.log('Sending initial messages for first-time chat');
             
-            // Send greeting message first
+            // Send situation message and save it
+            await this.addMessage('assistant', this.currentCharacter.situation, true);
+            
+            // Send greeting message and save it
             setTimeout(async () => {
-                await this.addMessage('assistant', this.currentCharacter.greeting, false);
+                await this.addMessage('assistant', this.currentCharacter.greeting, true);
             }, 500);
             
-            // Send character video after greeting
+            // Send character video and save it as a special message type
             setTimeout(async () => {
-                await this.addVideoMessage(this.currentCharacter.name);
-                
-                // Mark that we've chatted with this character
-                localStorage.setItem(chatHistoryKey, 'true');
+                await this.addVideoMessage(this.currentCharacter.name, true); // Add save parameter
             }, 1500);
-        } else {
-            // Already chatted before - just send a welcome back message
-            const welcomeBackMessages = [
-                `Welcome back! I've missed chatting with you.`,
-                `Hey there! Good to see you again.`,
-                `Oh, you're back! How have you been?`,
-                `*smiles* I was hoping you'd come back to chat!`,
-                `Great to see you again! What's on your mind today?`
-            ];
-            const randomWelcome = welcomeBackMessages[Math.floor(Math.random() * welcomeBackMessages.length)];
-            await this.addMessage('assistant', `[${this.currentCharacter.name}] ${randomWelcome}`, false);
         }
+        // If there are existing messages, we don't send initial messages again
+        // as they should already be loaded from history
     }
     
     async sendMessage() {
@@ -507,6 +497,18 @@ class MainChatSystem {
             return;
         }
         
+        // Check if this is a video message that should be rendered as video
+        if (content.startsWith('[VIDEO]') && role === 'assistant') {
+            // Extract character name from video message
+            const match = content.match(/\[VIDEO\] Welcome video from (.+)/);
+            if (match && match[1]) {
+                const characterName = match[1];
+                console.log('Recreating video message for:', characterName);
+                await this.addVideoMessage(characterName, false); // Don't save again since it's from history
+                return;
+            }
+        }
+        
         // Create message element
         const messageDiv = document.createElement('div');
         messageDiv.className = `message ${role}`;
@@ -532,7 +534,7 @@ class MainChatSystem {
         }
     }
     
-    async addVideoMessage(characterName) {
+    async addVideoMessage(characterName, saveToDb = false) {
         const messagesContainer = document.getElementById('chatMessages');
         
         if (!messagesContainer) {
@@ -648,6 +650,12 @@ class MainChatSystem {
         }, 100);
         
         console.log(`Added video message for ${characterName}: ${videoUrl}`);
+        
+        // Save video message to database/localStorage if requested
+        if (saveToDb) {
+            const videoMessageContent = `[VIDEO] Welcome video from ${characterName}`;
+            await this.saveMessageToDatabase('assistant', videoMessageContent);
+        }
     }
     
     async saveMessageToDatabase(role, content) {
