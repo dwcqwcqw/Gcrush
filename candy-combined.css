@@ -1974,6 +1974,12 @@ ul {
     z-index: 1;
 }
 
+/* Stop loading animation when image is loaded */
+.character-image.image-loaded {
+    animation: none;
+    background: transparent;
+}
+
 @keyframes loading {
     0% {
         background-position: 200% 0;
@@ -1991,7 +1997,7 @@ ul {
     position: absolute;
     top: 0;
     left: 0;
-    z-index: 1;
+    z-index: 2; /* Above background */
     opacity: 0; /* Start hidden, show when loaded */
     image-rendering: -webkit-optimize-contrast;
     image-rendering: crisp-edges;
@@ -3144,8 +3150,9 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     background: none;
     border: none;
     backdrop-filter: none;
-    max-width: min(80vw, 280px); /* Responsive width for mobile */
+    max-width: min(70vw, 250px); /* Slightly smaller for better chat flow */
     width: 100%;
+    margin-bottom: 10px; /* Add space between video and next message */
 }
 
 .video-wrapper {
@@ -3156,7 +3163,7 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     backdrop-filter: blur(10px);
     position: relative;
     width: 100%;
-    max-width: min(80vw, 280px); /* Responsive max-width */
+    max-width: min(70vw, 250px); /* Match content max-width */
 }
 
 .character-video {
@@ -3170,8 +3177,8 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     visibility: visible !important;
     opacity: 1 !important;
     z-index: 10;
-    min-height: 200px; /* Ensure minimum visible height */
-    max-height: min(60vh, 400px); /* Limit height for mobile screens */
+    min-height: 180px; /* Adjusted minimum height */
+    max-height: min(50vh, 320px); /* Smaller max height for better chat experience */
 }
 
 /* Video loading and error states */

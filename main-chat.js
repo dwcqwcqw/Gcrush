@@ -414,18 +414,18 @@ class MainChatSystem {
             // Send situation message
             await this.addMessage('assistant', this.currentCharacter.situation, false);
             
-            // Send character video for first-time chat
-            setTimeout(async () => {
-                await this.addVideoMessage(this.currentCharacter.name);
-            }, 500);
-            
-            // Send greeting message after video
+            // Send greeting message first
             setTimeout(async () => {
                 await this.addMessage('assistant', this.currentCharacter.greeting, false);
+            }, 500);
+            
+            // Send character video after greeting
+            setTimeout(async () => {
+                await this.addVideoMessage(this.currentCharacter.name);
                 
                 // Mark that we've chatted with this character
                 localStorage.setItem(chatHistoryKey, 'true');
-            }, 2000);
+            }, 1500);
         } else {
             // Already chatted before - just send a welcome back message
             const welcomeBackMessages = [
@@ -562,7 +562,9 @@ class MainChatSystem {
         video.style.display = 'block';
         video.style.width = '100%';
         video.style.height = 'auto';
-        video.style.minHeight = '200px';
+        video.style.minHeight = '180px';
+        video.style.maxHeight = 'min(50vh, 320px)';
+        video.style.aspectRatio = '3/4';
         
         // Create video info
         const videoInfo = document.createElement('div');
