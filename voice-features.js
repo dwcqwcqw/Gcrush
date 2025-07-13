@@ -229,6 +229,29 @@ class VoiceFeatures {
         this.playingButtons.clear();
     }
 
+    // Reset all play buttons to ready state (more thorough)
+    resetAllPlayButtons() {
+        // Reset tracked buttons
+        this.playingButtons.forEach(button => {
+            if (button && button.parentNode) {
+                button.classList.remove('loading', 'playing', 'error');
+                button.innerHTML = '<i class="fas fa-play"></i>';
+                button.disabled = false;
+            }
+        });
+
+        // Also find and reset any other play buttons in the DOM
+        const allPlayButtons = document.querySelectorAll('.play-voice-btn');
+        allPlayButtons.forEach(button => {
+            button.classList.remove('loading', 'playing', 'error');
+            button.innerHTML = '<i class="fas fa-play"></i>';
+            button.disabled = false;
+        });
+
+        // Clear the tracking set
+        this.playingButtons.clear();
+    }
+
     // Handle text to speech
     async handleTextToSpeech(text, button) {
         // Check if user is logged in
@@ -350,15 +373,18 @@ class VoiceFeatures {
     // Play audio
     async playAudio(audioUrl, button) {
         try {
-            // Stop any currently playing audio and reset all buttons
-            this.stopCurrentAudio();
+            // Reset all buttons to ready state first
+            this.resetAllPlayButtons();
+            
+            // Stop any currently playing audio
+            if (this.currentAudio) {
+                this.currentAudio.pause();
+                this.currentAudio.currentTime = 0;
+            }
             
             const audio = new Audio(audioUrl);
             this.currentAudio = audio;
             this.currentPlayButton = button;
-            
-            // Add this button to the tracking set
-            this.playingButtons.add(button);
             
             audio.onloadstart = () => {
                 this.updatePlayButton(button, 'loading');
@@ -434,8 +460,8 @@ class VoiceFeatures {
                 button.innerHTML = '<i class="fas fa-pause"></i>';
                 button.classList.add('playing');
                 button.disabled = false;
-                // Ensure only this button shows as playing
-                this.ensureOnlyOnePlayingButton(button);
+                // Add to tracking set
+                this.playingButtons.add(button);
                 break;
             case 'error':
                 button.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
@@ -455,28 +481,6 @@ class VoiceFeatures {
         }
     }
 
-    // Ensure only one button shows as playing
-    ensureOnlyOnePlayingButton(activeButton) {
-        this.playingButtons.forEach(button => {
-            if (button !== activeButton && button.parentNode) {
-                // Reset all other buttons to ready state
-                button.classList.remove('loading', 'playing', 'error');
-                button.innerHTML = '<i class="fas fa-play"></i>';
-                button.disabled = false;
-            }
-        });
-        
-        // Clean up buttons that no longer exist in DOM
-        const buttonsToRemove = [];
-        this.playingButtons.forEach(button => {
-            if (!button.parentNode) {
-                buttonsToRemove.push(button);
-            }
-        });
-        buttonsToRemove.forEach(button => {
-            this.playingButtons.delete(button);
-        });
-    }
 
     // Show voice processing state
     showVoiceProcessing(show) {

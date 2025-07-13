@@ -1157,15 +1157,8 @@ class MainChatSystem {
             localStorage.removeItem(storageKey);
             console.log(`✅ Deleted chat history for ${characterName} from localStorage`);
 
-            // If this is the current character, clear the chat interface
-            if (this.currentCharacter?.name === characterName) {
-                this.clearMessages();
-                console.log('🧹 Cleared current chat interface');
-            }
-
-            // Refresh the recent chats list
-            await this.refreshChatSidebar();
-            console.log('🔄 Refreshed recent chats list');
+            // Handle navigation after deletion
+            await this.handlePostDeletionNavigation(characterName);
 
             // Show success message
             this.showTemporaryMessage(`Chat history with ${characterName} has been deleted.`, 'success');
@@ -1217,6 +1210,114 @@ class MainChatSystem {
                 }
             }, 300);
         }, 3000);
+    }
+
+    // Handle navigation after deleting chat history
+    async handlePostDeletionNavigation(deletedCharacterName) {
+        const wasCurrentCharacter = this.currentCharacter?.name === deletedCharacterName;
+        
+        // Refresh the chat sidebar first to get updated list
+        await this.refreshChatSidebar();
+        console.log('🔄 Refreshed recent chats list');
+
+        if (wasCurrentCharacter) {
+            console.log(`🧹 Deleted character ${deletedCharacterName} was current character`);
+            
+            // Clear current chat interface
+            this.clearMessages();
+            this.currentCharacter = null;
+            this.currentSessionId = null;
+
+            // Check if there are other characters with chat history
+            const remainingChats = await this.getRemainingChatHistory();
+            
+            if (remainingChats.length > 0) {
+                // Navigate to the first available character
+                const firstChar = remainingChats[0];
+                console.log(`🔀 Switching to ${firstChar.name}`);
+                
+                // Small delay to ensure UI updates
+                setTimeout(() => {
+                    this.startChat(firstChar.name);
+                }, 500);
+            } else {
+                // No more chat history, go to home page
+                console.log('🏠 No more chat history, returning to home page');
+                setTimeout(() => {
+                    this.closeChatInterface();
+                }, 500);
+            }
+        }
+    }
+
+    // Get remaining characters with chat history
+    async getRemainingChatHistory() {
+        try {
+            if (this.currentUser && this.supabase) {
+                // Get from database
+                const { data: sessions, error } = await this.supabase
+                    .from('chat_sessions')
+                    .select(`
+                        id,
+                        character_id,
+                        characters!inner(name, images)
+                    `)
+                    .eq('user_id', this.currentUser.id)
+                    .order('updated_at', { ascending: false });
+
+                if (!error && sessions) {
+                    // Group by character and get unique characters
+                    const uniqueChars = {};
+                    sessions.forEach(session => {
+                        const charName = session.characters?.name;
+                        if (charName && !uniqueChars[charName]) {
+                            uniqueChars[charName] = {
+                                name: charName,
+                                images: session.characters.images
+                            };
+                        }
+                    });
+                    return Object.values(uniqueChars);
+                }
+            }
+            
+            // Fallback: check localStorage
+            const localChars = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && key.startsWith('gcrush_chat_messages_')) {
+                    const charName = key.replace('gcrush_chat_messages_', '');
+                    const messages = localStorage.getItem(key);
+                    if (messages && JSON.parse(messages).length > 0) {
+                        localChars.push({ name: charName });
+                    }
+                }
+            }
+            return localChars;
+            
+        } catch (error) {
+            console.error('Error getting remaining chats:', error);
+            return [];
+        }
+    }
+
+    // Close chat interface and return to home
+    closeChatInterface() {
+        const chatInterface = document.querySelector('.chat-interface');
+        if (chatInterface) {
+            chatInterface.style.display = 'none';
+        }
+        
+        // Clear URL parameters
+        const url = new URL(window.location);
+        url.searchParams.delete('character');
+        window.history.replaceState({}, '', url);
+        
+        // Reset state
+        this.currentCharacter = null;
+        this.currentSessionId = null;
+        
+        console.log('🏠 Returned to home page');
     }
 
     // Helper method to delete sessions and their messages
