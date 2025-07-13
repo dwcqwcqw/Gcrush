@@ -2899,8 +2899,14 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     position: relative;
     display: flex;
     flex-direction: column;
-    transition: width 0.3s ease, transform 0.3s ease;
+    transition: width 0.3s ease, transform 0.3s ease, margin-left 0.3s ease;
     overflow: hidden;
+    margin-left: 240px; /* Default margin when main sidebar is expanded */
+}
+
+/* Adjust chat sidebar position based on main sidebar state */
+.sidebar.collapsed ~ .chat-interface .chat-sidebar {
+    margin-left: 60px; /* Reduced margin when main sidebar is collapsed */
 }
 
 .chat-sidebar.collapsed {
@@ -3140,10 +3146,14 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     width: 100%;
     height: auto;
     max-height: 300px;
+    min-height: 200px;
     object-fit: cover;
-    display: block;
+    display: block !important;
     border-radius: 15px 15px 0 0;
     background: #000;
+    visibility: visible !important;
+    opacity: 1 !important;
+    z-index: 10;
 }
 
 /* Video loading and error states */

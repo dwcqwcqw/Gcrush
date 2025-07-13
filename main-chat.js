@@ -115,13 +115,37 @@ class MainChatSystem {
             // Update character info in UI
             this.updateCharacterInfo();
             
+            let hasExistingMessages = false;
+            
             // Create or load chat session (only if user is logged in)
             if (this.currentUser) {
                 await this.createChatSession(this.currentCharacter);
+                // Historical messages are loaded in createChatSession if available
+                const messagesContainer = document.getElementById('chatMessages');
+                hasExistingMessages = messagesContainer && messagesContainer.children.length > 0;
+            } else {
+                // For non-logged in users, load messages from localStorage
+                console.log('Loading chat history from localStorage for non-logged in user');
+                const localMessages = this.loadMessagesFromLocalStorage();
+                
+                if (localMessages.length > 0) {
+                    // Clear existing messages first
+                    this.clearMessages();
+                    
+                    // Add each historical message to the UI
+                    for (const message of localMessages) {
+                        await this.addMessage(message.role, message.content, false); // Don't save to storage again
+                    }
+                    
+                    console.log(`Restored ${localMessages.length} messages from localStorage`);
+                    hasExistingMessages = true;
+                }
             }
             
-            // Send initial messages
-            await this.sendInitialMessages();
+            // Send initial messages only if no chat history was loaded
+            if (!hasExistingMessages) {
+                await this.sendInitialMessages();
+            }
             
         } catch (error) {
             console.error('Error starting chat:', error);
@@ -474,24 +498,32 @@ class MainChatSystem {
         // Create video element with enhanced error handling
         const videoUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Video/${characterName}/NSFW/${characterName}2.mov`;
         
-        messageContent.innerHTML = `
-            <div class="video-wrapper loading">
-                <video 
-                    controls 
-                    preload="metadata"
-                    class="character-video"
-                    crossorigin="anonymous"
-                >
-                    <source src="${videoUrl}" type="video/mp4">
-                    <source src="${videoUrl}" type="video/quicktime">
-                    Your browser does not support the video tag.
-                </video>
-                <div class="video-info">
-                    <span class="video-character-name">${characterName}</span>
-                    <span class="video-description">Welcome message</span>
-                </div>
-            </div>
+        // Create video wrapper
+        const videoWrapper = document.createElement('div');
+        videoWrapper.className = 'video-wrapper loading';
+        
+        // Create video element
+        const video = document.createElement('video');
+        video.className = 'character-video';
+        video.controls = true;
+        video.preload = 'metadata';
+        video.style.display = 'block';
+        video.style.width = '100%';
+        video.style.height = 'auto';
+        video.style.minHeight = '200px';
+        
+        // Create video info
+        const videoInfo = document.createElement('div');
+        videoInfo.className = 'video-info';
+        videoInfo.innerHTML = `
+            <span class="video-character-name">${characterName}</span>
+            <span class="video-description">Welcome message</span>
         `;
+        
+        // Assemble the video message
+        videoWrapper.appendChild(video);
+        videoWrapper.appendChild(videoInfo);
+        messageContent.appendChild(videoWrapper);
         
         messageDiv.appendChild(messageContent);
         messagesContainer.appendChild(messageDiv);
@@ -511,51 +543,58 @@ class MainChatSystem {
         
         // Setup video event handlers after DOM insertion
         setTimeout(() => {
-            const video = messageDiv.querySelector('.character-video');
-            const wrapper = messageDiv.querySelector('.video-wrapper');
-            
-            if (video && wrapper) {
+            if (video && videoWrapper) {
+                console.log(`Setting up video for ${characterName} with URL: ${videoUrl}`);
+                
                 // Handle successful load
                 video.addEventListener('loadeddata', () => {
                     console.log(`Video loaded successfully for ${characterName}`);
-                    wrapper.classList.remove('loading');
-                    // Try autoplay with user gesture detection
-                    const playPromise = video.play();
-                    if (playPromise !== undefined) {
-                        playPromise.then(() => {
-                            // Autoplay started successfully
-                            video.muted = false;
-                        }).catch((error) => {
-                            // Autoplay failed - this is normal without user interaction
-                            console.log('Autoplay prevented (normal):', error.name);
-                            video.muted = true;
-                        });
-                    }
+                    videoWrapper.classList.remove('loading');
+                    console.log('Video element dimensions:', video.offsetWidth, 'x', video.offsetHeight);
+                    console.log('Video element visibility:', getComputedStyle(video).visibility);
+                    console.log('Video element display:', getComputedStyle(video).display);
+                });
+                
+                // Handle when metadata is loaded
+                video.addEventListener('loadedmetadata', () => {
+                    console.log(`Video metadata loaded for ${characterName}`);
+                    console.log('Video duration:', video.duration);
+                    console.log('Video video width/height:', video.videoWidth, 'x', video.videoHeight);
                 });
                 
                 // Handle errors
                 video.addEventListener('error', (e) => {
                     console.error(`Video failed to load for ${characterName}:`, e);
-                    wrapper.classList.remove('loading');
-                    wrapper.classList.add('error');
+                    console.error('Error code:', video.error?.code, 'Message:', video.error?.message);
+                    videoWrapper.classList.remove('loading');
+                    videoWrapper.classList.add('error');
                 });
                 
                 // Handle user click to play
                 video.addEventListener('click', () => {
+                    console.log('Video clicked, attempting to play...');
                     if (video.paused) {
                         video.muted = false;
                         const playPromise = video.play();
                         if (playPromise !== undefined) {
-                            playPromise.catch((error) => {
+                            playPromise.then(() => {
+                                console.log('Video playing successfully');
+                            }).catch((error) => {
                                 console.error('Play failed:', error);
                             });
                         }
                     }
                 });
                 
-                // Set video source
+                // Set video source and load
+                console.log('Setting video source:', videoUrl);
                 video.src = videoUrl;
                 video.load();
+                
+                // Force video to be visible
+                video.style.display = 'block';
+                video.style.visibility = 'visible';
+                video.style.opacity = '1';
             }
         }, 100);
         
@@ -563,9 +602,16 @@ class MainChatSystem {
     }
     
     async saveMessageToDatabase(role, content) {
+        // Save to localStorage for non-logged in users
+        if (!this.currentUser) {
+            console.log('User not logged in - saving to localStorage');
+            this.saveMessageToLocalStorage(role, content);
+            return;
+        }
+        
         // Only save to database if user is logged in and has a session
-        if (!this.currentUser || !this.currentSessionId) {
-            console.log('Skipping database save - user not logged in or no session');
+        if (!this.currentSessionId) {
+            console.log('Skipping database save - no session');
             return;
         }
         
@@ -949,6 +995,106 @@ class MainChatSystem {
 
     clearMessages() {
         document.getElementById('chatMessages').innerHTML = '';
+    }
+    
+    // Save message to localStorage for non-logged in users
+    saveMessageToLocalStorage(role, content) {
+        if (!this.currentCharacter) {
+            console.log('No current character for localStorage save');
+            return;
+        }
+        
+        const storageKey = `gcrush_chat_messages_${this.currentCharacter.name}`;
+        let messages = [];
+        
+        try {
+            const existing = localStorage.getItem(storageKey);
+            if (existing) {
+                messages = JSON.parse(existing);
+            }
+        } catch (error) {
+            console.error('Error parsing localStorage messages:', error);
+            messages = [];
+        }
+        
+        // Add new message
+        const messageData = {
+            role: role,
+            content: content,
+            timestamp: new Date().toISOString(),
+            characterName: this.currentCharacter.name
+        };
+        
+        messages.push(messageData);
+        
+        // Keep only last 100 messages per character to avoid storage limits
+        if (messages.length > 100) {
+            messages = messages.slice(-100);
+        }
+        
+        try {
+            localStorage.setItem(storageKey, JSON.stringify(messages));
+            console.log('Message saved to localStorage for', this.currentCharacter.name);
+        } catch (error) {
+            console.error('Error saving to localStorage:', error);
+            // If storage is full, try to clear old messages and retry
+            this.cleanupOldLocalStorageMessages();
+            try {
+                localStorage.setItem(storageKey, JSON.stringify(messages.slice(-50))); // Keep only last 50
+            } catch (retryError) {
+                console.error('Failed to save even after cleanup:', retryError);
+            }
+        }
+    }
+    
+    // Load messages from localStorage for non-logged in users
+    loadMessagesFromLocalStorage() {
+        if (!this.currentCharacter) {
+            console.log('No current character for localStorage load');
+            return [];
+        }
+        
+        const storageKey = `gcrush_chat_messages_${this.currentCharacter.name}`;
+        
+        try {
+            const stored = localStorage.getItem(storageKey);
+            if (stored) {
+                const messages = JSON.parse(stored);
+                console.log(`Loaded ${messages.length} messages from localStorage for ${this.currentCharacter.name}`);
+                return messages;
+            }
+        } catch (error) {
+            console.error('Error loading from localStorage:', error);
+        }
+        
+        return [];
+    }
+    
+    // Clean up old localStorage messages to free space
+    cleanupOldLocalStorageMessages() {
+        console.log('Cleaning up old localStorage messages...');
+        const keysToRemove = [];
+        
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('gcrush_chat_messages_')) {
+                keysToRemove.push(key);
+            }
+        }
+        
+        // Remove oldest messages from each character (keep only 25 per character)
+        keysToRemove.forEach(key => {
+            try {
+                const messages = JSON.parse(localStorage.getItem(key) || '[]');
+                if (messages.length > 25) {
+                    const trimmed = messages.slice(-25);
+                    localStorage.setItem(key, JSON.stringify(trimmed));
+                }
+            } catch (error) {
+                console.error('Error cleaning up messages for key:', key, error);
+                localStorage.removeItem(key); // Remove corrupted data
+            }
+        });
     }
     
     // Method to reset first-time chat status (useful for testing)
