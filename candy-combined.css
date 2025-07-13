@@ -1987,11 +1987,14 @@ ul {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: opacity 0.3s ease;
+    transition: opacity 0.5s ease;
     position: absolute;
     top: 0;
     left: 0;
     z-index: 1;
+    opacity: 0; /* Start hidden, show when loaded */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
 }
 
 .character-video {
@@ -2905,8 +2908,19 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
 }
 
 /* Adjust chat sidebar position based on main sidebar state */
-.sidebar.collapsed ~ .chat-interface .chat-sidebar {
+.sidebar.collapsed ~ .main-content .chat-interface .chat-sidebar {
     margin-left: 60px; /* Reduced margin when main sidebar is collapsed */
+}
+
+/* Also adjust chat main area to account for sidebar changes */
+.chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 2;
+    margin-left: 0;
+    transition: margin-left 0.3s ease;
 }
 
 .chat-sidebar.collapsed {
@@ -3130,7 +3144,8 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     background: none;
     border: none;
     backdrop-filter: none;
-    max-width: 400px;
+    max-width: 350px; /* Match video max-width */
+    width: 100%;
 }
 
 .video-wrapper {
@@ -3140,13 +3155,15 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(10px);
     position: relative;
+    width: 100%;
+    max-width: 350px; /* Match video size */
 }
 
 .character-video {
     width: 100%;
     height: auto;
-    max-height: 300px;
-    min-height: 200px;
+    max-width: 350px; /* Limit max width for better proportions */
+    aspect-ratio: 3/4; /* Maintain 3:4 aspect ratio */
     object-fit: cover;
     display: block !important;
     border-radius: 15px 15px 0 0;
@@ -3190,6 +3207,51 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     content: 'Video unavailable';
     color: rgba(255, 255, 255, 0.7);
     opacity: 1;
+}
+
+/* Custom video fullscreen styles */
+.character-video:fullscreen {
+    width: 70vw !important;
+    height: 80vh !important;
+    max-width: 500px !important;
+    max-height: 90vh !important;
+    object-fit: contain !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    margin: auto !important;
+    border-radius: 0 !important;
+}
+
+.character-video:-webkit-full-screen {
+    width: 70vw !important;
+    height: 80vh !important;
+    max-width: 500px !important;
+    max-height: 90vh !important;
+    object-fit: contain !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    margin: auto !important;
+    border-radius: 0 !important;
+}
+
+.character-video:-moz-full-screen {
+    width: 70vw !important;
+    height: 80vh !important;
+    max-width: 500px !important;
+    max-height: 90vh !important;
+    object-fit: contain !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    margin: auto !important;
+    border-radius: 0 !important;
+}
+
+.character-video:-ms-fullscreen {
+    width: 70vw !important;
+    height: 80vh !important;
+    max-width: 500px !important;
+    max-height: 90vh !important;
+    object-fit: contain !important;
+    background: rgba(0, 0, 0, 0.95) !important;
+    margin: auto !important;
+    border-radius: 0 !important;
 }
 
 .video-info {

@@ -19,6 +19,7 @@ class MainChatSystem {
         }
         
         this.init();
+        this.setupSidebarHover();
     }
     
     async init() {
@@ -83,6 +84,30 @@ class MainChatSystem {
                 this.sendMessage();
             }
         });
+    }
+    
+    setupSidebarHover() {
+        const mainSidebar = document.querySelector('.sidebar');
+        if (mainSidebar) {
+            // Listen for hover events on main sidebar when it's collapsed
+            mainSidebar.addEventListener('mouseenter', () => {
+                if (mainSidebar.classList.contains('collapsed')) {
+                    const chatSidebar = document.querySelector('.chat-sidebar');
+                    if (chatSidebar) {
+                        chatSidebar.style.marginLeft = '240px'; // Expanded width
+                    }
+                }
+            });
+            
+            mainSidebar.addEventListener('mouseleave', () => {
+                if (mainSidebar.classList.contains('collapsed')) {
+                    const chatSidebar = document.querySelector('.chat-sidebar');
+                    if (chatSidebar) {
+                        chatSidebar.style.marginLeft = '60px'; // Collapsed width
+                    }
+                }
+            });
+        }
     }
     
     async startChat(characterName) {
@@ -173,6 +198,14 @@ class MainChatSystem {
         const mainSidebar = document.querySelector('.sidebar');
         if (mainSidebar) {
             mainSidebar.classList.add('collapsed');
+            
+            // Manually adjust chat sidebar position based on main sidebar state
+            setTimeout(() => {
+                const chatSidebar = document.querySelector('.chat-sidebar');
+                if (chatSidebar) {
+                    chatSidebar.style.marginLeft = mainSidebar.classList.contains('collapsed') ? '60px' : '240px';
+                }
+            }, 50);
         }
         
         // Update sidebar active state
@@ -1119,6 +1152,12 @@ function backToExplore() {
     const mainSidebar = document.querySelector('.sidebar');
     if (mainSidebar) {
         mainSidebar.classList.remove('collapsed');
+        
+        // Also reset chat sidebar position
+        const chatSidebar = document.querySelector('.chat-sidebar');
+        if (chatSidebar) {
+            chatSidebar.style.marginLeft = '240px';
+        }
     }
     
     // Show main content
