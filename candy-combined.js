@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCountdownTimer();
     initCharacterVideoHover();
     initLogoLoading();
-    initImageLoading();
+    // initImageLoading(); // Disabled - character-data-loader.js handles this
     initBannerCarousel();
     initBannerImageLoading();
     
@@ -234,21 +234,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 img.classList.remove('loading');
                 img.classList.add('loaded');
                 if (img.parentElement) {
+                    img.parentElement.classList.add('image-loaded');
                     img.parentElement.style.animation = 'none';
+                    img.parentElement.style.background = 'transparent';
                 }
             } else {
                 img.addEventListener('load', function() {
                     this.classList.remove('loading');
                     this.classList.add('loaded');
                     if (this.parentElement) {
+                        this.parentElement.classList.add('image-loaded');
                         this.parentElement.style.animation = 'none';
+                        this.parentElement.style.background = 'transparent';
                     }
                 });
                 
                 img.addEventListener('error', function() {
                     console.error('Failed to load image:', this.src);
                     this.classList.remove('loading');
-                    // Keep skeleton animation on error
+                    if (this.parentElement) {
+                        this.parentElement.classList.add('image-loaded');
+                        this.parentElement.style.animation = 'none';
+                        this.parentElement.style.background = 'transparent';
+                    }
                 });
             }
         });
