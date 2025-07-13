@@ -141,8 +141,9 @@
     <!-- 文字转语音测试 -->
     <div class="test-section">
         <h2>5. 文字转语音完整测试</h2>
+        <p><strong>注意：</strong>星号包围的文字（如 *动作* 或 *表情*）会被自动过滤，不会转换为语音。</p>
         <p>测试文本：</p>
-        <textarea id="testText" rows="3" placeholder="输入要转换为语音的文字">你好，这是一个语音测试。Hello, this is a voice test.</textarea>
+        <textarea id="testText" rows="3" placeholder="输入要转换为语音的文字">你好，这是一个语音测试。*微笑* Hello, this is a voice test. *waves hand*</textarea>
         <p>角色ID（测试用）：</p>
         <input type="text" id="testCharacterId" value="test-character-456" placeholder="输入测试角色ID">
         <p>用户ID（测试用）：</p>
@@ -476,6 +477,16 @@
             }
             
             log('开始文字转语音测试...');
+            
+            // Show text filtering demo
+            const filteredText = text.replace(/\*[^*]*\*/g, '').trim();
+            log(`原始文本: "${text}"`);
+            log(`过滤后文本 (移除星号内容): "${filteredText}"`);
+            
+            if (filteredText !== text) {
+                log('✅ 检测到星号内容，已自动过滤');
+            }
+            
             document.getElementById('ttsBtn').disabled = true;
             
             try {

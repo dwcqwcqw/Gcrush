@@ -31,9 +31,35 @@ export async function onRequestPost(context) {
             }
 
             console.log('Processing text-to-speech for character:', characterId, 'user:', userId);
+            console.log('Original text:', text);
             
-            // Create cache key based on text and character
-            const textHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+            // Filter out text within asterisks (e.g., *action* or *emotion*)
+            // This removes stage directions, actions, and other non-spoken content
+            const filteredText = text.replace(/\*[^*]*\*/g, '').trim();
+            
+            console.log('Filtered text (removed asterisk content):', filteredText);
+            
+            // Check if there's any text left after filtering
+            if (!filteredText) {
+                console.log('No speakable text found after filtering asterisk content');
+                return new Response(JSON.stringify({
+                    success: false,
+                    error: 'No speakable text found - only stage directions or actions detected',
+                    note: 'Text contained only content within asterisks (*action*) which is filtered out'
+                }), {
+                    status: 400,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
+            }
+            
+            // Use filtered text for cache key and TTS generation
+            const textForProcessing = filteredText;
+            
+            // Create cache key based on filtered text and character
+            const textHash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(textForProcessing));
             const hashArray = Array.from(new Uint8Array(textHash));
             const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
             const cacheKey = `gcrush/Sound/cache/${characterId}/${hashHex.substring(0, 16)}.mp3`;
@@ -131,7 +157,7 @@ export async function onRequestPost(context) {
             
             const minimaxPayload = {
                 model: "speech-02-turbo",
-                text: text,
+                text: textForProcessing,
                 stream: false,
                 voice_setting: {
                     voice_id: voiceId,
