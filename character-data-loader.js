@@ -347,12 +347,15 @@ class CharacterDataLoader {
             // Insert into page
             characterGrid.innerHTML = characterCardsHtml;
 
-            // Ensure all images are immediately visible
+            // Force all images to be immediately visible with !important-like styles
             const allImages = document.querySelectorAll('.character-image img');
-            allImages.forEach(img => {
-                img.style.opacity = '1';
-                img.style.visibility = 'visible';
-                img.style.display = 'block';
+            console.log(`Found ${allImages.length} images to make visible`);
+            allImages.forEach((img, index) => {
+                img.style.setProperty('opacity', '1', 'important');
+                img.style.setProperty('visibility', 'visible', 'important');
+                img.style.setProperty('display', 'block', 'important');
+                img.style.setProperty('z-index', '10', 'important');
+                console.log(`Forced image ${index + 1} to be visible:`, img.src);
             });
 
             // Re-initialize video hover effects
@@ -402,12 +405,48 @@ window.addEventListener('load', () => {
     setTimeout(() => {
         console.log('Final check: ensuring all character images are visible...');
         const allImages = document.querySelectorAll('.character-image img');
-        allImages.forEach((img, index) => {
-            img.style.opacity = '1';
-            img.style.visibility = 'visible';
-            img.style.display = 'block';
-            console.log(`Ensured image ${index + 1} is visible`);
-        });
+        console.log(`Found ${allImages.length} images in final check`);
+        
+        if (allImages.length === 0) {
+            console.warn('No images found! Checking if character cards exist...');
+            const characterCards = document.querySelectorAll('.character-card');
+            console.log(`Found ${characterCards.length} character cards`);
+            
+            characterCards.forEach((card, index) => {
+                const img = card.querySelector('.character-image img');
+                if (img) {
+                    console.log(`Found image in card ${index + 1}:`, img);
+                    img.style.setProperty('opacity', '1', 'important');
+                    img.style.setProperty('visibility', 'visible', 'important');
+                    img.style.setProperty('display', 'block', 'important');
+                    img.style.setProperty('z-index', '10', 'important');
+                    console.log(`Force-set image ${index + 1} to be visible with !important`);
+                } else {
+                    console.warn(`No image found in card ${index + 1}`);
+                }
+            });
+        } else {
+            allImages.forEach((img, index) => {
+                console.log(`Processing image ${index + 1}:`, img);
+                img.style.setProperty('opacity', '1', 'important');
+                img.style.setProperty('visibility', 'visible', 'important');
+                img.style.setProperty('display', 'block', 'important');
+                img.style.setProperty('z-index', '10', 'important');
+                console.log(`Force-ensured image ${index + 1} is visible with !important`);
+            });
+        }
+        
+        // Also force any images that might be added later
+        setTimeout(() => {
+            const laterImages = document.querySelectorAll('.character-image img');
+            console.log(`Second check: found ${laterImages.length} images`);
+            laterImages.forEach((img, index) => {
+                img.style.setProperty('opacity', '1', 'important');
+                img.style.setProperty('visibility', 'visible', 'important');
+                img.style.setProperty('display', 'block', 'important');
+                img.style.setProperty('z-index', '10', 'important');
+            });
+        }, 500);
     }, 100);
 });
 
