@@ -1976,8 +1976,16 @@ ul {
 
 /* Stop loading animation when image is loaded */
 .character-image.image-loaded {
-    animation: none;
-    background: transparent;
+    animation: none !important;
+    background: transparent !important;
+    background-image: none !important;
+}
+
+/* Force stop animation with higher specificity */
+.character-card .character-image.image-loaded {
+    animation: none !important;
+    background: transparent !important;
+    background-image: none !important;
 }
 
 @keyframes loading {

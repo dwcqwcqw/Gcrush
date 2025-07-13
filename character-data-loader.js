@@ -425,12 +425,34 @@ window.addEventListener('load', () => {
     setTimeout(() => {
         console.log('Forcing all character images to show...');
         const allCharacterImages = document.querySelectorAll('.character-image');
-        allCharacterImages.forEach(imgContainer => {
+        console.log(`Found ${allCharacterImages.length} character image containers to force show`);
+        
+        allCharacterImages.forEach((imgContainer, index) => {
+            // Remove all animation-related styles
             imgContainer.classList.add('image-loaded');
-            imgContainer.style.animation = 'none';
-            imgContainer.style.background = 'transparent';
+            imgContainer.style.cssText += '; animation: none !important; background: transparent !important; background-image: none !important;';
+            
+            // Also ensure the image inside is visible
+            const img = imgContainer.querySelector('img');
+            if (img) {
+                img.style.opacity = '1';
+                img.style.visibility = 'visible';
+                console.log(`Forced image ${index + 1} to show`);
+            }
         });
-    }, 500);
+        
+        // Double-check after a short delay
+        setTimeout(() => {
+            const stillLoading = document.querySelectorAll('.character-image:not(.image-loaded)');
+            if (stillLoading.length > 0) {
+                console.warn(`Still ${stillLoading.length} images not showing, forcing again...`);
+                stillLoading.forEach(imgContainer => {
+                    imgContainer.classList.add('image-loaded');
+                    imgContainer.setAttribute('style', 'animation: none !important; background: transparent !important; background-image: none !important;');
+                });
+            }
+        }, 100);
+    }, 300); // Reduced delay
 });
 
 // Navigation function for chat
