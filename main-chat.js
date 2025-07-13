@@ -1119,19 +1119,37 @@ class MainChatSystem {
                 // Delete from database for logged-in users
                 console.log(`🗑️ Deleting chat history for ${characterName} from database...`);
                 
-                const { error } = await this.supabase
-                    .from('chat_messages')
-                    .delete()
-                    .eq('user_id', this.currentUser.id)
-                    .eq('character_name', characterName);
+                // First, find the character ID
+                const { data: character, error: charError } = await this.supabase
+                    .from('characters')
+                    .select('id')
+                    .eq('name', characterName)
+                    .single();
 
-                if (error) {
-                    console.error('Error deleting chat history from database:', error);
-                    alert('Error deleting chat history. Please try again.');
+                if (charError || !character) {
+                    console.error('Error finding character:', charError);
+                    console.log(`No character found with name: ${characterName}`);
                     return;
                 }
 
-                console.log(`✅ Successfully deleted chat history for ${characterName} from database`);
+                // Then find all sessions for this user and character
+                const { data: sessions, error: sessionError } = await this.supabase
+                    .from('chat_sessions')
+                    .select('id')
+                    .eq('user_id', this.currentUser.id)
+                    .eq('character_id', character.id);
+
+                if (sessionError) {
+                    console.error('Error finding sessions:', sessionError);
+                    alert('Error accessing chat sessions. Please try again.');
+                    return;
+                } else if (sessions && sessions.length > 0) {
+                    const sessionIds = sessions.map(s => s.id);
+                    const success = await this.deleteSessionsAndMessages(sessionIds, characterName);
+                    if (!success) return;
+                } else {
+                    console.log(`No sessions found for ${characterName}`);
+                }
             }
 
             // Delete from localStorage
@@ -1199,6 +1217,38 @@ class MainChatSystem {
                 }
             }, 300);
         }, 3000);
+    }
+
+    // Helper method to delete sessions and their messages
+    async deleteSessionsAndMessages(sessionIds, characterName) {
+        console.log(`Found ${sessionIds.length} sessions to delete for ${characterName}`);
+        
+        // Delete messages first
+        const { error: messagesError } = await this.supabase
+            .from('chat_messages')
+            .delete()
+            .in('session_id', sessionIds);
+
+        if (messagesError) {
+            console.error('Error deleting messages:', messagesError);
+            alert('Error deleting chat messages. Please try again.');
+            return false;
+        }
+
+        // Delete sessions
+        const { error: sessionsError } = await this.supabase
+            .from('chat_sessions')
+            .delete()
+            .in('id', sessionIds);
+
+        if (sessionsError) {
+            console.error('Error deleting sessions:', sessionsError);
+            alert('Error deleting chat sessions. Please try again.');
+            return false;
+        }
+
+        console.log(`✅ Successfully deleted ${sessionIds.length} sessions and their messages for ${characterName}`);
+        return true;
     }
 
     // Refresh the chat sidebar after changes
