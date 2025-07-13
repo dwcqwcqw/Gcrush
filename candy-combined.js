@@ -129,10 +129,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     // If hovering, start playing immediately
                     if (isHovered) {
-                        img.style.opacity = '0';
                         video.classList.add('playing');
                         video.currentTime = 0;
-                        video.play().catch(error => {
+                        video.play().then(() => {
+                            // Only hide image AFTER video successfully starts playing
+                            img.style.opacity = '0';
+                        }).catch(error => {
                             console.log('Video playback failed:', error);
                             img.style.opacity = '1';
                             video.classList.remove('playing');
@@ -154,10 +156,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     
                     if (videoReady) {
                         // Video is ready, play it
-                        img.style.opacity = '0';
                         video.classList.add('playing');
                         video.currentTime = 0;
-                        video.play().catch(error => {
+                        video.play().then(() => {
+                            // Only hide image AFTER video successfully starts playing
+                            img.style.opacity = '0';
+                        }).catch(error => {
                             console.log('Video playback failed:', error);
                             img.style.opacity = '1';
                             video.classList.remove('playing');
@@ -183,6 +187,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         video.currentTime = 0;
                         video.play().catch(error => {
                             console.log('Video loop failed:', error);
+                            // If loop fails, show image again
+                            img.style.opacity = '1';
+                            video.classList.remove('playing');
                         });
                     }
                 });
