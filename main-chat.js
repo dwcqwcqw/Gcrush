@@ -145,10 +145,10 @@ class MainChatSystem {
         // Show chat interface
         document.getElementById('chatInterface').style.display = 'flex';
         
-        // Always auto-collapse chat sidebar when entering any chat (hover to expand)
-        const chatSidebar = document.getElementById('chatSidebar');
-        if (chatSidebar) {
-            chatSidebar.classList.add('collapsed');
+        // Collapse main navigation sidebar when entering chat (hover to expand)
+        const mainSidebar = document.querySelector('.sidebar');
+        if (mainSidebar) {
+            mainSidebar.classList.add('collapsed');
         }
         
         // Update sidebar active state
@@ -471,19 +471,16 @@ class MainChatSystem {
         const messageContent = document.createElement('div');
         messageContent.className = 'message-content video-content';
         
-        // Create video element with controls
+        // Create video element with enhanced error handling
         const videoUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Video/${characterName}/NSFW/${characterName}2.mov`;
         
         messageContent.innerHTML = `
-            <div class="video-wrapper">
+            <div class="video-wrapper loading">
                 <video 
                     controls 
-                    autoplay
                     preload="metadata"
                     class="character-video"
-                    onloadstart="console.log('Video loading started')"
-                    oncanplay="this.muted = false; console.log('Video can start playing with audio')"
-                    onerror="console.error('Video failed to load', this.src)"
+                    crossorigin="anonymous"
                 >
                     <source src="${videoUrl}" type="video/mp4">
                     <source src="${videoUrl}" type="video/quicktime">
@@ -515,27 +512,50 @@ class MainChatSystem {
         // Setup video event handlers after DOM insertion
         setTimeout(() => {
             const video = messageDiv.querySelector('.character-video');
-            if (video) {
-                // Ensure audio is enabled when video can play
-                video.addEventListener('canplay', () => {
-                    video.muted = false;
-                    console.log(`Video ready with audio for ${characterName}`);
+            const wrapper = messageDiv.querySelector('.video-wrapper');
+            
+            if (video && wrapper) {
+                // Handle successful load
+                video.addEventListener('loadeddata', () => {
+                    console.log(`Video loaded successfully for ${characterName}`);
+                    wrapper.classList.remove('loading');
+                    // Try autoplay with user gesture detection
+                    const playPromise = video.play();
+                    if (playPromise !== undefined) {
+                        playPromise.then(() => {
+                            // Autoplay started successfully
+                            video.muted = false;
+                        }).catch((error) => {
+                            // Autoplay failed - this is normal without user interaction
+                            console.log('Autoplay prevented (normal):', error.name);
+                            video.muted = true;
+                        });
+                    }
                 });
                 
-                // Handle user interaction requirement for autoplay with audio
+                // Handle errors
+                video.addEventListener('error', (e) => {
+                    console.error(`Video failed to load for ${characterName}:`, e);
+                    wrapper.classList.remove('loading');
+                    wrapper.classList.add('error');
+                });
+                
+                // Handle user click to play
                 video.addEventListener('click', () => {
                     if (video.paused) {
                         video.muted = false;
-                        video.play();
+                        const playPromise = video.play();
+                        if (playPromise !== undefined) {
+                            playPromise.catch((error) => {
+                                console.error('Play failed:', error);
+                            });
+                        }
                     }
                 });
                 
-                // Try to unmute after a brief delay (browser policy workaround)
-                setTimeout(() => {
-                    if (video.readyState >= 2) { // HAVE_CURRENT_DATA
-                        video.muted = false;
-                    }
-                }, 500);
+                // Set video source
+                video.src = videoUrl;
+                video.load();
             }
         }, 100);
         
@@ -949,17 +969,18 @@ function backToExplore() {
     // Hide chat interface
     document.getElementById('chatInterface').style.display = 'none';
     
-    // Reset chat sidebar to expanded state when returning to main page
-    const chatSidebar = document.getElementById('chatSidebar');
-    if (chatSidebar) {
-        chatSidebar.classList.remove('collapsed');
+    // Restore main navigation sidebar when returning to main page
+    const mainSidebar = document.querySelector('.sidebar');
+    if (mainSidebar) {
+        mainSidebar.classList.remove('collapsed');
     }
     
     // Show main content
     document.getElementById('heroSection').style.display = 'block';
     document.getElementById('titleSection').style.display = 'block';
     document.getElementById('characterLobby').style.display = 'block';
-    document.querySelector('.faq-section').style.display = 'block';
+    const faqSection = document.querySelector('.faq-section');
+    if (faqSection) faqSection.style.display = 'block';
     
     // Force refresh of banner centering by triggering a reflow
     const heroBanner = document.querySelector('.hero-banner');
@@ -968,6 +989,16 @@ function backToExplore() {
         heroBanner.offsetHeight; // Force reflow
         heroBanner.style.display = '';
     }
+    
+    // Update sidebar active state to show Explore as active
+    const sidebarItems = document.querySelectorAll('.sidebar-item');
+    sidebarItems.forEach(item => {
+        item.classList.remove('active');
+        // Set Explore as active
+        if (item.querySelector('span') && item.querySelector('span').textContent.trim() === 'Explore') {
+            item.classList.add('active');
+        }
+    });
     
     // Clear current chat
     if (window.mainChatSystem) {
