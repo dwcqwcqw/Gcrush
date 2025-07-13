@@ -1968,34 +1968,13 @@ ul {
     overflow: hidden;
     position: relative;
     border-radius: 12px;
-    background: linear-gradient(90deg, #2a2a2d 25%, #3a3a3f 50%, #2a2a2d 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
+    background: transparent;
     z-index: 1;
 }
 
-/* Stop loading animation when image is loaded */
-.character-image.image-loaded {
-    animation: none !important;
-    background: transparent !important;
-    background-image: none !important;
-}
+/* Image containers now have transparent background by default - no loading animation needed */
 
-/* Force stop animation with higher specificity */
-.character-card .character-image.image-loaded {
-    animation: none !important;
-    background: transparent !important;
-    background-image: none !important;
-}
-
-@keyframes loading {
-    0% {
-        background-position: 200% 0;
-    }
-    100% {
-        background-position: -200% 0;
-    }
-}
+/* Loading animation removed - images show immediately */
 
 .character-image img {
     width: 100%;

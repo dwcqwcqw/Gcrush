@@ -219,8 +219,8 @@ class CharacterDataLoader {
             <div class="character-card glass-card" data-character="${character.name}" onclick="navigateToChat('${character.name}')">
                 <div class="character-image">
                     <img src="${imageUrl}" alt="${character.name}" loading="eager" 
-                         onload="console.log('Image loaded for ${character.name}'); this.parentElement.classList.add('image-loaded'); this.parentElement.style.animation='none'; this.parentElement.style.background='transparent';" 
-                         onerror="console.error('Failed to load image for ${character.name}:', this.src); this.parentElement.classList.add('image-loaded'); this.parentElement.style.animation='none'; this.parentElement.style.background='transparent';">
+                         onload="console.log('Image loaded for ${character.name}');" 
+                         onerror="console.error('Failed to load image for ${character.name}:', this.src);">
                     ${videoUrl ? `
                         <video class="character-video" loop muted preload="none" 
                                onloadeddata="this.classList.add('loaded')" 
@@ -352,8 +352,7 @@ class CharacterDataLoader {
                 initCharacterVideoHover();
             }
 
-            // Setup image loading handlers for robustness
-            this.setupImageLoadingHandlers();
+            // Images now show immediately - no loading handlers needed
 
             console.log('Character cards rendered successfully');
             
@@ -381,35 +380,7 @@ class CharacterDataLoader {
         return this.characters;
     }
 
-    // Setup image loading handlers for robustness
-    setupImageLoadingHandlers() {
-        console.log('Setting up image loading handlers...');
-        const images = document.querySelectorAll('.character-image img');
-        console.log(`Found ${images.length} character images`);
-        
-        images.forEach((img, index) => {
-            // Force check if image is already loaded (cached)
-            if (img.complete && img.naturalHeight !== 0) {
-                console.log('Image already loaded (cached):', img.alt);
-                img.parentElement.classList.add('image-loaded');
-                // Force skeleton animation to stop
-                img.parentElement.style.animation = 'none';
-                img.parentElement.style.background = 'transparent';
-            } else {
-                console.log('Image not yet loaded:', img.alt);
-                // Set up a timeout fallback - just mark as loaded if it fails to fire onload
-                setTimeout(() => {
-                    if (!img.parentElement.classList.contains('image-loaded')) {
-                        console.log('Forcing image loaded state after timeout:', img.alt);
-                        img.parentElement.classList.add('image-loaded');
-                        // Force skeleton animation to stop
-                        img.parentElement.style.animation = 'none';
-                        img.parentElement.style.background = 'transparent';
-                    }
-                }, 1000 + (index * 50)); // Faster timeout
-            }
-        });
-    }
+    // Image loading handlers removed - images show immediately with transparent background
 }
 
 // Create global instance
@@ -420,40 +391,7 @@ document.addEventListener('DOMContentLoaded', () => {
     characterLoader.renderCharacterCards();
 });
 
-// Force images to show after a delay if they're stuck
-window.addEventListener('load', () => {
-    setTimeout(() => {
-        console.log('Forcing all character images to show...');
-        const allCharacterImages = document.querySelectorAll('.character-image');
-        console.log(`Found ${allCharacterImages.length} character image containers to force show`);
-        
-        allCharacterImages.forEach((imgContainer, index) => {
-            // Remove all animation-related styles
-            imgContainer.classList.add('image-loaded');
-            imgContainer.style.cssText += '; animation: none !important; background: transparent !important; background-image: none !important;';
-            
-            // Also ensure the image inside is visible
-            const img = imgContainer.querySelector('img');
-            if (img) {
-                img.style.opacity = '1';
-                img.style.visibility = 'visible';
-                console.log(`Forced image ${index + 1} to show`);
-            }
-        });
-        
-        // Double-check after a short delay
-        setTimeout(() => {
-            const stillLoading = document.querySelectorAll('.character-image:not(.image-loaded)');
-            if (stillLoading.length > 0) {
-                console.warn(`Still ${stillLoading.length} images not showing, forcing again...`);
-                stillLoading.forEach(imgContainer => {
-                    imgContainer.classList.add('image-loaded');
-                    imgContainer.setAttribute('style', 'animation: none !important; background: transparent !important; background-image: none !important;');
-                });
-            }
-        }, 100);
-    }, 300); // Reduced delay
-});
+// Images now display immediately - no force loading needed
 
 // Navigation function for chat
 function navigateToChat(characterName) {
