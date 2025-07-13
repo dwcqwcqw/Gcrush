@@ -60,13 +60,13 @@ export async function onRequestPost(context) {
             const audioFileName = `user_${userId}_${Date.now()}.webm`;
             let r2Key = `gcrush/Sound/${userId}/${audioFileName}`;
             
-            console.log('R2 bucket available:', !!env.GCRUSH_R2);
+            console.log('R2 bucket available:', !!env.R2_BUCKET);
             console.log('About to upload to R2 with key:', r2Key);
             
             // Upload to R2 (skip if not configured)
-            if (env.GCRUSH_R2) {
+            if (env.R2_BUCKET) {
                 try {
-                    const r2Response = await env.GCRUSH_R2.put(r2Key, audioFile.stream(), {
+                    const r2Response = await env.R2_BUCKET.put(r2Key, audioFile.stream(), {
                         httpMetadata: {
                             contentType: audioFile.type || 'audio/webm'
                         }
@@ -83,11 +83,15 @@ export async function onRequestPost(context) {
             }
 
             // Convert to OpenAI Whisper API
+            console.log('🚀 Calling OpenAI Whisper API...');
+            
             const whisperFormData = new FormData();
             whisperFormData.append('file', audioFile, 'audio.webm');
             whisperFormData.append('model', 'whisper-1');
-            // Remove language parameter to let Whisper auto-detect
-            // whisperFormData.append('language', 'en');
+            // Don't specify language to let Whisper auto-detect and avoid region restrictions
+            
+            console.log('📝 Audio file size:', audioFile.size);
+            console.log('📝 Audio file type:', audioFile.type);
 
             const whisperResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
                 method: 'POST',

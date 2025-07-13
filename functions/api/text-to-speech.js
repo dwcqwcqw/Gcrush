@@ -93,67 +93,47 @@ export async function onRequestPost(context) {
 
             console.log('Using voice_id:', voiceId, 'for character:', characterName);
 
-            // Call Minimax TTS API - try different endpoint formats
-            let minimaxResponse;
-            const requestData = {
-                group_id: env.MINIMAX_GROUP_ID,
+            // Call Minimax TTS API with correct endpoint
+            const minimaxUrl = `https://api.minimax.io/v1/t2a_v2?GroupId=${env.MINIMAX_GROUP_ID || '1925025302392607036'}`;
+            
+            const minimaxPayload = {
                 model: "speech-02-turbo",
                 text: text,
+                stream: false,
                 voice_setting: {
                     voice_id: voiceId,
                     speed: 1.0,
-                    emotion: "neutral"
+                    vol: 1.0,
+                    pitch: 0
                 },
                 audio_setting: {
-                    sample_rate: 22050,
+                    sample_rate: 32000,
                     bitrate: 128000,
                     format: "mp3",
                     channel: 1
                 }
             };
             
-            // Try multiple possible endpoints
-            const possibleEndpoints = [
-                'https://api.minimaxi.chat/v1/text_to_audio',
-                'https://api.minimaxi.chat/v1/audio/speech',
-                'https://api.minimaxi.chat/v1/t2a',
-                'https://api.minimax.chat/v1/text_to_audio',
-                'https://api.minimax.chat/v1/audio/speech'
-            ];
+            console.log('🚀 Calling MiniMax API:', minimaxUrl);
+            console.log('📝 Payload:', JSON.stringify(minimaxPayload, null, 2));
             
-            let lastError = null;
-            for (const endpoint of possibleEndpoints) {
-                try {
-                    console.log(`Trying endpoint: ${endpoint}`);
-                    minimaxResponse = await fetch(endpoint, {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': `Bearer ${env.MINIMAX_API_KEY}`,
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(requestData)
-                    });
+            const minimaxResponse = await fetch(minimaxUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${env.MINIMAX_API_KEY}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(minimaxPayload)
+            });
 
-                    if (minimaxResponse.ok) {
-                        console.log(`✅ Success with endpoint: ${endpoint}`);
-                        break;
-                    } else {
-                        const errorText = await minimaxResponse.text();
-                        console.log(`❌ Failed with endpoint ${endpoint}: ${minimaxResponse.status} - ${errorText}`);
-                        lastError = `${endpoint}: ${minimaxResponse.status} - ${errorText}`;
-                    }
-                } catch (error) {
-                    console.log(`❌ Error with endpoint ${endpoint}: ${error.message}`);
-                    lastError = `${endpoint}: ${error.message}`;
-                }
-            }
-
-            if (!minimaxResponse || !minimaxResponse.ok) {
-                console.error('All MiniMax endpoints failed, last error:', lastError);
+            if (!minimaxResponse.ok) {
+                const error = await minimaxResponse.text();
+                console.error('MiniMax TTS API error:', minimaxResponse.status, error);
                 return new Response(JSON.stringify({ 
                     error: 'Text-to-speech generation failed',
-                    details: `All endpoints failed. Last error: ${lastError}`,
-                    testedEndpoints: possibleEndpoints
+                    details: error,
+                    status: minimaxResponse.status,
+                    url: minimaxUrl
                 }), {
                     status: 500,
                     headers: {
@@ -184,14 +164,14 @@ export async function onRequestPost(context) {
                 const audioFileName = `tts_${characterId}_${Date.now()}.mp3`;
                 const r2Key = `gcrush/Sound/${userId}/${audioFileName}`;
                 
-                console.log('R2 bucket available:', !!env.GCRUSH_R2);
+                console.log('R2 bucket available:', !!env.R2_BUCKET);
                 console.log('About to upload TTS audio to R2 with key:', r2Key);
                 
                 // Upload to R2 (skip if not configured)
                 let r2AudioUrl;
-                if (env.GCRUSH_R2) {
+                if (env.R2_BUCKET) {
                     try {
-                        const r2Response = await env.GCRUSH_R2.put(r2Key, audioBuffer, {
+                        const r2Response = await env.R2_BUCKET.put(r2Key, audioBuffer, {
                             httpMetadata: {
                                 contentType: 'audio/mpeg'
                             }
