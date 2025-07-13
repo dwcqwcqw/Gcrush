@@ -58,7 +58,7 @@ export async function onRequestPost(context) {
 
             // Store audio file in R2
             const audioFileName = `user_${userId}_${Date.now()}.webm`;
-            const r2Key = `gcrush/Sound/${userId}/${audioFileName}`;
+            let r2Key = `gcrush/Sound/${userId}/${audioFileName}`;
             
             console.log('R2 bucket available:', !!env.GCRUSH_R2);
             console.log('About to upload to R2 with key:', r2Key);
