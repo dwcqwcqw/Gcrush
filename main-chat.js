@@ -168,14 +168,18 @@ class MainChatSystem {
     }
     
     getFallbackCharacter(characterName) {
+        // Generate a temporary UUID for fallback character
+        const fallbackId = this.generateTempUUID();
+        
         return {
-            id: 'fallback',
+            id: fallbackId,
             name: characterName,
             images: [`https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${characterName}/${characterName}1.png`],
             personality: 'Friendly and helpful',
             background: 'I\'m an AI companion here to chat with you.',
-            situation: `<You are chatting with ${characterName}>`,
-            greeting: `Hey there! I'm ${characterName}. How are you doing today?`
+            situation: `You are chatting with ${characterName} in a friendly environment.`,
+            greeting: `Hey there! I'm ${characterName}. How are you doing today?`,
+            system_prompt: `You are ${characterName}, a friendly and helpful AI companion. You are warm, engaging, and genuinely interested in conversation. Respond naturally and keep your answers concise (1-3 sentences). Use first person and stay in character.`
         };
     }
     
@@ -187,7 +191,13 @@ class MainChatSystem {
         
         try {
             const userId = this.currentUser.id;
-            const characterId = character.id || 'fallback';
+            const characterId = character.id;
+            
+            // Validate that we have a valid character ID (UUID)
+            if (!characterId || typeof characterId !== 'string') {
+                console.error('Invalid character ID:', characterId);
+                throw new Error('Character must have a valid UUID');
+            }
             
             console.log('Creating chat session:', {
                 character_id: characterId,
@@ -201,6 +211,7 @@ class MainChatSystem {
                 .select('id, created_at')
                 .eq('user_id', userId)
                 .eq('character_id', characterId)
+                .eq('is_active', true)
                 .order('created_at', { ascending: false })
                 .limit(1);
             
@@ -208,24 +219,23 @@ class MainChatSystem {
                 console.warn('Error searching for existing sessions:', searchError);
             }
             
-            // If there's a recent session (within the last hour), use it instead of creating a new one
+            // If there's an existing active session, use it and load messages
             if (existingSessions && existingSessions.length > 0) {
                 const existingSession = existingSessions[0];
-                const sessionTime = new Date(existingSession.created_at);
-                const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                console.log('Using existing active session:', existingSession.id);
+                this.currentSessionId = existingSession.id;
+                this.sessionCreatedSuccessfully = true;
                 
-                if (sessionTime > oneHourAgo) {
-                    console.log('Using existing recent session:', existingSession.id);
-                    this.currentSessionId = existingSession.id;
-                    this.sessionCreatedSuccessfully = true;
-                    return;
-                }
+                // Load historical messages for this session
+                await this.loadHistoricalMessages(this.currentSessionId);
+                return;
             }
             
-            // Create a new session with upsert to handle potential conflicts
+            // Create a new session
             const sessionData = {
                 character_id: characterId,
                 user_id: userId,
+                is_active: true,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
                 last_message_at: new Date().toISOString()
@@ -233,40 +243,18 @@ class MainChatSystem {
             
             const { data, error } = await this.supabase
                 .from('chat_sessions')
-                .upsert(sessionData, { 
-                    onConflict: 'user_id,character_id',
-                    ignoreDuplicates: false 
-                })
+                .insert(sessionData)
                 .select()
                 .single();
             
             if (error) {
                 console.error('Supabase error creating session:', error);
-                
-                // If upsert fails, try a simple insert with a timestamp suffix
-                const fallbackData = {
-                    ...sessionData,
-                    created_at: new Date().toISOString()
-                };
-                
-                const { data: fallbackResult, error: fallbackError } = await this.supabase
-                    .from('chat_sessions')
-                    .insert(fallbackData)
-                    .select()
-                    .single();
-                
-                if (fallbackError) {
-                    throw fallbackError;
-                }
-                
-                this.currentSessionId = fallbackResult.id;
-                this.sessionCreatedSuccessfully = true;
-                console.log('Chat session created with fallback method:', this.currentSessionId);
-            } else {
-                this.currentSessionId = data.id;
-                this.sessionCreatedSuccessfully = true;
-                console.log('Chat session created successfully:', this.currentSessionId);
+                throw error;
             }
+            
+            this.currentSessionId = data.id;
+            this.sessionCreatedSuccessfully = true;
+            console.log('New chat session created successfully:', this.currentSessionId);
             
         } catch (error) {
             console.error('Error creating chat session:', error);
@@ -275,6 +263,50 @@ class MainChatSystem {
             this.currentSessionId = this.generateTempUUID();
             this.sessionCreatedSuccessfully = false;
             console.log('Using temporary session ID - messages will not be persisted:', this.currentSessionId);
+        }
+    }
+    
+    async loadHistoricalMessages(sessionId) {
+        if (!sessionId || !this.supabase) {
+            console.log('Cannot load historical messages - missing sessionId or supabase');
+            return;
+        }
+        
+        try {
+            console.log('Loading historical messages for session:', sessionId);
+            
+            const { data: messages, error } = await this.supabase
+                .from('chat_messages')
+                .select('message_type, content, created_at')
+                .eq('session_id', sessionId)
+                .eq('is_deleted', false)
+                .order('created_at', { ascending: true });
+            
+            if (error) {
+                console.error('Error loading historical messages:', error);
+                return;
+            }
+            
+            if (messages && messages.length > 0) {
+                console.log(`Loaded ${messages.length} historical messages`);
+                
+                // Clear existing messages first
+                this.clearMessages();
+                
+                // Add each historical message to the UI
+                for (const message of messages) {
+                    // Convert 'character' message type to 'assistant' for UI
+                    const role = message.message_type === 'character' ? 'assistant' : message.message_type;
+                    await this.addMessage(role, message.content, false); // Don't save to DB again
+                }
+                
+                console.log('Historical messages loaded successfully');
+            } else {
+                console.log('No historical messages found for this session');
+            }
+            
+        } catch (error) {
+            console.error('Error loading historical messages:', error);
         }
     }
     
@@ -420,10 +452,13 @@ class MainChatSystem {
             return;
         }
         
-        // Don't save to database if using a temporary session ID 
-        // (either old temp_ format or if session creation failed)
-        if (this.currentSessionId.startsWith('temp_') || !this.sessionCreatedSuccessfully) {
-            console.log('Skipping database save - using temporary session or session creation failed');
+        // Don't save to database if using a temporary session ID, fallback character, or if session creation failed
+        if (this.currentSessionId.startsWith('temp_') || 
+            !this.sessionCreatedSuccessfully || 
+            !this.currentCharacter?.id || 
+            this.currentCharacter.id.includes('temp_') ||
+            this.currentCharacter.id === 'fallback') {
+            console.log('Skipping database save - using temporary session, fallback character, or session creation failed');
             return;
         }
         

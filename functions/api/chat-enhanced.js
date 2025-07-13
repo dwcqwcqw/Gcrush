@@ -39,12 +39,12 @@ export async function onRequestPost(context) {
             });
         }
         
-        // Build enhanced prompt with system prompt and chat history
+        // Build enhanced prompt with system prompt and character data
         console.log('Building enhanced prompt for character:', character.name);
         
         let prompt = '';
         
-        // 1. Start with system prompt if available
+        // 1. Start with system prompt if available, otherwise build from character data
         if (character.system_prompt) {
             prompt += character.system_prompt + '\n\n';
             console.log('Using character system_prompt');
@@ -73,10 +73,6 @@ export async function onRequestPost(context) {
                 prompt += `Your speaking style: ${character.style}. `;
             }
             
-            if (character.situation) {
-                prompt += `Current situation: ${character.situation}. `;
-            }
-            
             const tags = [character.tag1, character.tag2, character.tag3].filter(tag => tag && tag.trim() !== '');
             if (tags.length > 0) {
                 prompt += `Your personality traits include: ${tags.join(', ')}. `;
@@ -87,6 +83,18 @@ export async function onRequestPost(context) {
             prompt += `Use first person ("I", "me", "my") and respond as if you are having a real conversation.\n\n`;
             
             console.log('Built system prompt from character data');
+        }
+        
+        // 2. Add situation context if available (important for role-playing)
+        if (character.situation) {
+            prompt += `Current situation/context: ${character.situation}\n\n`;
+            console.log('Added character situation to prompt');
+        }
+        
+        // 3. Add greeting information if this appears to be an initial conversation
+        if (character.greeting && (message.toLowerCase().includes('hello') || message.toLowerCase().includes('hi') || message.toLowerCase().includes('hey'))) {
+            prompt += `Your greeting style (as reference): ${character.greeting}\n\n`;
+            console.log('Added character greeting style to prompt');
         }
         
         // 2. Add recent chat history if sessionId is provided
@@ -128,30 +136,61 @@ export async function onRequestPost(context) {
         
         const data = await response.json();
         console.log('=== RunPod Response Analysis ===');
+        console.log('Full response structure:', JSON.stringify(data, null, 2));
         console.log('Response status:', data.status);
         console.log('Has output:', !!data.output);
+        console.log('Output type:', typeof data.output);
         
-        // Extract response text
+        // Extract response text with comprehensive fallback strategy
         let generatedText = '';
         let extractionMethod = 'none';
         
-        if (data.output) {
-            if (typeof data.output === 'string') {
-                generatedText = data.output;
-                extractionMethod = 'output_string';
-            } else if (data.output.generated_text) {
+        // Strategy 1: Check if output is a direct string
+        if (data.output && typeof data.output === 'string') {
+            generatedText = data.output;
+            extractionMethod = 'output_string';
+        }
+        // Strategy 2: Check standard output properties
+        else if (data.output && typeof data.output === 'object') {
+            if (data.output.generated_text) {
                 generatedText = data.output.generated_text;
                 extractionMethod = 'output.generated_text';
-            } else if (data.output.choices && data.output.choices[0]) {
-                const choice = data.output.choices[0];
-                generatedText = choice.text || choice.message?.content || choice.content;
-                extractionMethod = 'output.choices[0]';
             } else if (data.output.text) {
                 generatedText = data.output.text;
                 extractionMethod = 'output.text';
+            } else if (data.output.content) {
+                generatedText = data.output.content;
+                extractionMethod = 'output.content';
+            } else if (data.output.response) {
+                generatedText = data.output.response;
+                extractionMethod = 'output.response';
+            } else if (data.output.choices && Array.isArray(data.output.choices) && data.output.choices.length > 0) {
+                const choice = data.output.choices[0];
+                if (choice.text) {
+                    generatedText = choice.text;
+                    extractionMethod = 'output.choices[0].text';
+                } else if (choice.message && choice.message.content) {
+                    generatedText = choice.message.content;
+                    extractionMethod = 'output.choices[0].message.content';
+                } else if (choice.content) {
+                    generatedText = choice.content;
+                    extractionMethod = 'output.choices[0].content';
+                }
+            }
+            // Strategy 3: Check if output has any string property
+            else {
+                const outputKeys = Object.keys(data.output);
+                for (const key of outputKeys) {
+                    if (typeof data.output[key] === 'string' && data.output[key].trim().length > 0) {
+                        generatedText = data.output[key];
+                        extractionMethod = `output.${key}`;
+                        break;
+                    }
+                }
             }
         }
         
+        // Strategy 4: Check direct data properties
         if (!generatedText && data.generated_text) {
             generatedText = data.generated_text;
             extractionMethod = 'data.generated_text';
@@ -162,8 +201,25 @@ export async function onRequestPost(context) {
             extractionMethod = 'data.text';
         }
         
+        if (!generatedText && data.content) {
+            generatedText = data.content;
+            extractionMethod = 'data.content';
+        }
+        
+        if (!generatedText && data.response) {
+            generatedText = data.response;
+            extractionMethod = 'data.response';
+        }
+        
+        // Strategy 5: Check if data itself is the text response
+        if (!generatedText && typeof data === 'string') {
+            generatedText = data;
+            extractionMethod = 'data_direct_string';
+        }
+        
         console.log('Extraction method:', extractionMethod);
         console.log('Generated text length:', generatedText ? generatedText.length : 0);
+        console.log('Generated text preview:', generatedText ? generatedText.substring(0, 200) + '...' : 'NONE');
         console.log('=== End Response Analysis ===');
         
         if (!generatedText) {
@@ -171,8 +227,30 @@ export async function onRequestPost(context) {
             generatedText = 'I\'m having trouble generating a response right now. Could you try asking me something else?';
         }
         
-        // Clean up the response
-        const cleanedText = generatedText.trim();
+        // Clean up and post-process the response
+        let cleanedText = generatedText.trim();
+        
+        // Remove common artifacts from AI responses
+        cleanedText = cleanedText
+            // Remove leading/trailing quotes
+            .replace(/^["']|["']$/g, '')
+            // Remove model artifacts like "<|im_end|>", "[INST]", etc.
+            .replace(/<\|.*?\|>/g, '')
+            .replace(/\[INST\]|\[\/INST\]/g, '')
+            .replace(/\<s\>|\<\/s\>/g, '')
+            // Remove repetitive character names at the start
+            .replace(new RegExp(`^${character.name}:\\s*`, 'i'), '')
+            // Remove extra whitespace
+            .replace(/\s+/g, ' ')
+            .trim();
+        
+        // Ensure the response isn't empty after cleaning
+        if (!cleanedText || cleanedText.length < 3) {
+            console.warn('Response became empty after cleaning, using fallback');
+            cleanedText = `*${character.name} smiles* That's interesting! Tell me more about that.`;
+        }
+        
+        console.log('Final cleaned response:', cleanedText);
         
         return new Response(JSON.stringify({ 
             response: cleanedText,
