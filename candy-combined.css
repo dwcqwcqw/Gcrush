@@ -2003,6 +2003,21 @@ ul {
     image-rendering: crisp-edges;
 }
 
+/* Fallback: Show image after a delay even if onload doesn't fire */
+.character-image img[src] {
+    animation: delayedShow 2s ease-in-out 1.5s forwards;
+}
+
+@keyframes delayedShow {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* If image is successfully loaded, remove the delayed animation */
+.character-image.image-loaded img {
+    animation: none;
+}
+
 .character-video {
     width: 100%;
     height: 100%;
@@ -3150,7 +3165,7 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     background: none;
     border: none;
     backdrop-filter: none;
-    max-width: min(70vw, 250px); /* Slightly smaller for better chat flow */
+    max-width: min(60vw, 300px); /* Increased to match video wrapper width */
     width: 100%;
     margin-bottom: 10px; /* Add space between video and next message */
 }
@@ -3163,22 +3178,23 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     backdrop-filter: blur(10px);
     position: relative;
     width: 100%;
-    max-width: min(70vw, 250px); /* Match content max-width */
+    max-width: min(60vw, 300px); /* Increased width to accommodate proper aspect ratio */
+    aspect-ratio: 3/4; /* Force wrapper to maintain 3:4 ratio */
 }
 
 .character-video {
     width: 100%;
     height: auto;
     aspect-ratio: 3/4; /* Maintain 3:4 aspect ratio */
-    object-fit: cover;
+    object-fit: contain; /* Changed from cover to contain to show full video */
     display: block !important;
     border-radius: 15px 15px 0 0;
     background: #000;
     visibility: visible !important;
     opacity: 1 !important;
     z-index: 10;
-    min-height: 180px; /* Adjusted minimum height */
-    max-height: min(50vh, 320px); /* Smaller max height for better chat experience */
+    min-height: 300px; /* Increased minimum height for proper 3:4 display */
+    max-height: min(60vh, 400px); /* Increased max height to accommodate 3:4 ratio */
 }
 
 /* Video loading and error states */
@@ -3398,5 +3414,19 @@ body:has(.chat-interface:not([style*="display: none"])) .header-right {
     
     .message-content {
         max-width: 85%;
+    }
+    
+    /* Mobile video adjustments */
+    .video-wrapper {
+        max-width: min(80vw, 280px); /* Larger on mobile for better visibility */
+    }
+    
+    .message.video-message .message-content {
+        max-width: min(80vw, 280px);
+    }
+    
+    .character-video {
+        min-height: 240px; /* Adjusted for mobile */
+        max-height: min(50vh, 350px);
     }
 }

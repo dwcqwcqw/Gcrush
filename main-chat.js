@@ -561,10 +561,8 @@ class MainChatSystem {
         video.preload = 'metadata';
         video.style.display = 'block';
         video.style.width = '100%';
-        video.style.height = 'auto';
-        video.style.minHeight = '180px';
-        video.style.maxHeight = 'min(50vh, 320px)';
-        video.style.aspectRatio = '3/4';
+        video.style.height = '100%';
+        video.style.objectFit = 'contain';
         
         // Create video info
         const videoInfo = document.createElement('div');
@@ -645,10 +643,7 @@ class MainChatSystem {
                 video.src = videoUrl;
                 video.load();
                 
-                // Force video to be visible
-                video.style.display = 'block';
-                video.style.visibility = 'visible';
-                video.style.opacity = '1';
+                // Video visibility is now handled by CSS
             }
         }, 100);
         

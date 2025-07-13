@@ -218,9 +218,9 @@ class CharacterDataLoader {
         return `
             <div class="character-card glass-card" data-character="${character.name}" onclick="navigateToChat('${character.name}')">
                 <div class="character-image">
-                    <img src="${imageUrl}" alt="${character.name}" loading="lazy" 
-                         onload="this.style.opacity='1'; this.parentElement.classList.add('image-loaded')" 
-                         onerror="this.style.opacity='1'; console.error('Failed to load image:', this.src)">
+                    <img src="${imageUrl}" alt="${character.name}" loading="eager" 
+                         onload="console.log('Image loaded for ${character.name}'); this.style.opacity='1'; this.parentElement.classList.add('image-loaded')" 
+                         onerror="console.error('Failed to load image for ${character.name}:', this.src); this.style.opacity='1'; this.parentElement.classList.add('image-loaded')">
                     ${videoUrl ? `
                         <video class="character-video" loop muted preload="none" 
                                onloadeddata="this.classList.add('loaded')" 
@@ -352,6 +352,9 @@ class CharacterDataLoader {
                 initCharacterVideoHover();
             }
 
+            // Setup image loading handlers for robustness
+            this.setupImageLoadingHandlers();
+
             console.log('Character cards rendered successfully');
             
         } catch (error) {
@@ -376,6 +379,29 @@ class CharacterDataLoader {
     // Get all characters
     getAllCharacters() {
         return this.characters;
+    }
+
+    // Setup image loading handlers for robustness
+    setupImageLoadingHandlers() {
+        const images = document.querySelectorAll('.character-image img');
+        
+        images.forEach((img, index) => {
+            // Force check if image is already loaded (cached)
+            if (img.complete && img.naturalHeight !== 0) {
+                console.log('Image already loaded (cached):', img.alt);
+                img.style.opacity = '1';
+                img.parentElement.classList.add('image-loaded');
+            } else {
+                // Set up a timeout fallback
+                setTimeout(() => {
+                    if (img.style.opacity === '0' || img.style.opacity === '') {
+                        console.log('Forcing image display after timeout:', img.alt);
+                        img.style.opacity = '1';
+                        img.parentElement.classList.add('image-loaded');
+                    }
+                }, 3000 + (index * 100)); // Staggered timeout
+            }
+        });
     }
 }
 
