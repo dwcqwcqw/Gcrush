@@ -145,7 +145,7 @@ class MainChatSystem {
         // Show chat interface
         document.getElementById('chatInterface').style.display = 'flex';
         
-        // Auto-collapse chat sidebar when entering chat
+        // Always auto-collapse chat sidebar when entering any chat (hover to expand)
         const chatSidebar = document.getElementById('chatSidebar');
         if (chatSidebar) {
             chatSidebar.classList.add('collapsed');
@@ -338,13 +338,18 @@ class MainChatSystem {
             // Send situation message
             await this.addMessage('assistant', this.currentCharacter.situation, false);
             
-            // Send greeting message after a delay
+            // Send character video for first-time chat
+            setTimeout(async () => {
+                await this.addVideoMessage(this.currentCharacter.name);
+            }, 500);
+            
+            // Send greeting message after video
             setTimeout(async () => {
                 await this.addMessage('assistant', this.currentCharacter.greeting, false);
                 
                 // Mark that we've chatted with this character
                 localStorage.setItem(chatHistoryKey, 'true');
-            }, 1000);
+            }, 2000);
         } else {
             // Already chatted before - just send a welcome back message
             const welcomeBackMessages = [
@@ -449,6 +454,92 @@ class MainChatSystem {
         if (saveToDb) {
             await this.saveMessageToDatabase(role, content);
         }
+    }
+    
+    async addVideoMessage(characterName) {
+        const messagesContainer = document.getElementById('chatMessages');
+        
+        if (!messagesContainer) {
+            console.error('Messages container not found');
+            return;
+        }
+        
+        // Create message element for video
+        const messageDiv = document.createElement('div');
+        messageDiv.className = 'message assistant video-message';
+        
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content video-content';
+        
+        // Create video element with controls
+        const videoUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Video/${characterName}/NSFW/${characterName}2.mov`;
+        
+        messageContent.innerHTML = `
+            <div class="video-wrapper">
+                <video 
+                    controls 
+                    autoplay
+                    preload="metadata"
+                    class="character-video"
+                    onloadstart="console.log('Video loading started')"
+                    oncanplay="this.muted = false; console.log('Video can start playing with audio')"
+                    onerror="console.error('Video failed to load', this.src)"
+                >
+                    <source src="${videoUrl}" type="video/mp4">
+                    <source src="${videoUrl}" type="video/quicktime">
+                    Your browser does not support the video tag.
+                </video>
+                <div class="video-info">
+                    <span class="video-character-name">${characterName}</span>
+                    <span class="video-description">Welcome message</span>
+                </div>
+            </div>
+        `;
+        
+        messageDiv.appendChild(messageContent);
+        messagesContainer.appendChild(messageDiv);
+        
+        // Scroll to bottom
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        
+        // Add animation
+        messageDiv.style.opacity = '0';
+        messageDiv.style.transform = 'translateY(20px)';
+        
+        requestAnimationFrame(() => {
+            messageDiv.style.transition = 'all 0.3s ease';
+            messageDiv.style.opacity = '1';
+            messageDiv.style.transform = 'translateY(0)';
+        });
+        
+        // Setup video event handlers after DOM insertion
+        setTimeout(() => {
+            const video = messageDiv.querySelector('.character-video');
+            if (video) {
+                // Ensure audio is enabled when video can play
+                video.addEventListener('canplay', () => {
+                    video.muted = false;
+                    console.log(`Video ready with audio for ${characterName}`);
+                });
+                
+                // Handle user interaction requirement for autoplay with audio
+                video.addEventListener('click', () => {
+                    if (video.paused) {
+                        video.muted = false;
+                        video.play();
+                    }
+                });
+                
+                // Try to unmute after a brief delay (browser policy workaround)
+                setTimeout(() => {
+                    if (video.readyState >= 2) { // HAVE_CURRENT_DATA
+                        video.muted = false;
+                    }
+                }, 500);
+            }
+        }, 100);
+        
+        console.log(`Added video message for ${characterName}: ${videoUrl}`);
     }
     
     async saveMessageToDatabase(role, content) {
@@ -886,12 +977,7 @@ function backToExplore() {
     }
 }
 
-function toggleChatSidebar() {
-    const chatSidebar = document.getElementById('chatSidebar');
-    if (chatSidebar) {
-        chatSidebar.classList.toggle('collapsed');
-    }
-}
+// Sidebar now uses hover-based expansion, no manual toggle needed
 
 function sendMessage() {
     if (window.mainChatSystem) {
