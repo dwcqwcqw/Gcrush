@@ -123,6 +123,7 @@
         <h2>3. 语音录制测试</h2>
         <button id="recordBtn" onclick="toggleRecording()">开始录制</button>
         <button onclick="playRecording()" disabled id="playBtn">播放录制</button>
+        <button onclick="analyzeAudio()" disabled id="analyzeBtn">分析音频质量</button>
         <div id="recordStatus"></div>
         <audio id="recordedAudio" controls style="display: none;"></audio>
     </div>
@@ -302,6 +303,7 @@
                     audioElement.style.display = 'block';
                     
                     document.getElementById('playBtn').disabled = false;
+                    document.getElementById('analyzeBtn').disabled = false;
                     showStatus('recordStatus', `✅ 录制完成，音频大小: ${recordedBlob.size} bytes`, 'success');
                 };
                 
@@ -332,6 +334,65 @@
             const audioElement = document.getElementById('recordedAudio');
             audioElement.play();
             log('播放录制的音频');
+            
+            // Check audio duration and provide feedback
+            audioElement.addEventListener('loadedmetadata', function() {
+                log(`音频时长: ${audioElement.duration.toFixed(2)} 秒`);
+                if (audioElement.duration < 0.5) {
+                    showStatus('recordStatus', '⚠️ 音频时长太短，可能录制失败', 'error');
+                }
+            });
+        }
+        
+        function analyzeAudio() {
+            if (!recordedBlob) {
+                showStatus('recordStatus', '❌ 请先录制音频', 'error');
+                return;
+            }
+            
+            log('分析音频文件...');
+            
+            // Create audio context to analyze the audio
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const fileReader = new FileReader();
+            
+            fileReader.onload = function(e) {
+                audioContext.decodeAudioData(e.target.result).then(function(buffer) {
+                    const duration = buffer.duration;
+                    const numberOfChannels = buffer.numberOfChannels;
+                    const sampleRate = buffer.sampleRate;
+                    const length = buffer.length;
+                    
+                    log(`音频分析结果:`);
+                    log(`- 时长: ${duration.toFixed(2)} 秒`);
+                    log(`- 声道数: ${numberOfChannels}`);
+                    log(`- 采样率: ${sampleRate} Hz`);
+                    log(`- 样本数: ${length}`);
+                    
+                    // Check for silence (very low amplitude)
+                    const channelData = buffer.getChannelData(0);
+                    let maxAmplitude = 0;
+                    for (let i = 0; i < channelData.length; i++) {
+                        maxAmplitude = Math.max(maxAmplitude, Math.abs(channelData[i]));
+                    }
+                    
+                    log(`- 最大音量: ${(maxAmplitude * 100).toFixed(2)}%`);
+                    
+                    if (maxAmplitude < 0.01) {
+                        showStatus('recordStatus', '❌ 检测到静音，请检查麦克风权限和音量', 'error');
+                    } else if (maxAmplitude < 0.1) {
+                        showStatus('recordStatus', '⚠️ 音量较低，建议靠近麦克风说话', 'info');
+                    } else {
+                        showStatus('recordStatus', '✅ 音频质量良好', 'success');
+                    }
+                    
+                }).catch(function(error) {
+                    log(`音频解码失败: ${error.message}`);
+                    showStatus('recordStatus', `❌ 音频解码失败: ${error.message}`, 'error');
+                });
+            };
+            
+            fileReader.readAsArrayBuffer(recordedBlob);
         }
         
         // 4. 语音转文字测试

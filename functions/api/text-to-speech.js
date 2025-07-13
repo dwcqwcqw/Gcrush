@@ -93,37 +93,67 @@ export async function onRequestPost(context) {
 
             console.log('Using voice_id:', voiceId, 'for character:', characterName);
 
-            // Call Minimax TTS API - correct format 
-            const minimaxResponse = await fetch('https://api.minimaxi.chat/v1/text_to_audio', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${env.MINIMAX_API_KEY}`,
-                    'Content-Type': 'application/json'
+            // Call Minimax TTS API - try different endpoint formats
+            let minimaxResponse;
+            const requestData = {
+                group_id: env.MINIMAX_GROUP_ID,
+                model: "speech-02-turbo",
+                text: text,
+                voice_setting: {
+                    voice_id: voiceId,
+                    speed: 1.0,
+                    emotion: "neutral"
                 },
-                body: JSON.stringify({
-                    group_id: env.MINIMAX_GROUP_ID,
-                    model: "speech-02-turbo",
-                    text: text,
-                    voice_setting: {
-                        voice_id: voiceId,
-                        speed: 1.0,
-                        emotion: "neutral"
-                    },
-                    audio_setting: {
-                        sample_rate: 22050,
-                        bitrate: 128000,
-                        format: "mp3",
-                        channel: 1
-                    }
-                })
-            });
+                audio_setting: {
+                    sample_rate: 22050,
+                    bitrate: 128000,
+                    format: "mp3",
+                    channel: 1
+                }
+            };
+            
+            // Try multiple possible endpoints
+            const possibleEndpoints = [
+                'https://api.minimaxi.chat/v1/text_to_audio',
+                'https://api.minimaxi.chat/v1/audio/speech',
+                'https://api.minimaxi.chat/v1/t2a',
+                'https://api.minimax.chat/v1/text_to_audio',
+                'https://api.minimax.chat/v1/audio/speech'
+            ];
+            
+            let lastError = null;
+            for (const endpoint of possibleEndpoints) {
+                try {
+                    console.log(`Trying endpoint: ${endpoint}`);
+                    minimaxResponse = await fetch(endpoint, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${env.MINIMAX_API_KEY}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData)
+                    });
 
-            if (!minimaxResponse.ok) {
-                const error = await minimaxResponse.text();
-                console.error('Minimax TTS API error:', error);
+                    if (minimaxResponse.ok) {
+                        console.log(`✅ Success with endpoint: ${endpoint}`);
+                        break;
+                    } else {
+                        const errorText = await minimaxResponse.text();
+                        console.log(`❌ Failed with endpoint ${endpoint}: ${minimaxResponse.status} - ${errorText}`);
+                        lastError = `${endpoint}: ${minimaxResponse.status} - ${errorText}`;
+                    }
+                } catch (error) {
+                    console.log(`❌ Error with endpoint ${endpoint}: ${error.message}`);
+                    lastError = `${endpoint}: ${error.message}`;
+                }
+            }
+
+            if (!minimaxResponse || !minimaxResponse.ok) {
+                console.error('All MiniMax endpoints failed, last error:', lastError);
                 return new Response(JSON.stringify({ 
                     error: 'Text-to-speech generation failed',
-                    details: error 
+                    details: `All endpoints failed. Last error: ${lastError}`,
+                    testedEndpoints: possibleEndpoints
                 }), {
                     status: 500,
                     headers: {
