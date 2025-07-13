@@ -512,11 +512,47 @@
                 if (response.ok && jsonResult.success) {
                     showStatus('ttsStatus', '✅ 文字转语音成功', 'success');
                     
+                    let audioUrl = jsonResult.audioUrl;
+                    
+                    // If hex audio data is provided, create blob URL
+                    if (jsonResult.hexAudio || audioUrl.includes('blob-data-available')) {
+                        log('检测到十六进制音频数据，正在创建blob URL...');
+                        log(`十六进制音频长度: ${jsonResult.hexAudio ? jsonResult.hexAudio.length : 'N/A'}`);
+                        
+                        if (jsonResult.hexAudio) {
+                            // Convert hex string to bytes
+                            function hexToBytes(hexString) {
+                                const bytes = new Uint8Array(hexString.length / 2);
+                                for (let i = 0; i < hexString.length; i += 2) {
+                                    bytes[i / 2] = parseInt(hexString.substr(i, 2), 16);
+                                }
+                                return bytes;
+                            }
+                            
+                            try {
+                                const audioBytes = hexToBytes(jsonResult.hexAudio);
+                                const audioBlob = new Blob([audioBytes], { type: 'audio/mp3' });
+                                audioUrl = URL.createObjectURL(audioBlob);
+                                
+                                log(`✅ 成功创建blob URL: ${audioUrl}`);
+                                log(`✅ 音频大小: ${audioBlob.size} bytes`);
+                            } catch (error) {
+                                log(`❌ 创建blob URL失败: ${error.message}`);
+                                showStatus('ttsStatus', '❌ 音频数据处理失败', 'error');
+                                return;
+                            }
+                        } else {
+                            log('❌ 需要十六进制数据但未提供');
+                            showStatus('ttsStatus', '❌ 音频数据不完整', 'error');
+                            return;
+                        }
+                    }
+                    
                     const audioElement = document.getElementById('ttsResult');
-                    audioElement.src = jsonResult.audioUrl;
+                    audioElement.src = audioUrl;
                     audioElement.style.display = 'block';
                     
-                    log(`生成的音频URL: ${jsonResult.audioUrl}`);
+                    log(`生成的音频URL: ${audioUrl}`);
                 } else {
                     showStatus('ttsStatus', `❌ 文字转语音失败: ${jsonResult.error}`, 'error');
                     if (jsonResult.details) {

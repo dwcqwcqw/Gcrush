@@ -208,9 +208,17 @@ class VoiceFeatures {
             if (result.success) {
                 let audioUrl = result.audioUrl;
                 
-                // If hex audio data is provided, create blob URL
-                if (result.hexAudio) {
+                // If hex audio data is provided or audioUrl indicates blob data, create blob URL
+                if (result.hexAudio || audioUrl.includes('blob-data-available')) {
                     console.log('Creating blob URL from hex audio data...');
+                    console.log('Hex audio length:', result.hexAudio ? result.hexAudio.length : 'N/A');
+                    
+                    if (!result.hexAudio) {
+                        console.error('No hex audio data provided but needed for blob creation');
+                        alert('Audio data received but cannot be processed');
+                        this.updatePlayButton(button, 'error');
+                        return;
+                    }
                     
                     // Convert hex string to bytes
                     function hexToBytes(hexString) {
@@ -221,11 +229,27 @@ class VoiceFeatures {
                         return bytes;
                     }
                     
-                    const audioBytes = hexToBytes(result.hexAudio);
-                    const audioBlob = new Blob([audioBytes], { type: 'audio/mp3' });
-                    audioUrl = URL.createObjectURL(audioBlob);
-                    
-                    console.log('Created blob URL:', audioUrl);
+                    try {
+                        const audioBytes = hexToBytes(result.hexAudio);
+                        const audioBlob = new Blob([audioBytes], { type: 'audio/mp3' });
+                        audioUrl = URL.createObjectURL(audioBlob);
+                        
+                        console.log('✅ Created blob URL:', audioUrl);
+                        console.log('✅ Blob size:', audioBlob.size, 'bytes');
+                    } catch (error) {
+                        console.error('Failed to create blob URL:', error);
+                        alert('Failed to process audio data');
+                        this.updatePlayButton(button, 'error');
+                        return;
+                    }
+                }
+                
+                // Verify we have a valid audio URL
+                if (!audioUrl || audioUrl.includes('blob-data-available')) {
+                    console.error('Invalid audio URL:', audioUrl);
+                    alert('Invalid audio URL received');
+                    this.updatePlayButton(button, 'error');
+                    return;
                 }
                 
                 // Play the audio
