@@ -346,16 +346,86 @@ class CharacterDataLoader {
 
             // Insert into page
             characterGrid.innerHTML = characterCardsHtml;
+            
+            // Add mutation observer to detect if images are being removed
+            console.log('🔍 Setting up mutation observer to track image changes...');
+            const observer = new MutationObserver((mutations) => {
+                mutations.forEach((mutation) => {
+                    if (mutation.type === 'childList') {
+                        // Check for removed images
+                        mutation.removedNodes.forEach((node) => {
+                            if (node.nodeName === 'IMG' || (node.querySelector && node.querySelector('img'))) {
+                                console.error('🚨 IMAGE REMOVED!', node);
+                            }
+                        });
+                        
+                        // Check for modified attributes
+                        if (mutation.target.tagName === 'IMG') {
+                            console.log('📸 Image modified:', mutation.target.src, mutation);
+                        }
+                    } else if (mutation.type === 'attributes' && mutation.target.tagName === 'IMG') {
+                        console.log('🔧 Image attribute changed:', mutation.attributeName, mutation.target.src);
+                    }
+                });
+            });
+            
+            // Start observing
+            observer.observe(characterGrid, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ['style', 'class', 'src']
+            });
 
-            // Force all images to be immediately visible with !important-like styles
-            const allImages = document.querySelectorAll('.character-image img');
-            console.log(`Found ${allImages.length} images to make visible`);
-            allImages.forEach((img, index) => {
-                img.style.setProperty('opacity', '1', 'important');
-                img.style.setProperty('visibility', 'visible', 'important');
-                img.style.setProperty('display', 'block', 'important');
-                img.style.setProperty('z-index', '10', 'important');
-                console.log(`Forced image ${index + 1} to be visible:`, img.src);
+            // NUCLEAR OPTION: Manually create and inject images with JavaScript
+            console.log('🚀 NUCLEAR OPTION: Manually creating images via JavaScript...');
+            const characterCards = document.querySelectorAll('.character-card');
+            console.log(`Found ${characterCards.length} character cards for image injection`);
+            
+            characterCards.forEach((card, index) => {
+                const character = this.characters[index];
+                if (!character) return;
+                
+                const imageContainer = card.querySelector('.character-image');
+                if (!imageContainer) return;
+                
+                // Remove any existing images
+                const existingImages = imageContainer.querySelectorAll('img');
+                existingImages.forEach(img => img.remove());
+                
+                // Create new image element via JavaScript
+                const img = document.createElement('img');
+                img.src = this.getImageUrl(character);
+                img.alt = character.name;
+                img.loading = 'eager';
+                
+                // Force styles immediately with maximum priority
+                img.style.cssText = `
+                    width: 100% !important;
+                    height: 100% !important;
+                    object-fit: cover !important;
+                    position: absolute !important;
+                    top: 0 !important;
+                    left: 0 !important;
+                    z-index: 999 !important;
+                    opacity: 1 !important;
+                    visibility: visible !important;
+                    display: block !important;
+                `;
+                
+                // Add load event listener
+                img.addEventListener('load', () => {
+                    console.log(`✅ JS-created image loaded for ${character.name}`);
+                    img.style.setProperty('opacity', '1', 'important');
+                });
+                
+                img.addEventListener('error', () => {
+                    console.error(`❌ JS-created image failed for ${character.name}:`, img.src);
+                });
+                
+                // Insert the image
+                imageContainer.appendChild(img);
+                console.log(`🎯 Injected JS image for ${character.name}: ${img.src}`);
             });
 
             // Re-initialize video hover effects
