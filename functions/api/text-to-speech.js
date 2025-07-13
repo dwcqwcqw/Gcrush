@@ -28,6 +28,20 @@ export async function onRequestPost(context) {
             }
 
             console.log('Processing text-to-speech for character:', characterId, 'user:', userId);
+            
+            // Check if MiniMax API credentials are available
+            if (!env.MINIMAX_API_KEY || !env.MINIMAX_GROUP_ID) {
+                console.error('MiniMax API credentials not configured');
+                return new Response(JSON.stringify({ 
+                    error: 'MiniMax API credentials not configured on server' 
+                }), {
+                    status: 500,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
+            }
 
             // Get character voice_id from Supabase
             const supabaseUrl = 'https://kuflobojizyttadwcbhe.supabase.co';
@@ -74,8 +88,8 @@ export async function onRequestPost(context) {
 
             console.log('Using voice_id:', voiceId, 'for character:', character.name);
 
-            // Call Minimax TTS API
-            const minimaxResponse = await fetch('https://api.minimax.chat/v1/text_to_speech', {
+            // Call Minimax TTS API - correct format
+            const minimaxResponse = await fetch('https://api.minimaxi.chat/v1/text_to_speech', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${env.MINIMAX_API_KEY}`,
@@ -84,12 +98,17 @@ export async function onRequestPost(context) {
                 body: JSON.stringify({
                     group_id: env.MINIMAX_GROUP_ID,
                     model: "speech-02-turbo",
-                    voice_id: voiceId,
                     text: text,
+                    voice_setting: {
+                        voice_id: voiceId,
+                        speed: 1.0,
+                        emotion: "neutral"
+                    },
                     audio_setting: {
                         sample_rate: 22050,
                         bitrate: 128000,
-                        format: "mp3"
+                        format: "mp3",
+                        channel: 1
                     }
                 })
             });
@@ -112,11 +131,20 @@ export async function onRequestPost(context) {
             const ttsResult = await minimaxResponse.json();
             console.log('Minimax TTS result:', ttsResult);
 
-            // If Minimax returns audio data directly as base64
-            if (ttsResult.audio_file || ttsResult.data) {
-                // Convert audio data to buffer and store in R2
-                const audioData = ttsResult.audio_file || ttsResult.data;
-                const audioBuffer = Buffer.from(audioData, 'base64');
+            // Check for MiniMax response format: task.audios[0].audio_url
+            if (ttsResult.task && ttsResult.task.status === 'TASK_STATUS_SUCCEED' && 
+                ttsResult.audios && ttsResult.audios.length > 0 && ttsResult.audios[0].audio_url) {
+                
+                const audioUrl = ttsResult.audios[0].audio_url;
+                console.log('Got audio URL from MiniMax:', audioUrl);
+                
+                // Download the audio file from MiniMax
+                const audioResponse = await fetch(audioUrl);
+                if (!audioResponse.ok) {
+                    throw new Error('Failed to download audio from MiniMax');
+                }
+                
+                const audioBuffer = await audioResponse.arrayBuffer();
                 
                 const audioFileName = `tts_${characterId}_${Date.now()}.mp3`;
                 const r2Key = `gcrush/Sound/${userId}/${audioFileName}`;
@@ -131,11 +159,11 @@ export async function onRequestPost(context) {
                 console.log('TTS audio uploaded to R2:', r2Key);
 
                 // Return R2 URL for the audio
-                const audioUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${r2Key}`;
+                const r2AudioUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${r2Key}`;
 
                 return new Response(JSON.stringify({
                     success: true,
-                    audioUrl: audioUrl,
+                    audioUrl: r2AudioUrl,
                     r2Key: r2Key
                 }), {
                     status: 200,
@@ -147,7 +175,8 @@ export async function onRequestPost(context) {
             } else {
                 console.error('Unexpected Minimax response format:', ttsResult);
                 return new Response(JSON.stringify({ 
-                    error: 'Unexpected API response format' 
+                    error: 'Unexpected API response format',
+                    details: JSON.stringify(ttsResult)
                 }), {
                     status: 500,
                     headers: {

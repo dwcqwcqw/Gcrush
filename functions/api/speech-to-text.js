@@ -38,6 +38,20 @@ export async function onRequestPost(context) {
             }
 
             console.log('Processing speech-to-text for user:', userId);
+            
+            // Check if OpenAI API key is available
+            if (!env.OPENAI_API_KEY) {
+                console.error('OpenAI API key not configured');
+                return new Response(JSON.stringify({ 
+                    error: 'OpenAI API key not configured on server' 
+                }), {
+                    status: 500,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
+            }
 
             // Store audio file in R2
             const audioFileName = `user_${userId}_${Date.now()}.webm`;
@@ -68,10 +82,11 @@ export async function onRequestPost(context) {
 
             if (!whisperResponse.ok) {
                 const error = await whisperResponse.text();
-                console.error('OpenAI Whisper API error:', error);
+                console.error('OpenAI Whisper API error:', whisperResponse.status, error);
                 return new Response(JSON.stringify({ 
                     error: 'Speech recognition failed',
-                    details: error 
+                    details: error,
+                    status: whisperResponse.status
                 }), {
                     status: 500,
                     headers: {
@@ -83,6 +98,20 @@ export async function onRequestPost(context) {
 
             const result = await whisperResponse.json();
             console.log('Whisper transcription result:', result);
+
+            if (!result.text) {
+                console.error('No text in Whisper response:', result);
+                return new Response(JSON.stringify({ 
+                    error: 'No transcription text returned',
+                    details: JSON.stringify(result)
+                }), {
+                    status: 500,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
+            }
 
             return new Response(JSON.stringify({
                 success: true,
