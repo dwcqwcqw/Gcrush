@@ -63,17 +63,23 @@ export async function onRequestPost(context) {
             console.log('R2 bucket available:', !!env.GCRUSH_R2);
             console.log('About to upload to R2 with key:', r2Key);
             
-            // Upload to R2
-            try {
-                const r2Response = await env.GCRUSH_R2.put(r2Key, audioFile.stream(), {
-                    httpMetadata: {
-                        contentType: audioFile.type || 'audio/webm'
-                    }
-                });
-                console.log('Audio uploaded to R2:', r2Key);
-            } catch (r2Error) {
-                console.error('R2 upload failed:', r2Error);
-                throw new Error(`R2 upload failed: ${r2Error.message}`);
+            // Upload to R2 (skip if not configured)
+            if (env.GCRUSH_R2) {
+                try {
+                    const r2Response = await env.GCRUSH_R2.put(r2Key, audioFile.stream(), {
+                        httpMetadata: {
+                            contentType: audioFile.type || 'audio/webm'
+                        }
+                    });
+                    console.log('Audio uploaded to R2:', r2Key);
+                } catch (r2Error) {
+                    console.error('R2 upload failed:', r2Error);
+                    console.warn('Continuing without R2 storage...');
+                    r2Key = 'temp-storage-not-configured';
+                }
+            } else {
+                console.warn('R2 storage not configured, skipping upload');
+                r2Key = 'r2-not-configured';
             }
 
             // Convert to OpenAI Whisper API

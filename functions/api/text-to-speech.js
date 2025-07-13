@@ -46,50 +46,52 @@ export async function onRequestPost(context) {
                 });
             }
 
-            // Get character voice_id from Supabase
-            const supabaseUrl = 'https://kuflobojizyttadwcbhe.supabase.co';
-            const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+            // Get character voice_id from Supabase (skip for test character)
+            let voiceId = 'male-qn-qingse'; // Default voice
+            let characterName = 'Test Character';
             
-            const characterResponse = await fetch(`${supabaseUrl}/rest/v1/characters?id=eq.${characterId}&select=voice_id,name`, {
-                headers: {
-                    'apikey': supabaseKey,
-                    'Authorization': `Bearer ${supabaseKey}`,
-                    'Content-Type': 'application/json'
+            if (!characterId.startsWith('test-')) {
+                const supabaseUrl = 'https://kuflobojizyttadwcbhe.supabase.co';
+                const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+                
+                const characterResponse = await fetch(`${supabaseUrl}/rest/v1/characters?id=eq.${characterId}&select=voice_id,name`, {
+                    headers: {
+                        'apikey': supabaseKey,
+                        'Authorization': `Bearer ${supabaseKey}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!characterResponse.ok) {
+                    console.error('Failed to fetch character data from Supabase');
+                    return new Response(JSON.stringify({ error: 'Character not found in database' }), {
+                        status: 404,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    });
                 }
-            });
 
-            if (!characterResponse.ok) {
-                console.error('Failed to fetch character data from Supabase');
-                return new Response(JSON.stringify({ error: 'Character not found' }), {
-                    status: 404,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    }
-                });
+                const characters = await characterResponse.json();
+                if (characters.length === 0) {
+                    return new Response(JSON.stringify({ error: 'Character not found in database' }), {
+                        status: 404,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    });
+                }
+                
+                const character = characters[0];
+                voiceId = character.voice_id || 'male-qn-qingse';
+                characterName = character.name;
+            } else {
+                console.log('Using test character, skipping database lookup');
             }
 
-            const characters = await characterResponse.json();
-            if (characters.length === 0) {
-                return new Response(JSON.stringify({ error: 'Character not found' }), {
-                    status: 404,
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    }
-                });
-            }
-
-            const character = characters[0];
-            let voiceId = character.voice_id;
-            
-            if (!voiceId) {
-                console.log('No voice_id found for character, using default voice');
-                // Use MiniMax default voice if character doesn't have voice_id
-                voiceId = 'male-qn-qingse';
-            }
-
-            console.log('Using voice_id:', voiceId, 'for character:', character.name);
+            console.log('Using voice_id:', voiceId, 'for character:', characterName);
 
             // Call Minimax TTS API - correct format 
             const minimaxResponse = await fetch('https://api.minimaxi.chat/v1/text_to_audio', {
@@ -155,21 +157,26 @@ export async function onRequestPost(context) {
                 console.log('R2 bucket available:', !!env.GCRUSH_R2);
                 console.log('About to upload TTS audio to R2 with key:', r2Key);
                 
-                // Upload to R2
-                try {
-                    const r2Response = await env.GCRUSH_R2.put(r2Key, audioBuffer, {
-                        httpMetadata: {
-                            contentType: 'audio/mpeg'
-                        }
-                    });
-                    console.log('TTS audio uploaded to R2:', r2Key);
-                } catch (r2Error) {
-                    console.error('R2 upload failed for TTS:', r2Error);
-                    throw new Error(`R2 upload failed: ${r2Error.message}`);
+                // Upload to R2 (skip if not configured)
+                let r2AudioUrl;
+                if (env.GCRUSH_R2) {
+                    try {
+                        const r2Response = await env.GCRUSH_R2.put(r2Key, audioBuffer, {
+                            httpMetadata: {
+                                contentType: 'audio/mpeg'
+                            }
+                        });
+                        console.log('TTS audio uploaded to R2:', r2Key);
+                        r2AudioUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${r2Key}`;
+                    } catch (r2Error) {
+                        console.error('R2 upload failed for TTS:', r2Error);
+                        console.warn('Returning original MiniMax URL...');
+                        r2AudioUrl = audioUrl; // Use original MiniMax URL
+                    }
+                } else {
+                    console.warn('R2 storage not configured, returning original MiniMax URL');
+                    r2AudioUrl = audioUrl; // Use original MiniMax URL
                 }
-
-                // Return R2 URL for the audio
-                const r2AudioUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${r2Key}`;
 
                 return new Response(JSON.stringify({
                     success: true,
