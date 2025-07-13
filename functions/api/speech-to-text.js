@@ -1,26 +1,16 @@
 // Speech to Text API using OpenAI Whisper
-export default {
-    async fetch(request, env, ctx) {
-        // Handle CORS preflight
-        if (request.method === 'OPTIONS') {
-            return new Response(null, {
-                status: 200,
-                headers: {
-                    'Access-Control-Allow-Origin': '*',
-                    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-                    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-                }
-            });
+export async function onRequestOptions() {
+    return new Response(null, {
+        headers: {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'POST, OPTIONS',
+            'Access-Control-Allow-Headers': 'Content-Type, Authorization'
         }
+    });
+}
 
-        if (request.method !== 'POST') {
-            return new Response('Method not allowed', { 
-                status: 405,
-                headers: {
-                    'Access-Control-Allow-Origin': '*'
-                }
-            });
-        }
+export async function onRequestPost(context) {
+    const { request, env } = context;
 
         try {
             const formData = await request.formData();
@@ -120,4 +110,4 @@ export default {
             });
         }
     }
-};
+}
