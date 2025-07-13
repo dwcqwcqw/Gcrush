@@ -12,6 +12,9 @@ export async function onRequestOptions() {
 export async function onRequestPost(context) {
     const { request, env } = context;
     
+    console.log('TTS API called, env available:', !!env);
+    console.log('Available env keys:', Object.keys(env || {}));
+    
     try {
             const { text, characterId, userId } = await request.json();
 
@@ -149,14 +152,21 @@ export async function onRequestPost(context) {
                 const audioFileName = `tts_${characterId}_${Date.now()}.mp3`;
                 const r2Key = `gcrush/Sound/${userId}/${audioFileName}`;
                 
+                console.log('R2 bucket available:', !!env.GCRUSH_R2);
+                console.log('About to upload TTS audio to R2 with key:', r2Key);
+                
                 // Upload to R2
-                const r2Response = await env.GCRUSH_R2.put(r2Key, audioBuffer, {
-                    httpMetadata: {
-                        contentType: 'audio/mpeg'
-                    }
-                });
-
-                console.log('TTS audio uploaded to R2:', r2Key);
+                try {
+                    const r2Response = await env.GCRUSH_R2.put(r2Key, audioBuffer, {
+                        httpMetadata: {
+                            contentType: 'audio/mpeg'
+                        }
+                    });
+                    console.log('TTS audio uploaded to R2:', r2Key);
+                } catch (r2Error) {
+                    console.error('R2 upload failed for TTS:', r2Error);
+                    throw new Error(`R2 upload failed: ${r2Error.message}`);
+                }
 
                 // Return R2 URL for the audio
                 const r2AudioUrl = `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${r2Key}`;
@@ -188,9 +198,11 @@ export async function onRequestPost(context) {
 
         } catch (error) {
             console.error('Text-to-speech error:', error);
+            console.error('Error stack:', error.stack);
             return new Response(JSON.stringify({ 
                 error: 'Internal server error',
-                details: error.message 
+                details: error.message,
+                stack: error.stack
             }), {
                 status: 500,
                 headers: {

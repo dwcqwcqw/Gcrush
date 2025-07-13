@@ -48,8 +48,7 @@ class VoiceFeatures {
 
     // Add play button to AI messages
     addPlayButtonToMessage(messageElement, text) {
-        if (!this.currentUser) return; // Only add if user is logged in
-
+        // Always add play button, check login on click
         // Check if play button already exists
         if (messageElement.querySelector('.play-voice-btn')) return;
 

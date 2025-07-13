@@ -12,6 +12,9 @@ export async function onRequestOptions() {
 export async function onRequestPost(context) {
     const { request, env } = context;
     
+    console.log('STT API called, env available:', !!env);
+    console.log('Available env keys:', Object.keys(env || {}));
+    
     try {
             const formData = await request.formData();
             const audioFile = formData.get('audio');
@@ -57,14 +60,21 @@ export async function onRequestPost(context) {
             const audioFileName = `user_${userId}_${Date.now()}.webm`;
             const r2Key = `gcrush/Sound/${userId}/${audioFileName}`;
             
+            console.log('R2 bucket available:', !!env.GCRUSH_R2);
+            console.log('About to upload to R2 with key:', r2Key);
+            
             // Upload to R2
-            const r2Response = await env.GCRUSH_R2.put(r2Key, audioFile.stream(), {
-                httpMetadata: {
-                    contentType: audioFile.type || 'audio/webm'
-                }
-            });
-
-            console.log('Audio uploaded to R2:', r2Key);
+            try {
+                const r2Response = await env.GCRUSH_R2.put(r2Key, audioFile.stream(), {
+                    httpMetadata: {
+                        contentType: audioFile.type || 'audio/webm'
+                    }
+                });
+                console.log('Audio uploaded to R2:', r2Key);
+            } catch (r2Error) {
+                console.error('R2 upload failed:', r2Error);
+                throw new Error(`R2 upload failed: ${r2Error.message}`);
+            }
 
             // Convert to OpenAI Whisper API
             const whisperFormData = new FormData();
@@ -127,9 +137,11 @@ export async function onRequestPost(context) {
 
         } catch (error) {
             console.error('Speech-to-text error:', error);
+            console.error('Error stack:', error.stack);
             return new Response(JSON.stringify({ 
                 error: 'Internal server error',
-                details: error.message 
+                details: error.message,
+                stack: error.stack
             }), {
                 status: 500,
                 headers: {
