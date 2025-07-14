@@ -1702,11 +1702,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatBtn = document.getElementById('sidebarChatBtn');
         if (chatBtn) {
             chatBtn.addEventListener('click', async () => {
-                // 判断是否在聊天页（假设聊天页url包含chat.html或#chatInterface或有chatInterface元素）
-                const isOnChatPage = window.location.pathname.includes('chat.html') || document.getElementById('chatInterface');
+                // 判断是否在聊天页（兼容 /chat 和 /chat.html）
+                const isOnChatPage = window.location.pathname.includes('chat') || document.getElementById('chatInterface');
                 if (!isOnChatPage) {
                     // 跳转到聊天页，并加参数触发自动打开最近聊天
-                    window.location.href = '/chat.html?openRecent=1';
+                    window.location.href = '/chat?openRecent=1';
                 } else {
                     if (window.mainChatSystem) {
                         await window.mainChatSystem.openMostRecentChatOrNotify();
@@ -1716,7 +1716,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         // 聊天页加载后自动打开最近聊天
         const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('openRecent') === '1' && window.mainChatSystem) {
+        if (urlParams.get('openRecent') === '1' && window.location.pathname.includes('chat') && window.mainChatSystem) {
             window.mainChatSystem.openMostRecentChatOrNotify();
         }
     } catch (error) {
