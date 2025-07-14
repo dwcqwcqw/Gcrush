@@ -131,28 +131,54 @@ function setupAuthStateListener() {
         }
     });
     
-    // Check current session on initialization
+    // Check current session on initialization with better validation
     supabase.auth.getSession().then(({ data: { session }, error }) => {
-        if (!error && session) {
+        if (error) {
+            console.error('Error checking session:', error);
+            // Clear any corrupted auth data
+            const authKeys = ['sb-kuflobojizyttadwcbhe-auth-token', 'rememberMe'];
+            authKeys.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+            return;
+        }
+        
+        if (session && session.user) {
             console.log('Existing session found on initialization');
             console.log(`Session expires at: ${new Date(session.expires_at * 1000).toLocaleString()}`);
+            
+            // Validate session is not expired
+            const now = Math.floor(Date.now() / 1000);
+            if (session.expires_at && session.expires_at < now) {
+                console.log('Session is expired, clearing...');
+                localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
+                localStorage.removeItem('rememberMe');
+                return;
+            }
             
             // Check if user had "remember me" enabled
             const rememberMe = localStorage.getItem('rememberMe') === 'true';
             console.log('Remember me setting:', rememberMe);
             
-            if (rememberMe) {
-                console.log('Remember me enabled - maintaining session regardless of time');
-                updateUIForLoggedInUser(session.user);
-            } else {
-                // For users without "remember me", use Supabase's default session management
-                // This still respects the session expiration but doesn't add artificial restrictions
-                console.log('Remember me disabled - using default session management');
-                updateUIForLoggedInUser(session.user);
-            }
+            // Always update UI if we have a valid session
+            updateUIForLoggedInUser(session.user);
         } else {
             console.log('No existing session found');
+            // Ensure UI is in logged-out state
+            const currentLoginBtn = document.querySelector('.login-btn');
+            const currentCreateBtn = document.querySelector('.create-account-btn');
+            const currentUserProfile = document.querySelector('.user-profile');
+            
+            if (currentLoginBtn) currentLoginBtn.style.display = 'inline-block';
+            if (currentCreateBtn) currentCreateBtn.style.display = 'inline-block';
+            if (currentUserProfile) currentUserProfile.style.display = 'none';
         }
+    }).catch(sessionError => {
+        console.error('Session check failed:', sessionError);
+        // Clear potentially corrupted auth data
+        localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
+        localStorage.removeItem('rememberMe');
     });
 }
 
@@ -1238,96 +1264,145 @@ setTimeout(() => {
 
 // Handle logout
 async function logout() {
-    console.log('Logout initiated');
+    console.log('🚪 Logout initiated');
     
     try {
-        // Ensure we have a valid Supabase client
-        if (!supabase) {
-            console.log('Supabase client not initialized, reinitializing...');
-            if (!initializeSupabase()) {
-                console.error('Failed to reinitialize Supabase client');
+        // Step 1: Try proper Supabase logout first
+        if (supabase) {
+            console.log('🔄 Attempting proper Supabase logout...');
+            
+            try {
+                // Use global scope to ensure logout across all tabs
+                const { error } = await supabase.auth.signOut({
+                    scope: 'global'
+                });
+                
+                if (error) {
+                    console.warn('⚠️ Supabase signOut warning:', error.message);
+                    // Don't throw error, continue with manual cleanup
+                } else {
+                    console.log('✅ Supabase signOut successful');
+                }
+            } catch (signOutError) {
+                console.warn('⚠️ SignOut exception:', signOutError.message);
                 // Continue with manual cleanup
             }
         }
         
-        if (supabase) {
-            console.log('Checking for active session...');
-            
-            try {
-                const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-                
-                if (sessionError) {
-                    console.error('Error getting session:', sessionError);
-                } else if (session) {
-                    console.log('Active session found, attempting signOut...');
-                    
-                    // Try to sign out with proper error handling
-                    try {
-                        const { error } = await supabase.auth.signOut({
-                            scope: 'local' // Only sign out locally to avoid API issues
-                        });
-                        
-                        if (error) {
-                            console.error('Supabase signOut error:', error);
-                            // If API signOut fails, continue with manual cleanup
-                        } else {
-                            console.log('Supabase signOut successful');
-                        }
-                    } catch (signOutError) {
-                        console.error('SignOut exception:', signOutError);
-                        // Continue with manual cleanup
-                    }
-                } else {
-                    console.log('No active session found, proceeding with manual cleanup');
-                }
-            } catch (sessionCheckError) {
-                console.error('Session check failed:', sessionCheckError);
-                // Continue with manual cleanup
+        // Step 2: Comprehensive cleanup of all auth data
+        console.log('🧹 Performing comprehensive auth cleanup...');
+        
+        // Clear all possible auth-related storage keys
+        const keysToRemove = [];
+        
+        // Check localStorage
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && (
+                key.includes('supabase') || 
+                key.includes('auth') || 
+                key.includes('sb-') ||
+                key.includes('gcrush') ||
+                key === 'rememberMe'
+            )) {
+                keysToRemove.push(key);
             }
         }
-    } catch (error) {
-        console.error('Error during logout process:', error);
-        // Continue with manual cleanup
-    }
-    
-    // Clear all auth tokens from localStorage and sessionStorage
-    const authKeys = [
-        'gcrush-auth-token',
-        'sb-kuflobojizyttadwcbhe-auth-token',
-        'sb-kuflobojizyttadwcbhe-auth-token-refresh',
-        'supabase.auth.token',
-        'rememberMe'
-    ];
-    
-    // Clear specific auth keys
-    authKeys.forEach(key => {
-        localStorage.removeItem(key);
-        sessionStorage.removeItem(key);
-    });
-    
-    // Clear all localStorage items that might contain auth data
-    const keysToRemove = [];
-    for (let i = 0; i < localStorage.length; i++) {
-        const key = localStorage.key(i);
-        if (key && (key.includes('supabase') || key.includes('auth') || key.includes('sb-'))) {
-            keysToRemove.push(key);
+        
+        // Remove all auth-related keys
+        keysToRemove.forEach(key => {
+            localStorage.removeItem(key);
+            sessionStorage.removeItem(key);
+        });
+        
+        console.log('🗑️ Cleared auth keys:', keysToRemove);
+        
+        // Step 3: Reset UI state immediately
+        console.log('🎨 Resetting UI to logged-out state...');
+        
+        const currentLoginBtn = document.querySelector('.login-btn');
+        const currentCreateBtn = document.querySelector('.create-account-btn');
+        const currentUserProfile = document.querySelector('.user-profile');
+        const premiumBtn = document.querySelector('.premium-button');
+        
+        // Show login/create buttons
+        if (currentLoginBtn) {
+            currentLoginBtn.style.display = 'inline-block';
+            currentLoginBtn.style.visibility = 'visible';
         }
+        if (currentCreateBtn) {
+            currentCreateBtn.style.display = 'inline-block';
+            currentCreateBtn.style.visibility = 'visible';
+        }
+        
+        // Hide user profile and premium button
+        if (currentUserProfile) {
+            currentUserProfile.style.display = 'none';
+        }
+        if (premiumBtn) {
+            premiumBtn.style.display = 'none';
+        }
+        
+        // Step 4: Close any open dropdowns or modals
+        const profileDropdown = document.getElementById('profileDropdown');
+        if (profileDropdown) {
+            profileDropdown.remove();
+        }
+        
+        const authModal = document.getElementById('authModal');
+        if (authModal) {
+            closeModal(authModal);
+        }
+        
+        // Step 5: Force reinitialize Supabase client to clear any cached state
+        console.log('🔄 Reinitializing Supabase client...');
+        supabase = null;
+        initializeSupabase();
+        
+        console.log('✅ Logout completed successfully');
+        
+        // Optional: Show brief success message
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(76, 175, 80, 0.9);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            z-index: 10000;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        `;
+        notification.textContent = 'Successfully logged out';
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 2000);
+        
+    } catch (error) {
+        console.error('❌ Error during logout:', error);
+        
+        // Emergency fallback: force clear everything and reload
+        console.log('🆘 Emergency logout fallback...');
+        
+        // Clear all storage
+        try {
+            localStorage.clear();
+            sessionStorage.clear();
+        } catch (clearError) {
+            console.error('Failed to clear storage:', clearError);
+        }
+        
+        // Force page reload as last resort
+        setTimeout(() => {
+            window.location.reload();
+        }, 1000);
     }
-    keysToRemove.forEach(key => localStorage.removeItem(key));
-    
-    console.log('Local auth tokens cleared');
-    
-    // Reset UI immediately before reload
-    const currentLoginBtn = document.querySelector('.login-btn');
-    const currentCreateBtn = document.querySelector('.create-account-btn');
-    const currentUserProfile = document.querySelector('.user-profile');
-    
-    if (currentLoginBtn) currentLoginBtn.style.display = 'inline-block';
-    if (currentCreateBtn) currentCreateBtn.style.display = 'inline-block';
-    if (currentUserProfile) currentUserProfile.style.display = 'none';
-    
-    // Always reload the page to reset UI state
-    window.location.reload();
 }
 
 // Make logout available globally
