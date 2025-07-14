@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Debug Helper - Gcrush</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #ffffff;
+        }
+        .container {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            color: #A259FF;
+        }
+        .status-box {
+            background: #333;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #A259FF;
+        }
+        .log-container {
+            background: #000;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .button {
+            background: #A259FF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .button:hover {
+            background: #8a47e6;
+        }
+        .test-link {
+            display: inline-block;
+            background: #333;
+            color: #A259FF;
+            text-decoration: none;
+            padding: 10px 15px;
+            border-radius: 5px;
+            margin: 5px;
+            border: 1px solid #A259FF;
+        }
+        .test-link:hover {
+            background: #A259FF;
+            color: white;
+        }
+        .warning {
+            background: #4a2c00;
+            border-left-color: #ff9500;
+            color: #ffcc80;
+        }
+        .error {
+            background: #4a0000;
+            border-left-color: #ff0000;
+            color: #ffcccc;
+        }
+        .success {
+            background: #004a00;
+            border-left-color: #00ff00;
+            color: #ccffcc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Auth Debug Helper</h1>
+        <p>This page helps debug the account confusion issue when visiting generate-media page.</p>
+    </div>
+
+    <div class="container">
+        <h2>📊 Current Auth Status</h2>
+        <div class="status-box" id="authStatus">
+            <strong>Status:</strong> <span id="statusText">Loading...</span><br>
+            <strong>URL:</strong> <span id="currentUrl"></span><br>
+            <strong>LocalStorage Token:</strong> <span id="tokenStatus"></span><br>
+            <strong>Session User:</strong> <span id="sessionUser"></span><br>
+            <strong>Time:</strong> <span id="currentTime"></span>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>🧪 Test Navigation</h2>
+        <p>Click these links to test the issue:</p>
+        <a href="/" class="test-link">🏠 Main Page</a>
+        <a href="/generate-media.html" class="test-link">🎨 Generate Media</a>
+        <a href="/chat.html" class="test-link">💬 Chat</a>
+        <button class="button" onclick="clearAllAuth()">🧹 Clear All Auth Data</button>
+        <button class="button" onclick="refreshStatus()">🔄 Refresh Status</button>
+    </div>
+
+    <div class="container">
+        <h2>📝 Debug Logs</h2>
+        <button class="button" onclick="clearLogs()">Clear Logs</button>
+        <button class="button" onclick="exportLogs()">Export Logs</button>
+        <div class="log-container" id="logContainer">
+            Waiting for logs...
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>📋 Test Instructions</h2>
+        <ol>
+            <li>Open browser console (F12) to see detailed logs</li>
+            <li>Login normally on main page</li>
+            <li>Note your login status above</li>
+            <li>Click "Generate Media" link</li>
+            <li>Return to this page or main page</li>
+            <li>Check if login status changed unexpectedly</li>
+            <li>Export logs and share with developer</li>
+        </ol>
+    </div>
+
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth-simple.js"></script>
+    
+    <script>
+        let logs = [];
+        let originalConsoleLog = console.log;
+        
+        // Intercept console.log to capture auth debug messages
+        console.log = function(...args) {
+            originalConsoleLog.apply(console, args);
+            
+            // Capture AUTH-DEBUG messages
+            const message = args.join(' ');
+            if (message.includes('[AUTH-DEBUG]')) {
+                const timestamp = new Date().toISOString();
+                logs.push(`${timestamp}: ${message}`);
+                updateLogDisplay();
+            }
+        };
+
+        function updateLogDisplay() {
+            const container = document.getElementById('logContainer');
+            if (logs.length === 0) {
+                container.innerHTML = 'No auth debug logs yet...';
+            } else {
+                container.innerHTML = logs.slice(-50).join('\n');
+                container.scrollTop = container.scrollHeight;
+            }
+        }
+
+        function clearLogs() {
+            logs = [];
+            updateLogDisplay();
+        }
+
+        function exportLogs() {
+            const logText = logs.join('\n');
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `auth-debug-logs-${new Date().toISOString().slice(0,19)}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        async function refreshStatus() {
+            document.getElementById('currentUrl').textContent = window.location.href;
+            document.getElementById('currentTime').textContent = new Date().toLocaleString();
+            
+            // Check localStorage token
+            const token = localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token');
+            document.getElementById('tokenStatus').textContent = token ? 'EXISTS' : 'NONE';
+            
+            // Check current session if supabase is available
+            if (window.supabase && supabase) {
+                try {
+                    const { data: { session }, error } = await supabase.auth.getSession();
+                    if (error) {
+                        document.getElementById('statusText').textContent = 'ERROR';
+                        document.getElementById('sessionUser').textContent = error.message;
+                        document.getElementById('authStatus').className = 'status-box error';
+                    } else if (session && session.user) {
+                        document.getElementById('statusText').textContent = 'LOGGED IN';
+                        document.getElementById('sessionUser').textContent = `${session.user.email} (${session.user.app_metadata?.provider || 'email'})`;
+                        document.getElementById('authStatus').className = 'status-box success';
+                    } else {
+                        document.getElementById('statusText').textContent = 'LOGGED OUT';
+                        document.getElementById('sessionUser').textContent = 'None';
+                        document.getElementById('authStatus').className = 'status-box';
+                    }
+                } catch (err) {
+                    document.getElementById('statusText').textContent = 'EXCEPTION';
+                    document.getElementById('sessionUser').textContent = err.message;
+                    document.getElementById('authStatus').className = 'status-box error';
+                }
+            } else {
+                document.getElementById('statusText').textContent = 'SUPABASE NOT LOADED';
+                document.getElementById('sessionUser').textContent = 'N/A';
+                document.getElementById('authStatus').className = 'status-box warning';
+            }
+        }
+
+        function clearAllAuth() {
+            if (confirm('This will clear all authentication data. Continue?')) {
+                // Clear localStorage
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('supabase') || key.includes('auth') || key.includes('sb-') || key === 'rememberMe')) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                // Supabase logout if available
+                if (window.supabase && supabase) {
+                    supabase.auth.signOut();
+                }
+                
+                alert('All auth data cleared. Page will reload.');
+                window.location.reload();
+            }
+        }
+
+        // Initial status update
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(refreshStatus, 1000);
+            setInterval(refreshStatus, 5000); // Auto-refresh every 5 seconds
+        });
+    </script>
+</body>
+</html> 
