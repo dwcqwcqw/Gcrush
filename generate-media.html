@@ -297,14 +297,64 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- Only load essential scripts, NO auth-simple.js to prevent conflicts -->
     <script src="inline-debug.js"></script>
     <script src="candy-combined.js"></script>
-    <script src="auth-simple.js"></script>
     <script src="generate-media.js"></script>
     <script>
-    // 只保留 recent chats 跳转，不再处理登录/session
+    // Simple auth UI update without Supabase conflicts
     document.addEventListener('DOMContentLoaded', () => {
+        console.log('[GENERATE-MEDIA] Page loaded without auth conflicts');
+        
+        // Simple auth status check from localStorage only
+        function updateAuthUI() {
+            const authToken = localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token');
+            const loginBtn = document.querySelector('.login-btn');
+            const createBtn = document.querySelector('.create-account-btn');
+            const userProfile = document.querySelector('.user-profile');
+            
+            if (authToken) {
+                // User appears to be logged in based on localStorage
+                if (loginBtn) loginBtn.style.display = 'none';
+                if (createBtn) createBtn.style.display = 'none';
+                if (userProfile) {
+                    userProfile.style.display = 'flex';
+                    // Simple fallback display
+                    const usernameDisplay = userProfile.querySelector('.username-display');
+                    if (usernameDisplay && !usernameDisplay.textContent.trim()) {
+                        usernameDisplay.textContent = 'My Profile';
+                    }
+                }
+            } else {
+                // User appears to be logged out
+                if (loginBtn) loginBtn.style.display = 'inline-block';
+                if (createBtn) createBtn.style.display = 'inline-block';
+                if (userProfile) userProfile.style.display = 'none';
+            }
+        }
+        
+        // Update auth UI immediately
+        updateAuthUI();
+        
+        // Handle auth buttons - redirect to main page for auth
+        const loginBtn = document.querySelector('.login-btn');
+        const createBtn = document.querySelector('.create-account-btn');
+        
+        if (loginBtn) {
+            loginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = '/#login';
+            });
+        }
+        
+        if (createBtn) {
+            createBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = '/#signup';
+            });
+        }
+        
+        // Recent chats functionality
         const chatBtn = document.getElementById('sidebarChatBtn');
         if (chatBtn) {
             chatBtn.addEventListener('click', (e) => {
