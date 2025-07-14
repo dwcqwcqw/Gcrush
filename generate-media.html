@@ -16,8 +16,7 @@
     <link rel="stylesheet" href="candy-combined.css">
     <link rel="stylesheet" href="generate-media.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- Supabase SDK -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- NO Supabase SDK to prevent auth conflicts -->
 </head>
 <body>
     <!-- Header -->
@@ -297,52 +296,72 @@
         </div>
     </div>
 
-    <!-- Only load essential scripts, NO auth-simple.js to prevent conflicts -->
-    <script src="inline-debug.js"></script>
+    <!-- Load scripts in isolated mode -->
+    <script>
+        // CRITICAL: Prevent any global auth variables from being created
+        window.supabase = undefined;
+        window.authState = undefined;
+        window.currentUser = undefined;
+        
+        // Block any attempts to create Supabase clients
+        if (window.supabase && window.supabase.createClient) {
+            console.log('[GENERATE-MEDIA] Blocking Supabase client creation');
+            window.supabase.createClient = function() {
+                console.warn('[GENERATE-MEDIA] Supabase client creation blocked to prevent auth conflicts');
+                return null;
+            };
+        }
+    </script>
     <script src="candy-combined.js"></script>
     <script src="generate-media.js"></script>
     <script>
-    // Simple auth UI update without Supabase conflicts
+    // ISOLATED auth UI - NO Supabase, NO localStorage manipulation
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('[GENERATE-MEDIA] Page loaded without auth conflicts');
+        console.log('[GENERATE-MEDIA] Page loaded in isolated mode - no auth processing');
         
-        // Simple auth status check from localStorage only
+        // CRITICAL: Do NOT check or modify localStorage auth tokens
+        // This prevents interference with main page auth state
+        
+        // Simple visual-only auth status check
         function updateAuthUI() {
-            const authToken = localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token');
             const loginBtn = document.querySelector('.login-btn');
             const createBtn = document.querySelector('.create-account-btn');
             const userProfile = document.querySelector('.user-profile');
             
-            if (authToken) {
-                // User appears to be logged in based on localStorage
+            // Read-only check without modifying anything
+            const hasAnyAuthData = localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token');
+            
+            if (hasAnyAuthData) {
+                // Show as logged in, but don't process the token
                 if (loginBtn) loginBtn.style.display = 'none';
                 if (createBtn) createBtn.style.display = 'none';
                 if (userProfile) {
                     userProfile.style.display = 'flex';
-                    // Simple fallback display
                     const usernameDisplay = userProfile.querySelector('.username-display');
-                    if (usernameDisplay && !usernameDisplay.textContent.trim()) {
+                    if (usernameDisplay) {
                         usernameDisplay.textContent = 'My Profile';
                     }
                 }
             } else {
-                // User appears to be logged out
+                // Show as logged out
                 if (loginBtn) loginBtn.style.display = 'inline-block';
                 if (createBtn) createBtn.style.display = 'inline-block';
                 if (userProfile) userProfile.style.display = 'none';
             }
         }
         
-        // Update auth UI immediately
+        // Update UI once only
         updateAuthUI();
         
-        // Handle auth buttons - redirect to main page for auth
+        // All auth actions redirect to main page
         const loginBtn = document.querySelector('.login-btn');
         const createBtn = document.querySelector('.create-account-btn');
+        const userProfile = document.querySelector('.user-profile');
         
         if (loginBtn) {
             loginBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                console.log('[GENERATE-MEDIA] Redirecting to main page for login');
                 window.location.href = '/#login';
             });
         }
@@ -350,7 +369,16 @@
         if (createBtn) {
             createBtn.addEventListener('click', (e) => {
                 e.preventDefault();
+                console.log('[GENERATE-MEDIA] Redirecting to main page for signup');
                 window.location.href = '/#signup';
+            });
+        }
+        
+        if (userProfile) {
+            userProfile.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('[GENERATE-MEDIA] Redirecting to main page for profile');
+                window.location.href = '/';
             });
         }
         
