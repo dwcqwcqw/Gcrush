@@ -1736,13 +1736,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatBtn = document.getElementById('sidebarChatBtn');
         if (chatBtn) {
             chatBtn.addEventListener('click', async () => {
-                // 判断是否在主页或有chat界面
+                // 判断是否在主页
                 const isOnMainPage = window.location.pathname === '/' || window.location.pathname === '/index.html';
                 const isOnGenerateMediaPage = window.location.pathname.includes('generate-media');
-                const hasChatInterface = document.getElementById('chatInterface');
                 
-                if (isOnMainPage || (isOnGenerateMediaPage && hasChatInterface)) {
-                    // 在主页或generate-media页面，直接显示chat
+                if (isOnMainPage) {
+                    // 在主页，直接显示chat
                     if (window.mainChatSystem) {
                         await window.mainChatSystem.openMostRecentChatOrNotify();
                     }
@@ -1752,7 +1751,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         await window.mainChatSystem.openMostRecentChatOrNotify();
                     }
                 } else {
-                    // 在其他页面，跳转到主页并触发chat
+                    // 在其他页面（包括generate-media），跳转到主页并触发chat
                     const mostRecentChar = await window.mainChatSystem?.getMostRecentCharacter();
                     if (mostRecentChar) {
                         window.location.href = `/?character=${mostRecentChar}#`;
