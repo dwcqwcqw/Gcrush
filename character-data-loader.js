@@ -3,12 +3,25 @@
 // Character Data Loader for Dynamic Character Cards
 // =====================================================
 
-// Supabase client configuration - use existing global variables if available
-const CHARACTER_LOADER_SUPABASE_URL = window.SUPABASE_URL || 'https://kuflobojizyttadwcbhe.supabase.co';
-const CHARACTER_LOADER_SUPABASE_KEY = window.SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+// Use global Supabase instance from auth-simple.js
+// DO NOT create a new client - this causes authentication conflicts
+let characterLoaderSupabase = null;
 
-// Initialize Supabase client - use existing global client if available
-const characterLoaderSupabase = window.supabase ? window.supabase.createClient(CHARACTER_LOADER_SUPABASE_URL, CHARACTER_LOADER_SUPABASE_KEY) : null;
+// Wait for global Supabase client to be available
+function waitForSupabase() {
+    return new Promise((resolve) => {
+        if (window.supabase) {
+            characterLoaderSupabase = window.supabase;
+            console.log('[CHARACTER-LOADER] Using global Supabase client');
+            resolve();
+        } else {
+            console.log('[CHARACTER-LOADER] Waiting for global Supabase client...');
+            setTimeout(() => {
+                waitForSupabase().then(resolve);
+            }, 100);
+        }
+    });
+}
 
 // Character data management class
 class CharacterDataLoader {
@@ -26,6 +39,9 @@ class CharacterDataLoader {
         
         try {
             console.log('Loading character data from database...');
+            
+            // Wait for global Supabase client
+            await waitForSupabase();
             
             if (!characterLoaderSupabase) {
                 throw new Error('Supabase client not available');

@@ -8,14 +8,20 @@ class MainChatSystem {
         this.pendingMessage = null;
         this.isTyping = false;
         
-        // Initialize Supabase
-        if (window.supabase && window.supabase.createClient) {
-            this.supabase = window.supabase.createClient(
-                'https://kuflobojizyttadwcbhe.supabase.co',
-                'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
-            );
-        } else {
-            console.error('Supabase not loaded');
+        // Use global Supabase instance from auth-simple.js
+        // DO NOT create a new client - this causes authentication conflicts
+        this.supabase = window.supabase;
+        
+        if (!this.supabase) {
+            console.error('[MAIN-CHAT] Global Supabase client not available - waiting for auth-simple.js to initialize');
+            // Try again after a delay
+            setTimeout(() => {
+                this.supabase = window.supabase;
+                if (this.supabase) {
+                    console.log('[MAIN-CHAT] Global Supabase client now available');
+                    this.setupAuthentication();
+                }
+            }, 1000);
         }
         
         this.init();

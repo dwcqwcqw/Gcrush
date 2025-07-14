@@ -405,6 +405,8 @@
     <script src="auth-state-protection.js"></script>
     
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <!-- CRITICAL: Load Supabase Manager FIRST to ensure single instance -->
+    <script src="supabase-manager.js"></script>
     <!-- Load environment configuration if available -->
     <script src="env-config.js" onerror="console.warn('env-config.js not found - using defaults')"></script>
     <script src="inline-debug.js?v=3.0"></script>

@@ -38,7 +38,15 @@ let authView = 'sign_in'; // 'sign_in' or 'sign_up'
 function initializeSupabase() {
     authDebug('Starting Supabase initialization');
     
-    if (!window.supabase) {
+    // Use global Supabase client if already initialized
+    if (window._supabaseClientInitialized && window.supabase) {
+        authDebug('Using existing global Supabase client');
+        supabase = window.supabase;
+        console.log('Using global Supabase client from supabase-manager.js');
+        return true;
+    }
+    
+    if (!window.supabase || !window.supabase.createClient) {
         authDebug('ERROR: Supabase SDK not loaded!');
         console.error('Supabase SDK not loaded!');
         return false;
@@ -51,16 +59,22 @@ function initializeSupabase() {
             detectSessionInUrl: true
         });
         
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-            auth: {
-                autoRefreshToken: true,
-                persistSession: true,
-                detectSessionInUrl: true,
-                storage: window.localStorage,
-                storageKey: 'sb-kuflobojizyttadwcbhe-auth-token',
-                flowType: 'pkce'
-            }
-        });
+        // Only create if not already created by supabase-manager.js
+        if (!window._supabaseClientInitialized) {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                auth: {
+                    autoRefreshToken: true,
+                    persistSession: true,
+                    detectSessionInUrl: true,
+                    storage: window.localStorage,
+                    storageKey: 'sb-kuflobojizyttadwcbhe-auth-token',
+                    flowType: 'pkce'
+                }
+            });
+            window._supabaseClientInitialized = true;
+        } else {
+            supabase = window.supabase;
+        }
         
         authDebug('Supabase client initialized successfully');
         console.log('Supabase client initialized with persistent session');
@@ -1466,10 +1480,19 @@ async function logout() {
             closeModal(authModal);
         }
         
-        // Step 5: Force reinitialize Supabase client to clear any cached state
-        console.log('🔄 Reinitializing Supabase client...');
-        supabase = null;
-        initializeSupabase();
+        // Step 5: Clear global Supabase state
+        console.log('🔄 Clearing global Supabase state...');
+        
+        // Don't reinitialize - keep using the global client
+        // Just ensure we're properly logged out
+        if (window.supabase && window.supabase.auth) {
+            // Double-check logout was successful
+            const { data: { session } } = await window.supabase.auth.getSession();
+            if (session) {
+                console.warn('⚠️ Session still exists after logout, forcing clear...');
+                await window.supabase.auth.signOut({ scope: 'global' });
+            }
+        }
         
         console.log('✅ Logout completed successfully');
         
