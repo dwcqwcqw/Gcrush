@@ -79,7 +79,7 @@
         <button onclick="testChatOptions()">Test OPTIONS /api/chat</button>
         <div id="chatApiResult"></div>
     </div>
-
+    
     <div class="test-section">
         <h2>4. System Diagnostics</h2>
         <button onclick="runDiagnostics()">Run Full Diagnostics</button>
@@ -275,7 +275,7 @@ CORS Headers:
                 timestamp: new Date().toISOString(),
                 environmentVariables: {
                     RUNPOD_API_KEY: !!window.RUNPOD_API_KEY && window.RUNPOD_API_KEY !== '',
-                    RUNPOD_TEXT_ENDPOINT_ID: window.RUNPOD_TEXT_ENDPOINT_ID || 'NOT SET',
+                RUNPOD_TEXT_ENDPOINT_ID: window.RUNPOD_TEXT_ENDPOINT_ID || 'NOT SET',
                     NEXT_PUBLIC_SUPABASE_URL: !!window.NEXT_PUBLIC_SUPABASE_URL,
                     NEXT_PUBLIC_SUPABASE_ANON_KEY: !!window.NEXT_PUBLIC_SUPABASE_ANON_KEY
                 },

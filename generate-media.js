@@ -24,8 +24,8 @@ class GenerateMediaIntegrated {
                 e.target.classList.add('active');
                 this.currentMediaType = e.target.dataset.type;
                 console.log('📱 Media type changed to:', this.currentMediaType);
-            });
-        });
+    });
+});
 
         // Character selection
         const characterSelect = document.getElementById('character-select');
@@ -89,7 +89,7 @@ class GenerateMediaIntegrated {
 
                 this.characters = characters || [];
                 console.log('✅ Characters loaded:', this.characters.length);
-            } else {
+        } else {
                 console.warn('⚠️ Supabase not available, using fallback characters');
                 this.loadFallbackCharacters();
             }
@@ -162,8 +162,7 @@ class GenerateMediaIntegrated {
             const customPrompt = document.getElementById('custom-prompt')?.value || '';
             const style = document.getElementById('style-select')?.value || 'realistic';
             const quality = document.getElementById('quality-select')?.value || 'high';
-            const aspectRatio = document.getElementById('aspect-ratio')?.value || '16:9';
-            const seed = document.getElementById('seed-input')?.value || '';
+            const imageCount = parseInt(document.getElementById('image-count')?.value || '1');
 
             // Build the prompt
             const prompt = this.buildPrompt({
@@ -173,18 +172,18 @@ class GenerateMediaIntegrated {
                 outfit,
                 customPrompt,
                 style,
-                quality,
-                aspectRatio,
-                seed
+                quality
             });
 
             console.log('📝 Generated prompt:', prompt);
 
-            // Simulate generation (replace with actual API call)
-            const result = await this.simulateGeneration(prompt);
+            // Generate multiple images if requested
+            for (let i = 0; i < imageCount; i++) {
+                const result = await this.simulateGeneration(prompt);
+                this.showGenerationResult(result);
+            }
             
             this.hideLoadingOverlay();
-            this.showGenerationResult(result);
             this.showSuccessMessage();
 
         } catch (error) {
@@ -196,9 +195,9 @@ class GenerateMediaIntegrated {
         }
     }
 
-    buildPrompt({ character, pose, background, outfit, customPrompt, style, quality, aspectRatio, seed }) {
+    buildPrompt({ character, pose, background, outfit, customPrompt, style, quality }) {
         const selectedChar = this.characters.find(c => c.id === character);
-        let prompt = `${style} style, ${quality} quality, ${aspectRatio} aspect ratio`;
+        let prompt = `${style} style, ${quality} quality`;
         
         if (selectedChar) {
             prompt += `, ${selectedChar.name} (${selectedChar.description})`;
@@ -208,7 +207,6 @@ class GenerateMediaIntegrated {
         if (background) prompt += `, background: ${background}`;
         if (outfit) prompt += `, wearing: ${outfit}`;
         if (customPrompt) prompt += `, ${customPrompt}`;
-        if (seed) prompt += `, seed: ${seed}`;
         
         return prompt;
     }
@@ -226,8 +224,8 @@ class GenerateMediaIntegrated {
                 ? 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/alex.png'
                 : 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/banner3.mp4',
             prompt: prompt,
-            timestamp: new Date().toISOString()
-        };
+        timestamp: new Date().toISOString()
+    };
     }
 
     showLoadingOverlay() {
@@ -245,36 +243,60 @@ class GenerateMediaIntegrated {
     }
 
     showGenerationResult(result) {
-        const resultSection = document.getElementById('generation-result');
-        const resultContent = document.querySelector('.result-content');
-        
-        if (!resultSection || !resultContent) return;
+        console.log('🎨 Showing generation result:', result);
+        this.addToGallery(result);
+        this.showSuccessMessage();
+    }
 
-        // Create media element
-        let mediaElement;
-        if (result.type === 'image') {
-            mediaElement = document.createElement('img');
-            mediaElement.src = result.url;
-            mediaElement.alt = 'Generated Image';
-            mediaElement.style.maxWidth = '100%';
-            mediaElement.style.height = 'auto';
-        } else {
-            mediaElement = document.createElement('video');
-            mediaElement.src = result.url;
-            mediaElement.controls = true;
-            mediaElement.style.maxWidth = '100%';
-            mediaElement.style.height = 'auto';
+    addToGallery(result) {
+        const galleryContent = document.getElementById('gallery-content');
+        if (!galleryContent) return;
+
+        // Remove "no images" message if it exists
+        const noImagesMsg = galleryContent.querySelector('.no-images');
+        if (noImagesMsg) {
+            noImagesMsg.remove();
         }
 
-        // Clear previous content and add new media
-        resultContent.innerHTML = '';
-        resultContent.appendChild(mediaElement);
+        // Create gallery grid if it doesn't exist
+        let galleryGrid = galleryContent.querySelector('.gallery-grid');
+        if (!galleryGrid) {
+            galleryGrid = document.createElement('div');
+            galleryGrid.className = 'gallery-grid';
+            galleryContent.appendChild(galleryGrid);
+        }
 
-        // Show result section
-        resultSection.style.display = 'block';
+        // Add new item to gallery
+        const galleryItem = document.createElement('div');
+        galleryItem.className = 'gallery-item';
         
-        // Scroll to result
-        resultSection.scrollIntoView({ behavior: 'smooth' });
+        const media = document.createElement(result.type === 'video' ? 'video' : 'img');
+        media.src = result.url;
+        media.alt = 'Generated Media';
+        if (result.type === 'video') {
+            media.controls = true;
+        }
+        
+        const itemInfo = document.createElement('div');
+        itemInfo.className = 'gallery-item-info';
+        
+        const title = document.createElement('h4');
+        title.textContent = result.character || 'Generated Media';
+        
+        const timestamp = document.createElement('p');
+        timestamp.textContent = new Date().toLocaleString();
+        
+        itemInfo.appendChild(title);
+        itemInfo.appendChild(timestamp);
+        
+        galleryItem.appendChild(media);
+        galleryItem.appendChild(itemInfo);
+        
+        // Add to beginning of gallery
+        galleryGrid.insertBefore(galleryItem, galleryGrid.firstChild);
+        
+        // Scroll to gallery
+        galleryContent.scrollIntoView({ behavior: 'smooth' });
     }
 
     showSuccessMessage() {
