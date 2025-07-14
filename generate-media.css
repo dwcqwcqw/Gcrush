@@ -5,6 +5,11 @@
     padding: 40px 20px;
 }
 
+/* Show generate media section by default on this page */
+#generateMediaSection {
+    display: block !important;
+}
+
 .generate-media-header {
     text-align: center;
     margin-bottom: 40px;

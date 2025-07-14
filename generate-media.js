@@ -17,15 +17,10 @@ class GenerateMediaIntegrated {
     }
 
     setupEventListeners() {
-        // Chat button - redirect to main page with chat intent
-        const chatBtn = document.getElementById('sidebarChatBtn');
-        if (chatBtn) {
-            chatBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                // Store intent to show chat when returning to main page
-                localStorage.setItem('showChatOnLoad', 'true');
-                window.location.href = 'index.html';
-            });
+        // Show generate media section by default
+        const generateMediaSection = document.getElementById('generateMediaSection');
+        if (generateMediaSection) {
+            generateMediaSection.style.display = 'block';
         }
 
         // Media type selector
@@ -330,14 +325,9 @@ class GenerateMediaIntegrated {
     }
 }
 
-// Initialize when page loads
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('🎨 DOM loaded, initializing Generate Media...');
-    
-    // Initialize auth system first
-    if (typeof enhancedInitialization === 'function') {
-        enhancedInitialization();
-    }
+// Initialize when main scripts are ready
+function initGenerateMediaPage() {
+    console.log('🎨 Initializing Generate Media page...');
     
     // Wait for auth to be ready
     const initGenerateMedia = () => {
@@ -351,6 +341,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     
     initGenerateMedia();
+}
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    // Wait a bit for main scripts to load
+    setTimeout(initGenerateMediaPage, 500);
 });
 
 // Navigation functions for compatibility
