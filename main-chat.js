@@ -1357,7 +1357,7 @@ class MainChatSystem {
         try {
             if (this.currentUser && this.supabase) {
                 // Load recent chats from database
-                await this.loadChatHistory();
+                await this.renderChatList();
             } else {
                 // Show fallback characters list
                 this.renderFallbackChatList();
