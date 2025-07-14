@@ -1603,6 +1603,34 @@ class MainChatSystem {
         console.log('Reset first chat status for:', characterName || this.currentCharacter?.name);
     }
 
+    async getMostRecentCharacter() {
+        try {
+            if (this.currentUser && this.supabase) {
+                // 登录用户查数据库
+                const { data: sessions, error } = await this.supabase
+                    .from('chat_sessions')
+                    .select('id, character_id, characters!inner(name)')
+                    .eq('user_id', this.currentUser.id)
+                    .order('updated_at', { ascending: false })
+                    .limit(1);
+
+                if (sessions && sessions.length > 0 && sessions[0].characters?.name) {
+                    return sessions[0].characters.name;
+                }
+            } else {
+                // 未登录用户查localStorage
+                const chatListContainer = document.getElementById('chatList');
+                if (chatListContainer && chatListContainer.firstElementChild) {
+                    return chatListContainer.firstElementChild.getAttribute('data-character');
+                }
+            }
+            return null;
+        } catch (error) {
+            console.error('Error in getMostRecentCharacter:', error);
+            return null;
+        }
+    }
+
     // 打开最近一次聊天或弹窗提示
     async openMostRecentChatOrNotify() {
         let recentCharacterName = null;
@@ -1708,14 +1736,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const chatBtn = document.getElementById('sidebarChatBtn');
         if (chatBtn) {
             chatBtn.addEventListener('click', async () => {
-                // 判断是否在聊天页（兼容 /chat 和 /chat.html）
-                const isOnChatPage = window.location.pathname.includes('chat') || document.getElementById('chatInterface');
-                if (!isOnChatPage) {
-                    // 跳转到聊天页，并加参数触发自动打开最近聊天
-                    window.location.href = '/chat?openRecent=1';
-                } else {
+                // 判断是否在主页或有chat界面
+                const isOnMainPage = window.location.pathname === '/' || window.location.pathname === '/index.html';
+                const isOnGenerateMediaPage = window.location.pathname.includes('generate-media');
+                const hasChatInterface = document.getElementById('chatInterface');
+                
+                if (isOnMainPage || (isOnGenerateMediaPage && hasChatInterface)) {
+                    // 在主页或generate-media页面，直接显示chat
                     if (window.mainChatSystem) {
                         await window.mainChatSystem.openMostRecentChatOrNotify();
+                    }
+                } else if (window.location.pathname.includes('chat')) {
+                    // 在独立的chat页面
+                    if (window.mainChatSystem) {
+                        await window.mainChatSystem.openMostRecentChatOrNotify();
+                    }
+                } else {
+                    // 在其他页面，跳转到主页并触发chat
+                    const mostRecentChar = await window.mainChatSystem?.getMostRecentCharacter();
+                    if (mostRecentChar) {
+                        window.location.href = `/?character=${mostRecentChar}#`;
+                    } else {
+                        window.location.href = '/?openRecent=1';
                     }
                 }
             });
