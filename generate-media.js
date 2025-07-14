@@ -17,6 +17,17 @@ class GenerateMediaIntegrated {
     }
 
     setupEventListeners() {
+        // Chat button - redirect to main page with chat intent
+        const chatBtn = document.getElementById('sidebarChatBtn');
+        if (chatBtn) {
+            chatBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Store intent to show chat when returning to main page
+                localStorage.setItem('showChatOnLoad', 'true');
+                window.location.href = 'index.html';
+            });
+        }
+
         // Media type selector
         document.querySelectorAll('.media-type-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -160,6 +171,7 @@ class GenerateMediaIntegrated {
             const background = document.getElementById('background-input')?.value || '';
             const outfit = document.getElementById('outfit-input')?.value || '';
             const customPrompt = document.getElementById('custom-prompt')?.value || '';
+            const negativePrompt = document.getElementById('negative-prompt')?.value || '';
             const style = document.getElementById('style-select')?.value || 'realistic';
             const quality = document.getElementById('quality-select')?.value || 'high';
             const imageCount = parseInt(document.getElementById('image-count')?.value || '1');
@@ -171,6 +183,7 @@ class GenerateMediaIntegrated {
                 background,
                 outfit,
                 customPrompt,
+                negativePrompt,
                 style,
                 quality
             });
@@ -195,7 +208,7 @@ class GenerateMediaIntegrated {
         }
     }
 
-    buildPrompt({ character, pose, background, outfit, customPrompt, style, quality }) {
+    buildPrompt({ character, pose, background, outfit, customPrompt, negativePrompt, style, quality }) {
         const selectedChar = this.characters.find(c => c.id === character);
         let prompt = `${style} style, ${quality} quality`;
         
@@ -207,6 +220,7 @@ class GenerateMediaIntegrated {
         if (background) prompt += `, background: ${background}`;
         if (outfit) prompt += `, wearing: ${outfit}`;
         if (customPrompt) prompt += `, ${customPrompt}`;
+        if (negativePrompt) prompt += `, negative: ${negativePrompt}`;
         
         return prompt;
     }
@@ -319,6 +333,11 @@ class GenerateMediaIntegrated {
 // Initialize when page loads
 document.addEventListener('DOMContentLoaded', () => {
     console.log('🎨 DOM loaded, initializing Generate Media...');
+    
+    // Initialize auth system first
+    if (typeof enhancedInitialization === 'function') {
+        enhancedInitialization();
+    }
     
     // Wait for auth to be ready
     const initGenerateMedia = () => {

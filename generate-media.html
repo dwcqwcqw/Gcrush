@@ -66,7 +66,7 @@
                     <i class="fas fa-compass"></i>
                     <span>Explore</span>
                 </a>
-                <a href="chat.html" class="sidebar-item" id="sidebarChatBtn">
+                <a href="index.html" class="sidebar-item" id="sidebarChatBtn">
                     <i class="fas fa-comment"></i>
                     <span>Chat</span>
                 </a>
@@ -135,7 +135,8 @@
                 </div>
 
                 <div class="generate-form">
-                    <div class="form-group">
+                    <!-- Character Selection -->
+                    <div class="form-group character-select-group">
                         <label for="character-select">
                             <i class="fas fa-user"></i>
                             Select Character <span class="required">(required)</span>
@@ -145,29 +146,38 @@
                         </select>
                     </div>
 
-                    <div class="form-row">
-                        <div class="form-group">
+                    <!-- Main Form Grid -->
+                    <div class="form-grid">
+                        <div class="form-group pose-group">
                             <label for="pose-input">
+                                <i class="fas fa-running"></i>
                                 Pose <span class="optional">(optional)</span>
                             </label>
-                            <input type="text" id="pose-input" class="form-control" placeholder="">
+                            <textarea id="pose-input" class="form-control pose-textarea" rows="8" placeholder=""></textarea>
                         </div>
-                        <div class="form-group">
-                            <label for="background-input">
-                                Background <span class="optional">(optional)</span>
-                            </label>
-                            <input type="text" id="background-input" class="form-control" placeholder="">
-                        </div>
-                        <div class="form-group">
-                            <label for="outfit-input">
-                                Outfit <span class="optional">(optional)</span>
-                            </label>
-                            <input type="text" id="outfit-input" class="form-control" placeholder="">
+                        
+                        <div class="form-group-right">
+                            <div class="form-group">
+                                <label for="background-input">
+                                    <i class="fas fa-mountain"></i>
+                                    Background <span class="optional">(optional)</span>
+                                </label>
+                                <textarea id="background-input" class="form-control" rows="3" placeholder=""></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="outfit-input">
+                                    <i class="fas fa-tshirt"></i>
+                                    Outfit <span class="optional">(optional)</span>
+                                </label>
+                                <textarea id="outfit-input" class="form-control" rows="3" placeholder=""></textarea>
+                            </div>
                         </div>
                     </div>
 
+                    <!-- Custom Prompt -->
                     <div class="form-group">
                         <label for="custom-prompt">
+                            <i class="fas fa-edit"></i>
                             Custom Prompt <span class="optional">(optional)</span>
                         </label>
                         <textarea id="custom-prompt" class="form-control" rows="3" placeholder=""></textarea>
@@ -180,6 +190,12 @@
                             <i class="fas fa-chevron-down"></i>
                         </button>
                         <div class="advanced-settings">
+                            <div class="form-group">
+                                <label for="negative-prompt">
+                                    Negative Prompt <span class="optional">(optional)</span>
+                                </label>
+                                <textarea id="negative-prompt" class="form-control" rows="3" placeholder=""></textarea>
+                            </div>
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="style-select">Style</label>

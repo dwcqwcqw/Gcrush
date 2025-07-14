@@ -119,6 +119,18 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     });
 
+    // Check if we should show chat on load (from generate-media page)
+    if (localStorage.getItem('showChatOnLoad') === 'true') {
+        localStorage.removeItem('showChatOnLoad');
+        // Trigger chat functionality
+        setTimeout(() => {
+            const chatBtn = document.getElementById('sidebarChatBtn');
+            if (chatBtn) {
+                chatBtn.click();
+            }
+        }, 100);
+    }
+
     // Simulate content loading for demonstration
     setTimeout(() => {
         const loader = document.querySelector('.loader');
