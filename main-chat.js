@@ -211,6 +211,9 @@ class MainChatSystem {
                 await this.sendInitialMessages();
             }
             
+            // Update Recent Chats to show current character at the top
+            await this.updateRecentChatsForCurrentCharacter();
+            
         } catch (error) {
             console.error('Error starting chat:', error);
             // Use fallback character and continue
@@ -219,6 +222,111 @@ class MainChatSystem {
             
             // Add a system message about the error
             await this.addMessage('assistant', 'Hi! I\'m having some technical difficulties, but I\'m here to chat with you!', false);
+            
+            // Still update Recent Chats even with error
+            await this.updateRecentChatsForCurrentCharacter();
+        }
+    }
+
+    // Update Recent Chats to show current character at the top
+    async updateRecentChatsForCurrentCharacter() {
+        if (!this.currentCharacter) return;
+
+        try {
+            if (this.currentUser && this.supabase) {
+                // For logged-in users, update session timestamp and refresh from database
+                if (this.currentSessionId) {
+                    await this.supabase
+                        .from('chat_sessions')
+                        .update({ 
+                            updated_at: new Date().toISOString(),
+                            last_message_at: new Date().toISOString()
+                        })
+                        .eq('id', this.currentSessionId);
+                }
+                
+                // Refresh chat list from database
+                await this.renderChatList();
+            } else {
+                // For non-logged-in users, update localStorage timestamp and show in Recent Chats
+                const storageKey = `gcrush_chat_messages_${this.currentCharacter.name}`;
+                let messages = [];
+                
+                try {
+                    const existing = localStorage.getItem(storageKey);
+                    if (existing) {
+                        messages = JSON.parse(existing);
+                    }
+                } catch (error) {
+                    console.error('Error parsing localStorage messages:', error);
+                    messages = [];
+                }
+
+                // Add a timestamp entry if no messages exist
+                if (messages.length === 0) {
+                    messages.push({
+                        role: 'system',
+                        content: 'Chat started',
+                        timestamp: new Date().toISOString(),
+                        hidden: true // Don't display this message
+                    });
+                    localStorage.setItem(storageKey, JSON.stringify(messages));
+                }
+
+                // Create a recent chat entry for this character
+                this.addCharacterToRecentChats(this.currentCharacter);
+            }
+
+            console.log(`✅ Updated Recent Chats for ${this.currentCharacter.name}`);
+        } catch (error) {
+            console.error('Error updating Recent Chats:', error);
+        }
+    }
+
+    // Add character to Recent Chats (for non-logged-in users)
+    addCharacterToRecentChats(character) {
+        const chatListContainer = document.getElementById('chatList');
+        if (!chatListContainer) return;
+
+        // Check if character already exists in the list
+        const existingItem = chatListContainer.querySelector(`[data-character="${character.name}"]`);
+        if (existingItem) {
+            // Move existing item to top
+            chatListContainer.removeChild(existingItem);
+        }
+
+        // Create new chat item
+        const avatar = character.images ? character.images[0] : 
+            `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${character.name}/${character.name}1.png`;
+        
+        const timeString = this.formatTimeAgo(new Date().toISOString());
+        const isActive = 'active'; // Current character is always active
+
+        const chatItemHTML = `
+            <div class="chat-item ${isActive}" onclick="mainChatSystem.startChat('${character.name}')" data-character="${character.name}">
+                <img class="chat-item-avatar" src="${avatar}" alt="${character.name}">
+                <div class="chat-item-content">
+                    <div class="chat-item-header">
+                        <div class="chat-item-name">${character.name}</div>
+                        <div class="chat-item-time">${timeString}</div>
+                    </div>
+                    <div class="chat-item-preview">Active conversation...</div>
+                </div>
+                <button class="chat-item-delete" onclick="event.stopPropagation(); mainChatSystem.deleteChatHistory('${character.name}')" title="Delete chat history">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        `;
+
+        // Insert at the top of the list
+        chatListContainer.insertAdjacentHTML('afterbegin', chatItemHTML);
+
+        // Limit to 6 recent chats
+        const chatItems = chatListContainer.querySelectorAll('.chat-item');
+        if (chatItems.length > 6) {
+            for (let i = 6; i < chatItems.length; i++) {
+                chatListContainer.removeChild(chatItems[i]);
+            }
         }
     }
     
@@ -1036,6 +1144,11 @@ class MainChatSystem {
         }).join('');
         
         chatListContainer.innerHTML = chatItems;
+        
+        // 保证未登录用户recent chats有当前聊天角色
+        if (this.currentCharacter) {
+            this.addCharacterToRecentChats(this.currentCharacter);
+        }
     }
 
     getFallbackCharacters() {
