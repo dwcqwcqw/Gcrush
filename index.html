@@ -191,7 +191,7 @@
                             </div>
                             <div class="banner-text-side">
                                 <h2 class="banner-split-title">AI turns your dream guy into stunning photos and videos</h2>
-                                <button class="banner-split-cta" onclick="window.location.href='generate-media.html'">Generate Media</button>
+                                <button class="banner-split-cta" onclick="if(window.authProtection) window.authProtection.protectAndNavigate('generate-media.html'); else window.location.href='generate-media.html';">Generate Media</button>
                             </div>
                         </div>
                     </div>
@@ -401,6 +401,9 @@
         })();
     </script>
 
+    <!-- CRITICAL: Load auth protection BEFORE Supabase -->
+    <script src="auth-state-protection.js"></script>
+    
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <!-- Load environment configuration if available -->
     <script src="env-config.js" onerror="console.warn('env-config.js not found - using defaults')"></script>
