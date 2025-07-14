@@ -2,6 +2,24 @@
 const SUPABASE_URL = 'https://kuflobojizyttadwcbhe.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
 
+// Debug helper function
+function authDebug(message, data = null) {
+    const timestamp = new Date().toISOString();
+    const url = window.location.href;
+    const referrer = document.referrer || 'direct';
+    const stack = new Error().stack;
+    
+    console.log(`[AUTH-DEBUG] ${timestamp} | ${message}`);
+    if (data) {
+        console.log(`[AUTH-DEBUG] Data:`, data);
+    }
+    console.log(`[AUTH-DEBUG] URL: ${url}`);
+    console.log(`[AUTH-DEBUG] Referrer: ${referrer}`);
+    console.log(`[AUTH-DEBUG] Stack:`, stack.split('\n').slice(1, 4).join('\n'));
+    console.log(`[AUTH-DEBUG] LocalStorage auth token:`, localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token') ? 'EXISTS' : 'NONE');
+    console.log(`[AUTH-DEBUG] ==========================================`);
+}
+
 // Initialize Supabase client
 let supabase = null;
 
@@ -18,12 +36,21 @@ let authView = 'sign_in'; // 'sign_in' or 'sign_up'
 
 // Initialize Supabase client safely
 function initializeSupabase() {
+    authDebug('Starting Supabase initialization');
+    
     if (!window.supabase) {
+        authDebug('ERROR: Supabase SDK not loaded!');
         console.error('Supabase SDK not loaded!');
         return false;
     }
     
     try {
+        authDebug('Creating Supabase client with config', {
+            url: SUPABASE_URL,
+            storageKey: 'sb-kuflobojizyttadwcbhe-auth-token',
+            detectSessionInUrl: true
+        });
+        
         supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
             auth: {
                 autoRefreshToken: true,
@@ -34,9 +61,12 @@ function initializeSupabase() {
                 flowType: 'pkce'
             }
         });
+        
+        authDebug('Supabase client initialized successfully');
         console.log('Supabase client initialized with persistent session');
         return true;
     } catch (error) {
+        authDebug('ERROR: Failed to initialize Supabase client', error);
         console.error('Failed to initialize Supabase client:', error);
         return false;
     }
@@ -44,10 +74,12 @@ function initializeSupabase() {
 
 // Initialize after DOM is loaded
 function initializeAuth() {
+    authDebug('Starting auth system initialization');
     console.log('Initializing auth system...');
     
     // First, initialize Supabase client
     if (!initializeSupabase()) {
+        authDebug('ERROR: Failed to initialize Supabase, aborting auth init');
         console.error('Cannot initialize auth system without Supabase');
         return;
     }
@@ -78,28 +110,57 @@ function initializeAuth() {
 
 // Setup auth state change listener separately
 function setupAuthStateListener() {
+    authDebug('Setting up auth state listener');
+    
     supabase.auth.onAuthStateChange(async (event, session) => {
+        authDebug(`Auth state change detected`, {
+            event: event,
+            hasSession: !!session,
+            hasUser: !!(session && session.user),
+            userEmail: session?.user?.email,
+            userId: session?.user?.id,
+            provider: session?.user?.app_metadata?.provider,
+            expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : null
+        });
+        
         console.log('Auth state changed:', event, session);
         
         // Handle all auth events that result in a valid session
         if (session && session.user) {
+            authDebug(`Valid session found for event: ${event}`, {
+                userEmail: session.user.email,
+                provider: session.user.app_metadata?.provider,
+                userMetadata: session.user.user_metadata,
+                appMetadata: session.user.app_metadata
+            });
+            
             console.log(`Auth event: ${event}, User: ${session.user.email}`);
             
             // Close any open auth modal
             if (authModal) {
+                authDebug('Closing auth modal');
                 closeModal(authModal);
             }
             
             // Always update UI for logged in user
+            authDebug('Updating UI for logged in user');
             await updateUIForLoggedInUser(session.user);
             
             // For OAuth providers, handle the redirect properly
             if (event === 'SIGNED_IN' && session.user.app_metadata?.provider) {
+                authDebug('OAuth sign in detected', {
+                    provider: session.user.app_metadata.provider,
+                    currentPath: window.location.pathname,
+                    currentSearch: window.location.search,
+                    fullURL: window.location.href
+                });
+                
                 console.log('OAuth sign in completed for provider:', session.user.app_metadata.provider);
                 console.log('Full user data:', JSON.stringify(session.user, null, 2));
                 
                 // Force UI update for Twitter users who might have different metadata structure
                 if (session.user.app_metadata.provider === 'twitter' || session.user.app_metadata.provider === 'twitter_v2') {
+                    authDebug('Twitter user detected, forcing delayed UI update');
                     console.log('Twitter user detected, forcing UI update');
                     setTimeout(() => {
                         updateUIForLoggedInUser(session.user);
@@ -108,16 +169,28 @@ function setupAuthStateListener() {
                 
                 // Ensure we're on the main page after OAuth redirect
                 if (window.location.pathname.includes('/auth/callback') || window.location.search.includes('code=')) {
+                    authDebug('OAuth callback detected, redirecting to main page', {
+                        fromPath: window.location.pathname,
+                        fromSearch: window.location.search
+                    });
                     console.log('Redirecting to main page after OAuth callback');
                     window.location.href = '/';
                 }
             }
         } else if (event === 'SIGNED_OUT') {
+            authDebug('User signed out event');
             console.log('User signed out');
+            
             // Reset UI to show login/create account buttons
             const currentLoginBtn = document.querySelector('.login-btn');
             const currentCreateBtn = document.querySelector('.create-account-btn');
             const currentUserProfile = document.querySelector('.user-profile');
+            
+            authDebug('Resetting UI elements for signed out state', {
+                hasLoginBtn: !!currentLoginBtn,
+                hasCreateBtn: !!currentCreateBtn,
+                hasUserProfile: !!currentUserProfile
+            });
             
             if (currentLoginBtn) currentLoginBtn.style.display = 'inline-block';
             if (currentCreateBtn) currentCreateBtn.style.display = 'inline-block';
@@ -132,8 +205,10 @@ function setupAuthStateListener() {
     });
     
     // Check current session on initialization with better validation
+    authDebug('Starting session check on initialization');
     supabase.auth.getSession().then(({ data: { session }, error }) => {
         if (error) {
+            authDebug('ERROR: Session check failed', error);
             console.error('Error checking session:', error);
             // Clear any corrupted auth data
             const authKeys = ['sb-kuflobojizyttadwcbhe-auth-token', 'rememberMe'];
@@ -145,12 +220,20 @@ function setupAuthStateListener() {
         }
         
         if (session && session.user) {
+            authDebug('Existing session found on initialization', {
+                userEmail: session.user.email,
+                userId: session.user.id,
+                expiresAt: new Date(session.expires_at * 1000).toISOString(),
+                provider: session.user.app_metadata?.provider
+            });
+            
             console.log('Existing session found on initialization');
             console.log(`Session expires at: ${new Date(session.expires_at * 1000).toLocaleString()}`);
             
             // Validate session is not expired
             const now = Math.floor(Date.now() / 1000);
             if (session.expires_at && session.expires_at < now) {
+                authDebug('Session is expired, clearing auth data');
                 console.log('Session is expired, clearing...');
                 localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
                 localStorage.removeItem('rememberMe');
@@ -159,22 +242,33 @@ function setupAuthStateListener() {
             
             // Check if user had "remember me" enabled
             const rememberMe = localStorage.getItem('rememberMe') === 'true';
+            authDebug('Remember me setting checked', { rememberMe });
             console.log('Remember me setting:', rememberMe);
             
             // Always update UI if we have a valid session
+            authDebug('Updating UI for existing session user');
             updateUIForLoggedInUser(session.user);
         } else {
+            authDebug('No existing session found on initialization');
             console.log('No existing session found');
+            
             // Ensure UI is in logged-out state
             const currentLoginBtn = document.querySelector('.login-btn');
             const currentCreateBtn = document.querySelector('.create-account-btn');
             const currentUserProfile = document.querySelector('.user-profile');
+            
+            authDebug('Setting UI to logged-out state', {
+                hasLoginBtn: !!currentLoginBtn,
+                hasCreateBtn: !!currentCreateBtn,
+                hasUserProfile: !!currentUserProfile
+            });
             
             if (currentLoginBtn) currentLoginBtn.style.display = 'inline-block';
             if (currentCreateBtn) currentCreateBtn.style.display = 'inline-block';
             if (currentUserProfile) currentUserProfile.style.display = 'none';
         }
     }).catch(sessionError => {
+        authDebug('ERROR: Session check failed with exception', sessionError);
         console.error('Session check failed:', sessionError);
         // Clear potentially corrupted auth data
         localStorage.removeItem('sb-kuflobojizyttadwcbhe-auth-token');
@@ -550,6 +644,7 @@ async function handleAuthSubmit(e) {
 
 // Handle social authentication
 async function handleSocialAuth(provider) {
+    authDebug(`Initiating ${provider} authentication`);
     console.log(`Initiating ${provider} authentication...`);
     
     const socialBtn = document.querySelector(`[data-provider="${provider}"]`);
@@ -567,6 +662,7 @@ async function handleSocialAuth(provider) {
         if (socialBtn.disabled) {
             socialBtn.disabled = false;
             socialBtn.innerHTML = originalHTML;
+            authDebug(`${provider} auth timeout - resetting button`);
             console.log(`${provider} auth timeout - resetting button`);
         }
     }, 10000);
@@ -574,6 +670,13 @@ async function handleSocialAuth(provider) {
     try {
         // Use the current page URL for redirect after OAuth
         const redirectUrl = window.location.origin + '/';
+        
+        authDebug(`OAuth Debug Info for ${provider}`, {
+            currentURL: window.location.href,
+            currentOrigin: window.location.origin,
+            redirectURL: redirectUrl,
+            provider: provider
+        });
         
         // Log current environment for debugging
         console.log(`OAuth Debug Info for ${provider}:`);
@@ -1196,12 +1299,14 @@ async function updateUIForLoggedInUser(user, username = null) {
 
 // Initialize only when user clicks login - NO AUTO LOGIN CHECK
 document.addEventListener('DOMContentLoaded', async () => {
+    authDebug('DOM Content Loaded - Starting auth initialization');
     console.log('DOM Content Loaded - Starting auth initialization');
     
     // Wait for DOM to be fully loaded and scripts to initialize
     await new Promise(resolve => setTimeout(resolve, 500));
     
     // Use enhanced initialization
+    authDebug('Starting enhanced initialization');
     await enhancedInitialization();
     
     // Setup profile form if it exists
@@ -1264,11 +1369,13 @@ setTimeout(() => {
 
 // Handle logout
 async function logout() {
+    authDebug('Logout initiated');
     console.log('🚪 Logout initiated');
     
     try {
         // Step 1: Try proper Supabase logout first
         if (supabase) {
+            authDebug('Attempting Supabase logout');
             console.log('🔄 Attempting proper Supabase logout...');
             
             try {
@@ -1278,15 +1385,20 @@ async function logout() {
                 });
                 
                 if (error) {
+                    authDebug('Supabase signOut warning', error);
                     console.warn('⚠️ Supabase signOut warning:', error.message);
                     // Don't throw error, continue with manual cleanup
                 } else {
+                    authDebug('Supabase signOut successful');
                     console.log('✅ Supabase signOut successful');
                 }
             } catch (signOutError) {
+                authDebug('SignOut exception', signOutError);
                 console.warn('⚠️ SignOut exception:', signOutError.message);
                 // Continue with manual cleanup
             }
+        } else {
+            authDebug('No supabase client available for logout');
         }
         
         // Step 2: Comprehensive cleanup of all auth data
