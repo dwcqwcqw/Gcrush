@@ -9,6 +9,8 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <!-- Force cache refresh with timestamp -->
+    <meta name="cache-buster" content="2024-01-15-v3.0">
     <title>Gcrush - AI Companions</title>
     <!-- Favicon from R2 -->
     <link rel="icon" type="image/png" sizes="32x32" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
@@ -16,7 +18,7 @@
     <link rel="shortcut icon" type="image/png" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
     <meta name="theme-color" content="#A259FF">
-    <link rel="stylesheet" href="candy-combined.css?v=2.0">
+    <link rel="stylesheet" href="candy-combined.css?v=3.0">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -334,15 +336,52 @@
         </div>
     </div>
 
+    <!-- CRITICAL: Clean OAuth callback params BEFORE Supabase loads -->
+    <script>
+        // Immediately check and clean OAuth callback parameters to prevent account confusion
+        (function() {
+            const url = new URL(window.location.href);
+            const hasOAuthCode = url.searchParams.has('code');
+            const hasOAuthState = url.searchParams.has('state');
+            const hasOAuthError = url.searchParams.has('error');
+            
+            if (hasOAuthCode || hasOAuthState || hasOAuthError) {
+                console.log('[OAUTH-CLEANUP] Detected OAuth callback parameters:', {
+                    code: url.searchParams.get('code'),
+                    state: url.searchParams.get('state'),
+                    error: url.searchParams.get('error'),
+                    referrer: document.referrer
+                });
+                
+                // If coming from generate-media or other internal pages, clean the URL immediately
+                if (document.referrer.includes('generate-media') || 
+                    document.referrer.includes('gcrush.org') ||
+                    !document.referrer) {
+                    
+                    console.log('[OAUTH-CLEANUP] Cleaning URL to prevent account confusion');
+                    
+                    // Clean the URL without triggering a page reload
+                    const cleanUrl = url.origin + url.pathname;
+                    history.replaceState({}, document.title, cleanUrl);
+                    
+                    // Also clear any potential auth fragments
+                    if (window.location.hash) {
+                        window.location.hash = '';
+                    }
+                }
+            }
+        })();
+    </script>
+
     <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <!-- Load environment configuration if available -->
     <script src="env-config.js" onerror="console.warn('env-config.js not found - using defaults')"></script>
-    <script src="inline-debug.js?v=2.0"></script>
-    <script src="candy-combined.js?v=2.0"></script>
-    <script src="character-data-loader.js?v=2.0"></script>
-    <script src="auth-simple.js?v=2.0"></script>
-    <script src="main-chat.js?v=2.0"></script>
-    <script src="voice-features.js?v=2.0"></script>
+    <script src="inline-debug.js?v=3.0"></script>
+    <script src="candy-combined.js?v=3.0"></script>
+    <script src="character-data-loader.js?v=3.0"></script>
+    <script src="auth-simple.js?v=3.0"></script>
+    <script src="main-chat.js?v=3.0"></script>
+    <script src="voice-features.js?v=3.0"></script>
     <script src="chat-debug.js"></script>
     
 
