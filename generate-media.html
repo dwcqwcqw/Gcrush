@@ -7,412 +7,155 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <title>Generate Media - Gcrush</title>
-    <!-- Favicon from R2 -->
+    
+    <!-- Favicon -->
     <link rel="icon" type="image/png" sizes="32x32" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
     <link rel="icon" type="image/png" sizes="16x16" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
     <link rel="shortcut icon" type="image/png" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
     <meta name="theme-color" content="#A259FF">
-    <link rel="stylesheet" href="candy-combined.css">
+    
+    <!-- Styles -->
     <link rel="stylesheet" href="generate-media.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- NO Supabase SDK to prevent auth conflicts -->
+    
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-    <!-- Header -->
-    <header class="site-header">
-        <div class="header-container">
-            <div class="header-left">
-                <button class="menu-toggle">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <div class="logo">
-                    <a href="index.html"><img src="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/logo.png" alt="Gcrush" class="logo-img"></a>
-                </div>
+    <div class="generate-container">
+        <div class="generate-panel">
+            <!-- Header -->
+            <div class="generate-header">
+                <h1 class="generate-title">Generate Your Fantasy</h1>
+                <p class="generate-subtitle">✨ Create stunning AI-generated images and videos ✨</p>
             </div>
-            <div class="header-nav">
-            </div>
-            <div class="header-right">
-                <button class="premium-button" style="display: none;">
-                    <i class="fas fa-crown"></i>
-                    <span>Premium</span>
-                    <span class="discount">70% OFF</span>
-                </button>
-                <button class="auth-button create-account-btn">
-                    <i class="fas fa-user-plus"></i> Create Account
-                </button>
-                <button class="auth-button login-btn">
-                    <i class="fas fa-sign-in-alt"></i> Login
-                </button>
-                <div class="user-profile" style="display: none;">
-                    <img src="" alt="User" class="profile-img">
-                    <span class="username-display">My Profile</span>
-                    <i class="fas fa-chevron-down"></i>
-                </div>
-            </div>
-        </div>
-    </header>
 
-    <div class="page-container">
-        <!-- Sidebar -->
-        <aside class="sidebar">
-            <nav class="sidebar-nav">
-                <a href="index.html" class="sidebar-item">
-                    <i class="fas fa-compass"></i>
-                    <span>Explore</span>
-                </a>
-                <a href="#" class="sidebar-item" id="sidebarChatBtn">
-                    <i class="fas fa-comment"></i>
-                    <span>Chat</span>
-                </a>
-                <a href="#" class="sidebar-item">
-                    <i class="fas fa-user-circle"></i>
-                    <span>Create Character</span>
-                </a>
-                <a href="#" class="sidebar-item">
-                    <i class="fas fa-heart"></i>
-                    <span>My AI</span>
-                </a>
-                <a href="generate-media.html" class="sidebar-item active">
+            <!-- Media Type Selector -->
+            <div class="media-type-selector">
+                <button class="media-type-btn active" data-type="image">
                     <i class="fas fa-image"></i>
-                    <span>Generate Media</span>
-                </a>
-                <a href="#" class="sidebar-item">
-                    <i class="fas fa-layer-group"></i>
-                    <span>Collection</span>
-                </a>
-                <a href="#" class="sidebar-item premium">
-                    <i class="fas fa-gem"></i>
-                    <span>Become Premium</span>
-                </a>
-            </nav>
-            
-            <!-- Sidebar Footer -->
-            <div class="sidebar-footer">
-                <div class="sidebar-footer-item">
-                    <img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons@6.6.6/flags/4x3/us.svg" alt="English" class="flag-icon">
-                    <span>English</span>
+                    Image
+                </button>
+                <button class="media-type-btn" data-type="video">
+                    <i class="fas fa-video"></i>
+                    Video
+                </button>
+            </div>
+
+            <!-- Select Character -->
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-user"></i>
+                    Select Character
+                    <span style="color: #ef4444; margin-left: 5px;">(required)</span>
+                </label>
+                <select id="character-select" class="form-control" required>
+                    <option value="">Choose a character...</option>
+                    <option value="ethan">Ethan - Charming Artist</option>
+                    <option value="cruz">Cruz - Mysterious Stranger</option>
+                    <option value="hunter">Hunter - Adventurous Explorer</option>
+                    <option value="alex">Alex - Tech Genius</option>
+                    <option value="bruno">Bruno - Fitness Enthusiast</option>
+                    <option value="clayton">Clayton - Sophisticated Gentleman</option>
+                    <option value="gabriel">Gabriel - Creative Writer</option>
+                    <option value="terrell">Terrell - Music Producer</option>
+                    <option value="rohan">Rohan - Business Executive</option>
+                    <option value="luca">Luca - Chef & Foodie</option>
+                    <option value="mason">Mason - Outdoor Enthusiast</option>
+                    <option value="james">James - Academic Scholar</option>
+                </select>
+            </div>
+
+            <!-- Option Cards -->
+            <div class="option-cards">
+                <div class="option-card" data-option="pose">
+                    <i class="fas fa-running"></i>
+                    <div class="card-title">Pose</div>
+                    <div class="card-subtitle">(optional)</div>
+                </div>
+                <div class="option-card" data-option="background">
+                    <i class="fas fa-mountain"></i>
+                    <div class="card-title">Background</div>
+                    <div class="card-subtitle">(optional)</div>
+                </div>
+                <div class="option-card" data-option="outfit">
+                    <i class="fas fa-tshirt"></i>
+                    <div class="card-title">Outfit</div>
+                    <div class="card-subtitle">(optional)</div>
+                </div>
+            </div>
+
+            <!-- Custom Prompt -->
+            <div class="custom-prompt">
+                <label class="form-label">
+                    Custom Prompt
+                    <span style="color: rgba(255, 255, 255, 0.7); font-weight: normal;">(optional)</span>
+                </label>
+                <textarea 
+                    id="custom-prompt" 
+                    class="form-control prompt-textarea" 
+                    placeholder="Describe your ideal scene..."
+                ></textarea>
+            </div>
+
+            <!-- Advanced Settings -->
+            <div class="advanced-settings">
+                <button class="settings-toggle" id="advanced-toggle">
+                    Advanced Settings
                     <i class="fas fa-chevron-down"></i>
-                </div>
-                <div class="sidebar-footer-item">
-                    <i class="fab fa-discord"></i>
-                    <span>Discord</span>
-                </div>
-                <div class="sidebar-footer-item">
-                    <i class="fas fa-envelope"></i>
-                    <span>Contact Us</span>
-                </div>
-                <div class="footer-legal">
-                    <a href="/privacy-policy.html">Privacy Policy</a>
-                    <span class="dot-separator">•</span>
-                    <a href="/terms-of-service.html">Terms of Service</a>
-                </div>
-            </div>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="main-content">
-            <div class="generate-media-container glass-panel">
-                <div class="generate-header">
-                    <h1 class="page-title">Generate Your <span class="title-highlight">Fantasy</span></h1>
-                    <p class="subtitle">✨ Create stunning AI-generated images and videos ✨</p>
-                </div>
-
-                <div class="generation-box">
-                    <div class="tab-container">
-                    <button class="tab-button active" data-tab="image">
-                        <svg class="tab-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                            <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                            <polyline points="21 15 16 10 5 21"></polyline>
-                        </svg>
-                        Image
-                    </button>
-                    <button class="tab-button" data-tab="video">
-                        <svg class="tab-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18"></rect>
-                            <line x1="7" y1="2" x2="7" y2="22"></line>
-                            <line x1="17" y1="2" x2="17" y2="22"></line>
-                            <line x1="2" y1="12" x2="22" y2="12"></line>
-                            <line x1="2" y1="7" x2="7" y2="7"></line>
-                            <line x1="2" y1="17" x2="7" y2="17"></line>
-                            <line x1="17" y1="17" x2="22" y2="17"></line>
-                            <line x1="17" y1="7" x2="22" y2="7"></line>
-                        </svg>
-                        Video
-                    </button>
-                </div>
-
-                <div class="content-area">
-                    <!-- Character Selection -->
-                    <div class="selection-box character-selection glass-card">
-                        <div class="selection-header">
-                            <svg class="selection-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="12" cy="7" r="4"></circle>
-                            </svg>
-                            <div>
-                                <h3>Select Character</h3>
-                                <span class="required">(required)</span>
-                            </div>
-                        </div>
+                </button>
+                <div class="settings-content" id="advanced-content">
+                    <div class="form-group">
+                        <label class="form-label">Style</label>
+                        <select id="style-select" class="form-control">
+                            <option value="realistic">Realistic</option>
+                            <option value="artistic">Artistic</option>
+                            <option value="cinematic">Cinematic</option>
+                            <option value="vintage">Vintage</option>
+                            <option value="anime">Anime</option>
+                        </select>
                     </div>
-
-                    <!-- Optional Settings Grid -->
-                    <div class="settings-grid">
-                        <!-- Pose -->
-                        <div class="selection-box glass-card">
-                            <div class="selection-header">
-                                <svg class="selection-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <circle cx="12" cy="12" r="3"></circle>
-                                    <line x1="12" y1="1" x2="12" y2="3"></line>
-                                    <line x1="12" y1="21" x2="12" y2="23"></line>
-                                    <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                                    <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                                    <line x1="1" y1="12" x2="3" y2="12"></line>
-                                    <line x1="21" y1="12" x2="23" y2="12"></line>
-                                    <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                                    <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
-                                </svg>
-                                <div>
-                                    <h3>Pose</h3>
-                                    <span class="optional">(optional)</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Background -->
-                        <div class="selection-box glass-card">
-                            <div class="selection-header">
-                                <svg class="selection-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                                    <line x1="9" y1="9" x2="15" y2="15"></line>
-                                    <line x1="15" y1="9" x2="9" y2="15"></line>
-                                </svg>
-                                <div>
-                                    <h3>Background</h3>
-                                    <span class="optional">(optional)</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Outfit -->
-                        <div class="selection-box glass-card">
-                            <div class="selection-header">
-                                <svg class="selection-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"></path>
-                                </svg>
-                                <div>
-                                    <h3>Outfit</h3>
-                                    <span class="optional">(optional)</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Custom Prompt -->
-                    <div class="prompt-box">
-                        <label for="custom-prompt">Custom Prompt</label>
-                        <span class="optional">(optional)</span>
-                        <textarea 
-                            id="custom-prompt" 
-                            class="prompt-textarea" 
-                            placeholder="Describe your ideal scene..."
-                            rows="4"
-                        ></textarea>
-                    </div>
-
-                    <!-- Advanced Settings -->
-                    <details class="advanced-settings glass-card">
-                        <summary>Advanced Settings <span class="arrow">▼</span></summary>
-                        <div class="advanced-content">
-                            <!-- Negative Prompt -->
-                            <div class="prompt-box">
-                                <label for="negative-prompt">Negative Prompt</label>
-                                <span class="optional">(optional)</span>
-                                <textarea 
-                                    id="negative-prompt" 
-                                    class="prompt-textarea" 
-                                    placeholder="What to avoid in the generation..."
-                                    rows="3"
-                                ></textarea>
-                            </div>
-                        </div>
-                    </details>
-
-                    <!-- Number of Images -->
-                    <div class="number-selector">
-                        <label>Number of Images</label>
-                        <div class="number-buttons">
-                            <button class="number-button active" data-value="1">1</button>
-                            <button class="number-button" data-value="2">2</button>
-                            <button class="number-button" data-value="3">3</button>
-                            <button class="number-button" data-value="4">4</button>
-                            <button class="number-button" data-value="5">5</button>
-                        </div>
-                    </div>
-
-                    <!-- Generate Button -->
-                    <button class="generate-button">
-                        <svg class="generate-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                        </svg>
-                        Generate
-                    </button>
-                    </div>
-                </div>
-
-                <!-- Gallery Section -->
-                <div class="gallery-section">
-                    <h2 class="gallery-title">My Gallery</h2>
-                    <div class="gallery-grid" id="galleryGrid">
-                        <!-- Gallery items will be dynamically loaded here -->
+                    <div class="form-group">
+                        <label class="form-label">Quality</label>
+                        <select id="quality-select" class="form-control">
+                            <option value="standard">Standard</option>
+                            <option value="high">High Quality</option>
+                            <option value="ultra">Ultra HD</option>
+                        </select>
                     </div>
                 </div>
             </div>
-        </main>
-    </div>
 
-    <!-- Fullscreen Preview -->
-    <div class="fullscreen-preview" id="fullscreenPreview">
-        <button class="fullscreen-close" onclick="closeFullscreen()">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-        </button>
-        <div id="fullscreenContent"></div>
-    </div>
+            <!-- Number of Images -->
+            <div class="number-selector">
+                <label class="form-label">Number of images</label>
+                <div class="number-options">
+                    <button class="number-btn active" data-number="1">1</button>
+                    <button class="number-btn" data-number="2">2</button>
+                    <button class="number-btn" data-number="3">3</button>
+                    <button class="number-btn" data-number="4">4</button>
+                    <button class="number-btn" data-number="5">5</button>
+                </div>
+            </div>
 
-    <!-- Auth Modal with Supabase Auth UI -->
-    <div class="modal-overlay" id="authModal">
-        <div class="modal-content auth-modal">
-            <button class="modal-close">&times;</button>
-            <div id="auth-container"></div>
-            <p class="auth-disclaimer">
-                By signing up you confirm that you are over 18 years old and agree to the <a href="/terms-of-service.html">Terms of Service</a>.
-            </p>
+            <!-- Generate Button -->
+            <button class="generate-btn" id="generate-btn">
+                <i class="fas fa-magic"></i>
+                Generate
+            </button>
+
+            <!-- Gallery Section -->
+            <div class="gallery-section">
+                <h2 class="gallery-title">My Gallery</h2>
+                <div class="gallery-grid" id="gallery-grid">
+                    <div class="gallery-item">No images generated yet</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <!-- Load scripts in isolated mode -->
-    <script>
-        // CRITICAL: Prevent any global auth variables from being created
-        window.supabase = undefined;
-        window.authState = undefined;
-        window.currentUser = undefined;
-        
-        // Block any attempts to create Supabase clients
-        if (window.supabase && window.supabase.createClient) {
-            console.log('[GENERATE-MEDIA] Blocking Supabase client creation');
-            window.supabase.createClient = function() {
-                console.warn('[GENERATE-MEDIA] Supabase client creation blocked to prevent auth conflicts');
-                return null;
-            };
-        }
-    </script>
-    <script src="candy-combined.js"></script>
+    <!-- Scripts -->
     <script src="generate-media.js"></script>
-    <script>
-    // ISOLATED auth UI - NO Supabase, NO localStorage manipulation
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('[GENERATE-MEDIA] Page loaded in isolated mode - no auth processing');
-        
-        // CRITICAL: Do NOT check or modify localStorage auth tokens
-        // This prevents interference with main page auth state
-        
-        // Simple visual-only auth status check
-        function updateAuthUI() {
-            const loginBtn = document.querySelector('.login-btn');
-            const createBtn = document.querySelector('.create-account-btn');
-            const userProfile = document.querySelector('.user-profile');
-            
-            // Read-only check without modifying anything
-            const hasAnyAuthData = localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token');
-            
-            if (hasAnyAuthData) {
-                // Show as logged in, but don't process the token
-                if (loginBtn) loginBtn.style.display = 'none';
-                if (createBtn) createBtn.style.display = 'none';
-                if (userProfile) {
-                    userProfile.style.display = 'flex';
-                    const usernameDisplay = userProfile.querySelector('.username-display');
-                    if (usernameDisplay) {
-                        usernameDisplay.textContent = 'My Profile';
-                    }
-                }
-            } else {
-                // Show as logged out
-                if (loginBtn) loginBtn.style.display = 'inline-block';
-                if (createBtn) createBtn.style.display = 'inline-block';
-                if (userProfile) userProfile.style.display = 'none';
-            }
-        }
-        
-        // Update UI once only
-        updateAuthUI();
-        
-        // All auth actions redirect to main page
-        const loginBtn = document.querySelector('.login-btn');
-        const createBtn = document.querySelector('.create-account-btn');
-        const userProfile = document.querySelector('.user-profile');
-        
-        if (loginBtn) {
-            loginBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('[GENERATE-MEDIA] Redirecting to main page for login');
-                window.location.href = '/#login';
-            });
-        }
-        
-        if (createBtn) {
-            createBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('[GENERATE-MEDIA] Redirecting to main page for signup');
-                window.location.href = '/#signup';
-            });
-        }
-        
-        if (userProfile) {
-            userProfile.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('[GENERATE-MEDIA] Redirecting to main page for profile');
-                window.location.href = '/';
-            });
-        }
-        
-        // Recent chats functionality
-        const chatBtn = document.getElementById('sidebarChatBtn');
-        if (chatBtn) {
-            chatBtn.addEventListener('click', (e) => {
-                e.preventDefault();
-                // 只查 localStorage，不查 supabase，不处理 session
-                let recentCharacter = null;
-                let mostRecentTime = 0;
-                for (let i = 0; i < localStorage.length; i++) {
-                    const key = localStorage.key(i);
-                    if (key && key.startsWith('gcrush_chat_messages_')) {
-                        const charName = key.replace('gcrush_chat_messages_', '');
-                        const messages = JSON.parse(localStorage.getItem(key) || '[]');
-                        if (messages.length > 0) {
-                            const lastMsg = messages[messages.length - 1];
-                            const t = new Date(lastMsg.timestamp || 0).getTime();
-                            if (t > mostRecentTime) {
-                                mostRecentTime = t;
-                                recentCharacter = charName;
-                            }
-                        }
-                    }
-                }
-                if (recentCharacter) {
-                    window.location.href = '/?character=' + encodeURIComponent(recentCharacter) + '#';
-                } else {
-                    alert('No chat history yet. Please start a conversation by clicking any character card!');
-                }
-            });
-        }
-    });
-    </script>
 </body>
-</html>
+</html> 
