@@ -52,9 +52,9 @@
 }
 
 .media-type-btn.active {
-    background: linear-gradient(135deg, #a855f7, #ec4899);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
     border-color: transparent;
-    box-shadow: 0 10px 20px rgba(168, 85, 247, 0.3);
+    box-shadow: 0 10px 20px rgba(162, 89, 255, 0.3);
 }
 
 .media-type-btn:hover:not(.active) {
@@ -344,14 +344,14 @@
 .generate-media-section {
     padding: 60px 0;
     background: transparent;
-}
-
+    }
+    
 .generate-media-section .container {
     max-width: 1200px;
     margin: 0 auto;
     padding: 0 20px;
-}
-
+    }
+    
 .generate-panel {
     background: rgba(30, 30, 30, 0.95);
     border-radius: 20px;
@@ -456,4 +456,30 @@
 .generate-media-section .form-control option {
     background: #1f2937;
     color: #fff;
-} 
+}
+
+.number-btn {
+    background: rgba(30, 30, 30, 0.8);
+    border: 2px solid rgba(162, 89, 255, 0.3);
+    color: #fff;
+    padding: 10px 24px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-right: 8px;
+    min-width: 48px;
+}
+
+.number-btn.active {
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-pink));
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 16px rgba(162, 89, 255, 0.3);
+}
+
+.number-btn:hover:not(.active) {
+    border-color: var(--accent-purple);
+    transform: translateY(-2px);
+}

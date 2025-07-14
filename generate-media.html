@@ -53,7 +53,7 @@
                     <button class="user-menu-toggle">
                         <img src="default-avatar.svg" alt="User Avatar" class="user-avatar">
                         <span class="user-name">User</span>
-                        <i class="fas fa-chevron-down"></i>
+                    <i class="fas fa-chevron-down"></i>
                     </button>
                     <div class="user-menu-dropdown">
                         <a href="#" class="user-menu-item">
@@ -71,7 +71,7 @@
         </div>
     </header>
 
-    <!-- Sidebar -->
+        <!-- Sidebar -->
     <nav class="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-logo">
@@ -96,7 +96,7 @@
                     <i class="fas fa-magic"></i>
                     <span>Generate Media</span>
                 </a>
-            </div>
+                </div>
             <div class="sidebar-section">
                 <h3>Recent Chats</h3>
                 <div class="recent-chats-container">
@@ -106,138 +106,98 @@
         </div>
     </nav>
 
-    <!-- Main Content -->
-    <main class="main-content">
-        <div class="generate-media-container">
-            <div class="generate-media-header">
-                <h1>Generate Your Fantasy</h1>
-                <p>✨ Create stunning AI-generated images and videos ✨</p>
-            </div>
-
-            <div class="media-type-selector">
-                <button class="media-type-btn active" data-type="image">
-                    <i class="fas fa-image"></i>
-                    Image
-                </button>
-                <button class="media-type-btn" data-type="video">
-                    <i class="fas fa-video"></i>
-                    Video
-                </button>
-            </div>
-
-            <div class="generate-form">
-                <div class="form-group">
-                    <label for="character-select">
-                        <i class="fas fa-user"></i>
-                        Select Character <span class="required">(required)</span>
-                    </label>
-                    <select id="character-select" class="form-control">
-                        <option value="">Choose a character...</option>
-                    </select>
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label for="pose-input">
-                            <i class="fas fa-running"></i>
-                            Pose <span class="optional">(optional)</span>
-                        </label>
-                        <input type="text" id="pose-input" class="form-control" placeholder="e.g., standing, sitting, lying down">
+        <!-- Main Content -->
+        <main class="main-content">
+        <section class="generate-media-section">
+            <div class="container">
+                <div class="generate-panel">
+                    <!-- Header -->
+                    <div class="generate-header">
+                        <h1 class="generate-title">Generate Your Fantasy</h1>
+                        <p class="generate-subtitle">✨ Create stunning AI-generated images and videos ✨</p>
                     </div>
-                    <div class="form-group">
-                        <label for="background-input">
-                            <i class="fas fa-mountain"></i>
-                            Background <span class="optional">(optional)</span>
-                        </label>
-                        <input type="text" id="background-input" class="form-control" placeholder="e.g., beach, bedroom, office">
+                    <!-- Media Type Selector -->
+                    <div class="media-type-selector">
+                        <button class="media-type-btn active" data-type="image"><i class="fas fa-image"></i> Image</button>
+                        <button class="media-type-btn" data-type="video"><i class="fas fa-video"></i> Video</button>
                     </div>
+                    <!-- Select Character -->
                     <div class="form-group">
-                        <label for="outfit-input">
-                            <i class="fas fa-tshirt"></i>
-                            Outfit <span class="optional">(optional)</span>
-                        </label>
-                        <input type="text" id="outfit-input" class="form-control" placeholder="e.g., casual, formal, swimwear">
+                        <label class="form-label"><i class="fas fa-user"></i> Select Character <span style="color: #ef4444; margin-left: 5px;">(required)</span></label>
+                        <select id="character-select" class="form-control" required>
+                            <option value="">Choose a character...</option>
+                            <option value="ethan">Ethan - Charming Artist</option>
+                            <option value="cruz">Cruz - Mysterious Stranger</option>
+                            <option value="hunter">Hunter - Adventurous Explorer</option>
+                            <option value="alex">Alex - Tech Genius</option>
+                            <option value="bruno">Bruno - Fitness Enthusiast</option>
+                            <option value="clayton">Clayton - Sophisticated Gentleman</option>
+                            <option value="gabriel">Gabriel - Creative Writer</option>
+                            <option value="terrell">Terrell - Music Producer</option>
+                            <option value="rohan">Rohan - Business Executive</option>
+                            <option value="luca">Luca - Chef & Foodie</option>
+                            <option value="mason">Mason - Outdoor Enthusiast</option>
+                            <option value="james">James - Academic Scholar</option>
+                        </select>
                     </div>
-                </div>
-
-                <div class="form-group">
-                    <label for="custom-prompt">
-                        Custom Prompt <span class="optional">(optional)</span>
-                    </label>
-                    <textarea id="custom-prompt" class="form-control" rows="3" placeholder="Describe your ideal scene..."></textarea>
-                </div>
-
-                <div class="form-group">
-                    <button class="advanced-toggle">
-                        <i class="fas fa-cog"></i>
-                        Advanced Settings
-                        <i class="fas fa-chevron-down"></i>
-                    </button>
+                    <!-- Option Cards -->
+                    <div class="option-cards">
+                        <div class="option-card" data-option="pose"><i class="fas fa-running"></i><div class="card-title">Pose</div><div class="card-subtitle">(optional)</div></div>
+                        <div class="option-card" data-option="background"><i class="fas fa-mountain"></i><div class="card-title">Background</div><div class="card-subtitle">(optional)</div></div>
+                        <div class="option-card" data-option="outfit"><i class="fas fa-tshirt"></i><div class="card-title">Outfit</div><div class="card-subtitle">(optional)</div></div>
+                    </div>
+                    <!-- Custom Prompt -->
+                    <div class="custom-prompt">
+                        <label class="form-label">Custom Prompt <span style="color: rgba(255,255,255,0.7); font-weight: normal;">(optional)</span></label>
+                        <textarea id="custom-prompt" class="form-control prompt-textarea" placeholder="Describe your ideal scene..."></textarea>
+                    </div>
+                    <!-- Advanced Settings -->
                     <div class="advanced-settings">
-                        <div class="form-row">
+                        <button class="settings-toggle" id="advanced-toggle">Advanced Settings <i class="fas fa-chevron-down"></i></button>
+                        <div class="settings-content" id="advanced-content">
                             <div class="form-group">
-                                <label for="style-select">Style</label>
+                                <label class="form-label">Style</label>
                                 <select id="style-select" class="form-control">
                                     <option value="realistic">Realistic</option>
-                                    <option value="anime">Anime</option>
-                                    <option value="cartoon">Cartoon</option>
                                     <option value="artistic">Artistic</option>
+                                    <option value="cinematic">Cinematic</option>
+                                    <option value="vintage">Vintage</option>
+                                    <option value="anime">Anime</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label for="quality-select">Quality</label>
+                                <label class="form-label">Quality</label>
                                 <select id="quality-select" class="form-control">
                                     <option value="standard">Standard</option>
-                                    <option value="high">High</option>
-                                    <option value="ultra">Ultra</option>
+                                    <option value="high">High Quality</option>
+                                    <option value="ultra">Ultra HD</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="aspect-ratio">Aspect Ratio</label>
-                                <select id="aspect-ratio" class="form-control">
-                                    <option value="1:1">Square (1:1)</option>
-                                    <option value="16:9">Landscape (16:9)</option>
-                                    <option value="9:16">Portrait (9:16)</option>
-                                    <option value="4:3">Classic (4:3)</option>
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <label for="seed-input">Seed (for reproducibility)</label>
-                                <input type="number" id="seed-input" class="form-control" placeholder="Random if empty">
-                            </div>
+                    </div>
+                    <!-- Number of Images -->
+                    <div class="number-selector">
+                        <label class="form-label">Number of images</label>
+                        <div class="number-options">
+                            <button class="number-btn active" data-number="1">1</button>
+                            <button class="number-btn" data-number="2">2</button>
+                            <button class="number-btn" data-number="3">3</button>
+                            <button class="number-btn" data-number="4">4</button>
+                            <button class="number-btn" data-number="5">5</button>
+                        </div>
+                    </div>
+                    <!-- Generate Button -->
+                    <button class="generate-btn" id="generate-btn"><i class="fas fa-magic"></i> Generate</button>
+                    <!-- Gallery Section -->
+                    <div class="gallery-section">
+                        <h2 class="gallery-title">My Gallery</h2>
+                        <div class="gallery-grid" id="gallery-grid">
+                            <div class="gallery-item">No images generated yet</div>
                         </div>
                     </div>
                 </div>
-
-                <div class="form-actions">
-                    <button class="generate-btn" id="generate-btn">
-                        <i class="fas fa-magic"></i>
-                        Generate
-                    </button>
-                </div>
             </div>
-
-            <div class="generation-result" id="generation-result" style="display: none;">
-                <div class="result-header">
-                    <h3>Generated Media</h3>
-                    <div class="result-actions">
-                        <button class="download-btn">
-                            <i class="fas fa-download"></i>
-                            Download
-                        </button>
-                        <button class="regenerate-btn">
-                            <i class="fas fa-redo"></i>
-                            Regenerate
-                        </button>
-                    </div>
-                </div>
-                <div class="result-content">
-                    <!-- Generated media will be displayed here -->
-                </div>
-            </div>
-        </div>
+        </section>
     </main>
 
     <!-- Loading Overlay -->
@@ -290,4 +250,4 @@
     <script src="script.js?v=3.0"></script>
     <script src="inline-debug.js?v=3.0"></script>
 </body>
-</html> 
+</html>
