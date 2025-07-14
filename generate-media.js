@@ -1,23 +1,19 @@
-// Generate Media JavaScript - Integrated with Main Page
+// Generate Media Integration for Independent Page
+console.log('🎨 Generate Media JS loaded for independent page');
+
 class GenerateMediaIntegrated {
     constructor() {
-        this.selectedOptions = {
-            mediaType: 'image',
-            character: '',
-            pose: '',
-            background: '',
-            outfit: '',
-            customPrompt: '',
-            style: 'realistic',
-            quality: 'standard',
-            numberOfImages: 1
-        };
+        this.currentMediaType = 'image';
+        this.selectedCharacter = null;
+        this.characters = [];
+        this.isGenerating = false;
     }
 
     init() {
-        console.log('🎨 Initializing Generate Media Integration...');
+        console.log('🎨 Initializing Generate Media for independent page...');
         this.setupEventListeners();
-        console.log('✅ Generate Media Integration initialized');
+        this.loadCharacters();
+        this.initializeAdvancedSettings();
     }
 
     setupEventListeners() {
@@ -26,8 +22,8 @@ class GenerateMediaIntegrated {
             btn.addEventListener('click', (e) => {
                 document.querySelectorAll('.media-type-btn').forEach(b => b.classList.remove('active'));
                 e.target.classList.add('active');
-                this.selectedOptions.mediaType = e.target.dataset.type;
-                console.log('📱 Media type selected:', this.selectedOptions.mediaType);
+                this.currentMediaType = e.target.dataset.type;
+                console.log('📱 Media type changed to:', this.currentMediaType);
             });
         });
 
@@ -35,75 +31,10 @@ class GenerateMediaIntegrated {
         const characterSelect = document.getElementById('character-select');
         if (characterSelect) {
             characterSelect.addEventListener('change', (e) => {
-                this.selectedOptions.character = e.target.value;
-                console.log('👤 Character selected:', this.selectedOptions.character);
+                this.selectedCharacter = e.target.value;
+                console.log('👤 Character selected:', this.selectedCharacter);
             });
         }
-
-        // Option cards
-        document.querySelectorAll('.option-card').forEach(card => {
-            card.addEventListener('click', (e) => {
-                const option = e.currentTarget.dataset.option;
-                card.classList.toggle('selected');
-                
-                if (card.classList.contains('selected')) {
-                    this.selectedOptions[option] = option;
-                } else {
-                    this.selectedOptions[option] = '';
-                }
-                
-                console.log(`🎯 ${option} option:`, this.selectedOptions[option]);
-            });
-        });
-
-        // Custom prompt
-        const customPrompt = document.getElementById('custom-prompt');
-        if (customPrompt) {
-            customPrompt.addEventListener('input', (e) => {
-                this.selectedOptions.customPrompt = e.target.value;
-            });
-        }
-
-        // Advanced settings toggle
-        const advancedToggle = document.getElementById('advanced-toggle');
-        if (advancedToggle) {
-            advancedToggle.addEventListener('click', () => {
-                const content = document.getElementById('advanced-content');
-                const icon = document.querySelector('#advanced-toggle i');
-                
-                if (content && icon) {
-                    content.classList.toggle('open');
-                    icon.classList.toggle('fa-chevron-down');
-                    icon.classList.toggle('fa-chevron-up');
-                }
-            });
-        }
-
-        // Style and quality selectors
-        const styleSelect = document.getElementById('style-select');
-        const qualitySelect = document.getElementById('quality-select');
-        
-        if (styleSelect) {
-            styleSelect.addEventListener('change', (e) => {
-                this.selectedOptions.style = e.target.value;
-            });
-        }
-        
-        if (qualitySelect) {
-            qualitySelect.addEventListener('change', (e) => {
-                this.selectedOptions.quality = e.target.value;
-            });
-        }
-
-        // Number of images
-        document.querySelectorAll('.number-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                document.querySelectorAll('.number-btn').forEach(b => b.classList.remove('active'));
-                e.target.classList.add('active');
-                this.selectedOptions.numberOfImages = parseInt(e.target.dataset.number);
-                console.log('🔢 Number of images:', this.selectedOptions.numberOfImages);
-            });
-        });
 
         // Generate button
         const generateBtn = document.getElementById('generate-btn');
@@ -112,218 +43,284 @@ class GenerateMediaIntegrated {
                 this.generateMedia();
             });
         }
+
+        // Advanced settings toggle
+        const advancedToggle = document.querySelector('.advanced-toggle');
+        if (advancedToggle) {
+            advancedToggle.addEventListener('click', () => {
+                const settings = document.querySelector('.advanced-settings');
+                const chevron = advancedToggle.querySelector('.fa-chevron-down');
+                if (settings) {
+                    settings.classList.toggle('active');
+                    chevron.style.transform = settings.classList.contains('active') ? 'rotate(180deg)' : 'rotate(0deg)';
+                }
+            });
+        }
+
+        // Download button
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('download-btn') || e.target.closest('.download-btn')) {
+                this.downloadMedia();
+            }
+        });
+
+        // Regenerate button
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('regenerate-btn') || e.target.closest('.regenerate-btn')) {
+                this.regenerateMedia();
+            }
+        });
+    }
+
+    async loadCharacters() {
+        console.log('👥 Loading characters...');
+        try {
+            if (typeof window.supabase !== 'undefined' && window.supabase) {
+                const { data: characters, error } = await window.supabase
+                    .from('characters')
+                    .select('id, name, description, image_url')
+                    .order('name');
+
+                if (error) {
+                    console.error('❌ Error loading characters:', error);
+                    this.loadFallbackCharacters();
+                    return;
+                }
+
+                this.characters = characters || [];
+                console.log('✅ Characters loaded:', this.characters.length);
+            } else {
+                console.warn('⚠️ Supabase not available, using fallback characters');
+                this.loadFallbackCharacters();
+            }
+        } catch (error) {
+            console.error('❌ Error in loadCharacters:', error);
+            this.loadFallbackCharacters();
+        }
+
+        this.populateCharacterSelect();
+    }
+
+    loadFallbackCharacters() {
+        this.characters = [
+            { id: 'alex', name: 'Alex', description: 'Confident and charming', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/alex.png' },
+            { id: 'ethan', name: 'Ethan', description: 'Athletic and adventurous', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/ethan.png' },
+            { id: 'cruz', name: 'Cruz', description: 'Mysterious and alluring', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/cruz.png' }
+        ];
+    }
+
+    populateCharacterSelect() {
+        const characterSelect = document.getElementById('character-select');
+        if (!characterSelect) return;
+
+        // Clear existing options (keep the first placeholder option)
+        characterSelect.innerHTML = '<option value="">Choose a character...</option>';
+
+        this.characters.forEach(character => {
+            const option = document.createElement('option');
+            option.value = character.id;
+            option.textContent = character.name;
+            characterSelect.appendChild(option);
+        });
+
+        console.log('✅ Character select populated with', this.characters.length, 'characters');
+    }
+
+    initializeAdvancedSettings() {
+        // Set default values for advanced settings
+        const styleSelect = document.getElementById('style-select');
+        const qualitySelect = document.getElementById('quality-select');
+        const aspectRatio = document.getElementById('aspect-ratio');
+
+        if (styleSelect) styleSelect.value = 'realistic';
+        if (qualitySelect) qualitySelect.value = 'high';
+        if (aspectRatio) aspectRatio.value = '16:9';
     }
 
     async generateMedia() {
         console.log('🎨 Starting media generation...');
-        
-        // Check if user is logged in using main page auth
-        if (!window.supabase) {
-            alert('Please wait for the page to load completely!');
-            return;
-        }
 
-        try {
-            const { data: { session }, error } = await window.supabase.auth.getSession();
-            
-            if (error || !session || !session.user) {
-                alert('Please log in first to use Generate Media feature!');
-                // Close generate media and show login
-                this.hideGenerateMedia();
-                document.querySelector('.login-btn')?.click();
-                return;
-            }
-
-            console.log('✅ User authenticated:', session.user.email);
-        } catch (error) {
-            console.error('❌ Auth check failed:', error);
-            alert('Please log in first to use Generate Media feature!');
-            return;
-        }
-        
-        // Validate required fields
-        if (!this.selectedOptions.character) {
+        // Validation
+        if (!this.selectedCharacter) {
             alert('Please select a character first!');
             return;
         }
 
-        // Disable generate button and show loading
-        const generateBtn = document.getElementById('generate-btn');
-        const originalContent = generateBtn.innerHTML;
-        generateBtn.disabled = true;
-        generateBtn.innerHTML = '<div class="loading-spinner"></div> Generating...';
+        if (this.isGenerating) {
+            console.log('⏳ Already generating, please wait...');
+            return;
+        }
+
+        this.isGenerating = true;
+        this.showLoadingOverlay();
 
         try {
-            // Build prompt
-            const prompt = this.buildPrompt();
+            // Get form values
+            const pose = document.getElementById('pose-input')?.value || '';
+            const background = document.getElementById('background-input')?.value || '';
+            const outfit = document.getElementById('outfit-input')?.value || '';
+            const customPrompt = document.getElementById('custom-prompt')?.value || '';
+            const style = document.getElementById('style-select')?.value || 'realistic';
+            const quality = document.getElementById('quality-select')?.value || 'high';
+            const aspectRatio = document.getElementById('aspect-ratio')?.value || '16:9';
+            const seed = document.getElementById('seed-input')?.value || '';
+
+            // Build the prompt
+            const prompt = this.buildPrompt({
+                character: this.selectedCharacter,
+                pose,
+                background,
+                outfit,
+                customPrompt,
+                style,
+                quality,
+                aspectRatio,
+                seed
+            });
+
             console.log('📝 Generated prompt:', prompt);
 
-            // Simulate generation
-            await this.simulateGeneration(prompt);
+            // Simulate generation (replace with actual API call)
+            const result = await this.simulateGeneration(prompt);
             
-            // Show success message
+            this.hideLoadingOverlay();
+            this.showGenerationResult(result);
             this.showSuccessMessage();
-            
+
         } catch (error) {
-            console.error('❌ Generation failed:', error);
+            console.error('❌ Error generating media:', error);
+            this.hideLoadingOverlay();
             alert('Failed to generate media. Please try again.');
         } finally {
-            // Re-enable generate button
-            generateBtn.disabled = false;
-            generateBtn.innerHTML = originalContent;
+            this.isGenerating = false;
         }
     }
 
-    buildPrompt() {
-        let prompt = `${this.selectedOptions.character}`;
+    buildPrompt({ character, pose, background, outfit, customPrompt, style, quality, aspectRatio, seed }) {
+        const selectedChar = this.characters.find(c => c.id === character);
+        let prompt = `${style} style, ${quality} quality, ${aspectRatio} aspect ratio`;
         
-        if (this.selectedOptions.pose) {
-            prompt += `, ${this.selectedOptions.pose} pose`;
+        if (selectedChar) {
+            prompt += `, ${selectedChar.name} (${selectedChar.description})`;
         }
         
-        if (this.selectedOptions.background) {
-            prompt += `, ${this.selectedOptions.background} background`;
-        }
-        
-        if (this.selectedOptions.outfit) {
-            prompt += `, wearing ${this.selectedOptions.outfit}`;
-        }
-        
-        if (this.selectedOptions.customPrompt) {
-            prompt += `, ${this.selectedOptions.customPrompt}`;
-        }
-        
-        prompt += `, ${this.selectedOptions.style} style, ${this.selectedOptions.quality} quality`;
+        if (pose) prompt += `, ${pose}`;
+        if (background) prompt += `, background: ${background}`;
+        if (outfit) prompt += `, wearing: ${outfit}`;
+        if (customPrompt) prompt += `, ${customPrompt}`;
+        if (seed) prompt += `, seed: ${seed}`;
         
         return prompt;
     }
 
     async simulateGeneration(prompt) {
-        // Simulate API call delay
+        console.log('🎭 Simulating generation with prompt:', prompt);
+        
+        // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 3000));
         
-        // Create mock generated images
-        const galleryGrid = document.getElementById('gallery-grid');
-        
-        if (!galleryGrid) return;
-        
-        // Clear "no images" message
-        if (galleryGrid.children[0]?.textContent === 'No images generated yet') {
-            galleryGrid.innerHTML = '';
+        // Return mock result
+        return {
+            type: this.currentMediaType,
+            url: this.currentMediaType === 'image' 
+                ? 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/alex.png'
+                : 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/banner3.mp4',
+            prompt: prompt,
+            timestamp: new Date().toISOString()
+        };
+    }
+
+    showLoadingOverlay() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
         }
-        
-        // Add mock generated images
-        for (let i = 0; i < this.selectedOptions.numberOfImages; i++) {
-            const galleryItem = document.createElement('div');
-            galleryItem.className = 'gallery-item';
-            galleryItem.innerHTML = `
-                <div style="
-                    width: 100%;
-                    height: 100%;
-                    background: linear-gradient(45deg, #a855f7, #ec4899, #f59e0b);
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    color: white;
-                    font-weight: bold;
-                    border-radius: 10px;
-                ">
-                    Generated Image ${Date.now() + i}
-                </div>
-            `;
-            galleryGrid.appendChild(galleryItem);
+    }
+
+    hideLoadingOverlay() {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.style.display = 'none';
         }
+    }
+
+    showGenerationResult(result) {
+        const resultSection = document.getElementById('generation-result');
+        const resultContent = document.querySelector('.result-content');
         
-        console.log('💾 Mock generation completed');
+        if (!resultSection || !resultContent) return;
+
+        // Create media element
+        let mediaElement;
+        if (result.type === 'image') {
+            mediaElement = document.createElement('img');
+            mediaElement.src = result.url;
+            mediaElement.alt = 'Generated Image';
+            mediaElement.style.maxWidth = '100%';
+            mediaElement.style.height = 'auto';
+        } else {
+            mediaElement = document.createElement('video');
+            mediaElement.src = result.url;
+            mediaElement.controls = true;
+            mediaElement.style.maxWidth = '100%';
+            mediaElement.style.height = 'auto';
+        }
+
+        // Clear previous content and add new media
+        resultContent.innerHTML = '';
+        resultContent.appendChild(mediaElement);
+
+        // Show result section
+        resultSection.style.display = 'block';
+        
+        // Scroll to result
+        resultSection.scrollIntoView({ behavior: 'smooth' });
     }
 
     showSuccessMessage() {
-        // Create temporary success message
-        const successMsg = document.createElement('div');
-        successMsg.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: linear-gradient(135deg, #10b981, #059669);
-            color: white;
-            padding: 15px 20px;
-            border-radius: 10px;
-            font-weight: bold;
-            z-index: 1000;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-        `;
-        successMsg.innerHTML = '✅ Media generated successfully!';
-        document.body.appendChild(successMsg);
-        
-        // Remove after 3 seconds
-        setTimeout(() => {
-            successMsg.remove();
-        }, 3000);
+        console.log('✅ Media generated successfully!');
+        // Could add toast notification here
     }
 
-    hideGenerateMedia() {
-        const generateSection = document.getElementById('generateMediaSection');
-        const heroSection = document.getElementById('heroSection');
-        const titleSection = document.getElementById('titleSection');
-        const characterLobby = document.getElementById('characterLobby');
-        
-        if (generateSection) generateSection.style.display = 'none';
-        if (heroSection) heroSection.style.display = 'block';
-        if (titleSection) titleSection.style.display = 'block';
-        if (characterLobby) characterLobby.style.display = 'block';
+    downloadMedia() {
+        console.log('📥 Downloading media...');
+        // Implement download functionality
+        alert('Download functionality will be implemented soon!');
+    }
+
+    regenerateMedia() {
+        console.log('🔄 Regenerating media...');
+        this.generateMedia();
     }
 }
 
-// Global functions for navigation
-function showGenerateMedia() {
-    console.log('🎨 Showing Generate Media section...');
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('🎨 DOM loaded, initializing Generate Media...');
     
-    // Hide other sections
-    const heroSection = document.getElementById('heroSection');
-    const titleSection = document.getElementById('titleSection');
-    const characterLobby = document.getElementById('characterLobby');
-    const chatInterface = document.getElementById('chatInterface');
-    
-    if (heroSection) heroSection.style.display = 'none';
-    if (titleSection) titleSection.style.display = 'none';
-    if (characterLobby) characterLobby.style.display = 'none';
-    if (chatInterface) chatInterface.style.display = 'none';
-    
-    // Show generate media section
-    const generateSection = document.getElementById('generateMediaSection');
-    if (generateSection) {
-        generateSection.style.display = 'block';
-        
-        // Initialize generate media if not already done
-        if (!window.generateMediaApp) {
+    // Wait for auth to be ready
+    const initGenerateMedia = () => {
+        if (typeof window.supabase !== 'undefined') {
             window.generateMediaApp = new GenerateMediaIntegrated();
             window.generateMediaApp.init();
+        } else {
+            console.log('⏳ Waiting for Supabase to load...');
+            setTimeout(initGenerateMedia, 100);
         }
-    }
-}
+    };
+    
+    initGenerateMedia();
+});
 
+// Navigation functions for compatibility
 function backToExplore() {
-    console.log('🏠 Returning to main page...');
-    
-    // Hide generate media section
-    const generateSection = document.getElementById('generateMediaSection');
-    const chatInterface = document.getElementById('chatInterface');
-    
-    if (generateSection) generateSection.style.display = 'none';
-    if (chatInterface) chatInterface.style.display = 'none';
-    
-    // Show main sections
-    const heroSection = document.getElementById('heroSection');
-    const titleSection = document.getElementById('titleSection');
-    const characterLobby = document.getElementById('characterLobby');
-    
-    if (heroSection) heroSection.style.display = 'block';
-    if (titleSection) titleSection.style.display = 'block';
-    if (characterLobby) characterLobby.style.display = 'block';
+    console.log('🏠 Navigating back to explore...');
+    window.location.href = 'index.html';
 }
 
-// Auto-initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
-    // Generate media will be initialized when first accessed
-    console.log('📱 Generate Media integration ready');
-}); 
+// Legacy function for any remaining references
+function showGenerateMedia() {
+    console.log('🎨 Generate Media is already shown - this is the dedicated page');
+}
+
+console.log('🎨 Generate Media JS setup complete for independent page'); 

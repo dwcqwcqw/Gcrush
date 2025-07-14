@@ -19,7 +19,6 @@
     <link rel="apple-touch-icon" sizes="180x180" href="https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/Favicon.png">
     <meta name="theme-color" content="#A259FF">
     <link rel="stylesheet" href="candy-combined.css?v=3.0">
-    <link rel="stylesheet" href="generate-media.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- Supabase SDK -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -79,8 +78,8 @@
                     <i class="fas fa-heart"></i>
                     <span>My AI</span>
                 </a>
-                <a href="#" class="sidebar-item" onclick="showGenerateMedia(); return false;">
-                    <i class="fas fa-image"></i>
+                <a href="generate-media.html" class="sidebar-item">
+                    <i class="fas fa-magic"></i>
                     <span>Generate Media</span>
                 </a>
                 <a href="#" class="sidebar-item">
@@ -327,7 +326,7 @@
                             </div>
                             <div class="banner-text-side">
                                 <h2 class="banner-split-title">AI turns your dream guy into stunning photos and videos</h2>
-                                <button class="banner-split-cta" onclick="showGenerateMedia();">Generate Media</button>
+                                <button class="banner-split-cta" onclick="window.location.href='generate-media.html';">Generate Media</button>
                             </div>
                         </div>
                     </div>
@@ -551,7 +550,6 @@
     <script src="auth-simple.js?v=3.0"></script>
     <script src="main-chat.js?v=3.0"></script>
     <script src="voice-features.js?v=3.0"></script>
-    <script src="generate-media.js"></script>
     <script src="chat-debug.js"></script>
     
 
