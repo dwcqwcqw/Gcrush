@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Force Auth Reset - Gcrush</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: white;
+            text-align: center;
+            padding: 50px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #2d2d2d;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #A259FF;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            background: #333;
+            border-radius: 5px;
+            border-left: 4px solid #A259FF;
+        }
+        .completed {
+            border-left-color: #00ff00;
+            background: #004a00;
+        }
+        .button {
+            background: #A259FF;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        .button:hover {
+            background: #8a47e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Force Authentication Reset</h1>
+        <p>This will completely reset your authentication state and clear all cached data.</p>
+        
+        <div id="step1" class="step">
+            <strong>Step 1:</strong> Clear localStorage and sessionStorage
+            <div id="loader1" class="loader" style="display: none;"></div>
+        </div>
+        
+        <div id="step2" class="step">
+            <strong>Step 2:</strong> Clear browser cache and service workers
+            <div id="loader2" class="loader" style="display: none;"></div>
+        </div>
+        
+        <div id="step3" class="step">
+            <strong>Step 3:</strong> Force Supabase logout (if available)
+            <div id="loader3" class="loader" style="display: none;"></div>
+        </div>
+        
+        <div id="step4" class="step">
+            <strong>Step 4:</strong> Redirect to clean main page
+            <div id="loader4" class="loader" style="display: none;"></div>
+        </div>
+        
+        <button id="startReset" class="button">🚀 Start Reset Process</button>
+        <button id="manualReset" class="button" style="background: #ff6600;">⚠️ Manual Reset (if auto fails)</button>
+        
+        <div id="status" style="margin-top: 20px; font-weight: bold;"></div>
+    </div>
+
+    <!-- Only load Supabase if needed for logout -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        const SUPABASE_URL = 'https://kuflobojizyttadwcbhe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+        
+        let supabase = null;
+        
+        function updateStatus(message) {
+            document.getElementById('status').textContent = message;
+            console.log('[FORCE-RESET]', message);
+        }
+        
+        function completeStep(stepNum) {
+            const step = document.getElementById(`step${stepNum}`);
+            const loader = document.getElementById(`loader${stepNum}`);
+            step.classList.add('completed');
+            loader.style.display = 'none';
+        }
+        
+        function showLoader(stepNum) {
+            const loader = document.getElementById(`loader${stepNum}`);
+            loader.style.display = 'block';
+        }
+        
+        async function forceAuthReset() {
+            updateStatus('Starting force reset...');
+            
+            // Step 1: Clear all storage
+            showLoader(1);
+            updateStatus('Step 1: Clearing all storage...');
+            
+            // Clear localStorage
+            const localStorageKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                localStorageKeys.push(localStorage.key(i));
+            }
+            localStorageKeys.forEach(key => {
+                localStorage.removeItem(key);
+                console.log('[FORCE-RESET] Removed localStorage key:', key);
+            });
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            
+            // Clear specific auth keys
+            const authKeys = [
+                'sb-kuflobojizyttadwcbhe-auth-token',
+                'rememberMe',
+                'supabase.auth.token',
+                'gcrush_auth_token'
+            ];
+            authKeys.forEach(key => {
+                localStorage.removeItem(key);
+                sessionStorage.removeItem(key);
+            });
+            
+            completeStep(1);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Step 2: Clear cache
+            showLoader(2);
+            updateStatus('Step 2: Clearing browser cache...');
+            
+            if ('caches' in window) {
+                try {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(cacheName => {
+                            console.log('[FORCE-RESET] Deleting cache:', cacheName);
+                            return caches.delete(cacheName);
+                        })
+                    );
+                } catch (error) {
+                    console.warn('[FORCE-RESET] Cache clearing failed:', error);
+                }
+            }
+            
+            // Clear service workers
+            if ('serviceWorker' in navigator) {
+                try {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(
+                        registrations.map(registration => {
+                            console.log('[FORCE-RESET] Unregistering service worker');
+                            return registration.unregister();
+                        })
+                    );
+                } catch (error) {
+                    console.warn('[FORCE-RESET] Service worker clearing failed:', error);
+                }
+            }
+            
+            completeStep(2);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Step 3: Force Supabase logout
+            showLoader(3);
+            updateStatus('Step 3: Force Supabase logout...');
+            
+            try {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                await supabase.auth.signOut({ scope: 'global' });
+                console.log('[FORCE-RESET] Supabase logout completed');
+            } catch (error) {
+                console.warn('[FORCE-RESET] Supabase logout failed:', error);
+            }
+            
+            completeStep(3);
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Step 4: Redirect to clean page
+            showLoader(4);
+            updateStatus('Step 4: Redirecting to clean main page...');
+            
+            // Clear URL fragments and parameters
+            const cleanUrl = window.location.origin + '/';
+            
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            completeStep(4);
+            
+            updateStatus('Reset complete! Redirecting...');
+            
+            // Force hard refresh to clean page
+            setTimeout(() => {
+                window.location.href = cleanUrl + '?reset=true&t=' + Date.now();
+            }, 1500);
+        }
+        
+        function manualReset() {
+            updateStatus('Performing manual reset...');
+            
+            // Nuclear option - clear everything possible
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Clear cookies
+            document.cookie.split(";").forEach(function(c) { 
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            });
+            
+            updateStatus('Manual reset complete! Please close all browser tabs and restart your browser.');
+            
+            setTimeout(() => {
+                window.location.href = '/?manual-reset=true&t=' + Date.now();
+            }, 2000);
+        }
+        
+        document.getElementById('startReset').addEventListener('click', forceAuthReset);
+        document.getElementById('manualReset').addEventListener('click', manualReset);
+        
+        // Auto-start if URL parameter is present
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('auto') === 'true') {
+            setTimeout(forceAuthReset, 1000);
+        }
+    </script>
+</body>
+</html> 

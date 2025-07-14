@@ -345,6 +345,16 @@
             const hasOAuthState = url.searchParams.has('state');
             const hasOAuthError = url.searchParams.has('error');
             
+            // Check for force reset parameters
+            const isReset = url.searchParams.has('reset') || url.searchParams.has('manual-reset');
+            const isForceReset = url.searchParams.has('force-reset');
+            
+            if (isForceReset) {
+                console.log('[AUTH-CLEANUP] Force reset requested, redirecting...');
+                window.location.href = '/force-auth-reset.html?auto=true';
+                return;
+            }
+            
             if (hasOAuthCode || hasOAuthState || hasOAuthError) {
                 console.log('[OAUTH-CLEANUP] Detected OAuth callback parameters:', {
                     code: url.searchParams.get('code'),
@@ -368,6 +378,24 @@
                     if (window.location.hash) {
                         window.location.hash = '';
                     }
+                }
+            }
+            
+            // Check for corrupted auth state
+            const authToken = localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token');
+            if (authToken && !isReset) {
+                try {
+                    const tokenData = JSON.parse(authToken);
+                    // Check if token looks corrupted or invalid
+                    if (!tokenData.access_token || !tokenData.user || !tokenData.user.email) {
+                        console.log('[AUTH-CLEANUP] Detected corrupted auth token, forcing reset');
+                        window.location.href = '/force-auth-reset.html?auto=true';
+                        return;
+                    }
+                } catch (error) {
+                    console.log('[AUTH-CLEANUP] Failed to parse auth token, forcing reset');
+                    window.location.href = '/force-auth-reset.html?auto=true';
+                    return;
                 }
             }
         })();
