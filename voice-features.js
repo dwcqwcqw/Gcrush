@@ -3,6 +3,7 @@ class VoiceFeatures {
     constructor() {
         this.isRecording = false;
         this.mediaRecorder = null;
+        this.currentStream = null; // Store media stream for cleanup
         this.audioChunks = [];
         this.currentUser = null;
         this.currentCharacter = null;
@@ -84,7 +85,12 @@ class VoiceFeatures {
             return;
         }
 
-        if (this.isRecording) {
+        // Check current recording state more thoroughly
+        const isCurrentlyRecording = this.isRecording && 
+            this.mediaRecorder && 
+            (this.mediaRecorder.state === 'recording' || this.mediaRecorder.state === 'paused');
+
+        if (isCurrentlyRecording) {
             await this.stopRecording();
         } else {
             await this.startRecording();
@@ -95,6 +101,7 @@ class VoiceFeatures {
     async startRecording() {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            this.currentStream = stream; // Store stream reference for cleanup
             this.mediaRecorder = new MediaRecorder(stream, {
                 mimeType: 'audio/webm'
             });
@@ -119,19 +126,42 @@ class VoiceFeatures {
         } catch (error) {
             console.error('Error starting recording:', error);
             alert('Unable to access microphone. Please check permissions.');
+            this.isRecording = false;
+            this.updateVoiceButton(false);
         }
     }
 
     // Stop recording
     async stopRecording() {
-        if (this.mediaRecorder && this.isRecording) {
-            this.mediaRecorder.stop();
-            this.isRecording = false;
-            this.updateVoiceButton(false);
-            
-            // Stop all tracks
-            this.mediaRecorder.stream.getTracks().forEach(track => track.stop());
-            console.log('🛑 Recording stopped');
+        console.log('🔄 Attempting to stop recording...');
+        
+        // Reset UI state immediately to prevent double-clicks
+        this.isRecording = false;
+        this.updateVoiceButton(false);
+        
+        if (this.mediaRecorder) {
+            try {
+                // Only stop if recorder is in recording or paused state
+                if (this.mediaRecorder.state === 'recording' || this.mediaRecorder.state === 'paused') {
+                    this.mediaRecorder.stop();
+                    console.log('🛑 MediaRecorder stopped');
+                } else {
+                    console.log('🔄 MediaRecorder already in state:', this.mediaRecorder.state);
+                }
+            } catch (error) {
+                console.error('Error stopping MediaRecorder:', error);
+            }
+        }
+        
+        // Stop all tracks
+        if (this.currentStream) {
+            try {
+                this.currentStream.getTracks().forEach(track => track.stop());
+                console.log('🔇 Audio tracks stopped');
+            } catch (error) {
+                console.error('Error stopping stream tracks:', error);
+            }
+            this.currentStream = null;
         }
     }
 
@@ -175,6 +205,9 @@ class VoiceFeatures {
             alert('Error processing speech. Please try again.');
         } finally {
             this.showVoiceProcessing(false);
+            // Ensure recording state is properly reset
+            this.isRecording = false;
+            this.updateVoiceButton(false);
         }
     }
 
