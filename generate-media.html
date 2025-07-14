@@ -303,66 +303,30 @@
     <script src="auth-simple.js"></script>
     <script src="generate-media.js"></script>
     <script>
+    // 只保留 recent chats 跳转，不再处理登录/session
     document.addEventListener('DOMContentLoaded', () => {
         const chatBtn = document.getElementById('sidebarChatBtn');
         if (chatBtn) {
-            chatBtn.addEventListener('click', async (e) => {
+            chatBtn.addEventListener('click', (e) => {
                 e.preventDefault();
-                // 1. 初始化 supabase
-                if (!window.supabase || !window.supabase.createClient) {
-                    alert('Supabase SDK not loaded');
-                    return;
-                }
-                const supabaseUrl = 'https://kuflobojizyttadwcbhe.supabase.co';
-                const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
-                const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
-                // 2. 获取当前用户
-                let user = null;
-                try {
-                    const { data: { session } } = await supabase.auth.getSession();
-                    if (session && session.user) {
-                        user = session.user;
-                    }
-                } catch (err) {
-                    // ignore
-                }
+                // 只查 localStorage，不查 supabase，不处理 session
                 let recentCharacter = null;
-                // 3. 登录用户查 supabase 聊天
-                if (user) {
-                    try {
-                        const { data: sessions, error } = await supabase
-                            .from('chat_sessions')
-                            .select('id, character_id, characters!inner(name)')
-                            .eq('user_id', user.id)
-                            .order('updated_at', { ascending: false })
-                            .limit(1);
-                        if (!error && sessions && sessions.length > 0 && sessions[0].characters?.name) {
-                            recentCharacter = sessions[0].characters.name;
-                        }
-                    } catch (err) {
-                        // ignore
-                    }
-                }
-                // 4. 未登录或 supabase 没查到，fallback 到 localStorage
-                if (!recentCharacter) {
-                    let mostRecentTime = 0;
-                    for (let i = 0; i < localStorage.length; i++) {
-                        const key = localStorage.key(i);
-                        if (key && key.startsWith('gcrush_chat_messages_')) {
-                            const charName = key.replace('gcrush_chat_messages_', '');
-                            const messages = JSON.parse(localStorage.getItem(key) || '[]');
-                            if (messages.length > 0) {
-                                const lastMsg = messages[messages.length - 1];
-                                const t = new Date(lastMsg.timestamp || 0).getTime();
-                                if (t > mostRecentTime) {
-                                    mostRecentTime = t;
-                                    recentCharacter = charName;
-                                }
+                let mostRecentTime = 0;
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.startsWith('gcrush_chat_messages_')) {
+                        const charName = key.replace('gcrush_chat_messages_', '');
+                        const messages = JSON.parse(localStorage.getItem(key) || '[]');
+                        if (messages.length > 0) {
+                            const lastMsg = messages[messages.length - 1];
+                            const t = new Date(lastMsg.timestamp || 0).getTime();
+                            if (t > mostRecentTime) {
+                                mostRecentTime = t;
+                                recentCharacter = charName;
                             }
                         }
                     }
                 }
-                // 5. 跳转或提示
                 if (recentCharacter) {
                     window.location.href = '/?character=' + encodeURIComponent(recentCharacter) + '#';
                 } else {
