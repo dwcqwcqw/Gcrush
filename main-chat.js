@@ -1367,6 +1367,11 @@ class MainChatSystem {
             // Fallback to character list
             this.renderFallbackChatList();
         }
+        // 新增：如果没有任何聊天，跳转首页
+        const chatListContainer = document.getElementById('chatList');
+        if (chatListContainer && chatListContainer.children.length === 0) {
+            this.closeChatInterface();
+        }
     }
     
     // Save message to localStorage for non-logged in users
