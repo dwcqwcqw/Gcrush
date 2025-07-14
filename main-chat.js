@@ -1596,6 +1596,37 @@ class MainChatSystem {
         localStorage.removeItem(chatHistoryKey);
         console.log('Reset first chat status for:', characterName || this.currentCharacter?.name);
     }
+
+    // 打开最近一次聊天或弹窗提示
+    async openMostRecentChatOrNotify() {
+        let recentCharacterName = null;
+
+        if (this.currentUser && this.supabase) {
+            // 登录用户查数据库
+            const { data: sessions, error } = await this.supabase
+                .from('chat_sessions')
+                .select('id, character_id, characters!inner(name)')
+                .eq('user_id', this.currentUser.id)
+                .order('updated_at', { ascending: false })
+                .limit(1);
+
+            if (sessions && sessions.length > 0 && sessions[0].characters?.name) {
+                recentCharacterName = sessions[0].characters.name;
+            }
+        } else {
+            // 未登录用户查localStorage
+            const chatListContainer = document.getElementById('chatList');
+            if (chatListContainer && chatListContainer.firstElementChild) {
+                recentCharacterName = chatListContainer.firstElementChild.getAttribute('data-character');
+            }
+        }
+
+        if (recentCharacterName) {
+            await this.startChat(recentCharacterName);
+        } else {
+            alert('No chat history yet. Please start a conversation by clicking any character card!');
+        }
+    }
 }
 
 // Global functions
@@ -1667,6 +1698,15 @@ function sendMessage() {
 document.addEventListener('DOMContentLoaded', () => {
     try {
         window.mainChatSystem = new MainChatSystem();
+        // 配置左侧Chat按钮点击事件
+        const chatBtn = document.getElementById('sidebarChatBtn');
+        if (chatBtn) {
+            chatBtn.addEventListener('click', async () => {
+                if (window.mainChatSystem) {
+                    await window.mainChatSystem.openMostRecentChatOrNotify();
+                }
+            });
+        }
     } catch (error) {
         console.error('Failed to initialize MainChatSystem:', error);
     }
