@@ -62,7 +62,7 @@
                     <i class="fas fa-compass"></i>
                     <span>Explore</span>
                 </a>
-                <a href="#" class="sidebar-item">
+                <a href="#" class="sidebar-item" id="sidebarChatBtn">
                     <i class="fas fa-comment"></i>
                     <span>Chat</span>
                 </a>
@@ -302,5 +302,16 @@
     <script src="candy-combined.js"></script>
     <script src="auth-simple.js"></script>
     <script src="generate-media.js"></script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const chatBtn = document.getElementById('sidebarChatBtn');
+        if (chatBtn) {
+            chatBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                window.location.href = '/chat.html?openRecent=1';
+            });
+        }
+    });
+    </script>
 </body>
 </html>
