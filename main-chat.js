@@ -1317,7 +1317,12 @@ class MainChatSystem {
         this.currentCharacter = null;
         this.currentSessionId = null;
         
-        console.log('🏠 Returned to home page');
+        console.log('🏠 Returning to home page...');
+        
+        // Force page refresh to show home page content
+        setTimeout(() => {
+            window.location.reload();
+        }, 300);
     }
 
     // Helper method to delete sessions and their messages
@@ -1356,6 +1361,9 @@ class MainChatSystem {
     async refreshChatSidebar() {
         try {
             if (this.currentUser && this.supabase) {
+                // Add a small delay to ensure database changes are reflected
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
                 // Load recent chats from database
                 await this.renderChatList();
             } else {
@@ -1366,11 +1374,6 @@ class MainChatSystem {
             console.error('Error refreshing chat sidebar:', error);
             // Fallback to character list
             this.renderFallbackChatList();
-        }
-        // 新增：如果没有任何聊天，跳转首页
-        const chatListContainer = document.getElementById('chatList');
-        if (chatListContainer && chatListContainer.children.length === 0) {
-            this.closeChatInterface();
         }
     }
     
