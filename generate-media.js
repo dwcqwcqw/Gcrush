@@ -394,6 +394,11 @@ class GenerateMediaIntegrated {
             return;
         }
 
+        if (!this.selectedPose) {
+            alert('Please select a pose!');
+            return;
+        }
+
         const customPrompt = document.getElementById('custom-prompt')?.value.trim();
         if (!customPrompt) {
             alert('Please enter a custom prompt!');
