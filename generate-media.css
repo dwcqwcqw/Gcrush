@@ -152,8 +152,8 @@
     display: flex;
     flex-direction: column;
     width: 100%;
-    aspect-ratio: 3/4;
-    max-height: 300px;
+    aspect-ratio: 2/3;
+    max-height: 350px;
 }
 
 .character-preview-clickable,
@@ -174,7 +174,7 @@
     cursor: pointer;
     position: relative;
     overflow: hidden;
-    aspect-ratio: 3/4;
+    aspect-ratio: 2/3;
 }
 
 .character-preview-clickable:hover,
@@ -218,7 +218,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
     border-radius: 8px;
     z-index: 1;
 }
