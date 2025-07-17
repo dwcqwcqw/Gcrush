@@ -194,26 +194,33 @@
                         <!-- Character and Pose Selection (3:4 ratio, side by side) -->
                         <div class="character-pose-grid">
                             <div class="character-selector">
-                                <label for="character-select">
+                                <label>
                                     <i class="fas fa-user"></i>
                                     Select Character <span class="required">(required)</span>
                                 </label>
                                 <div class="character-selection-container">
-                                    <select id="character-select" class="form-control">
-                                        <option value="">Choose a character...</option>
-                                    </select>
-                                    <div class="character-preview" id="character-preview">
-                                        <!-- Character preview image will be shown here -->
+                                    <div class="character-preview-clickable" id="character-preview-clickable">
+                                        <div class="character-preview-content">
+                                            <i class="fas fa-user-plus"></i>
+                                            <span>Click to Select Character</span>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                             
                             <div class="pose-selector">
-                                <label for="pose-input">
+                                <label>
                                     <i class="fas fa-running"></i>
-                                    Pose <span class="required">(required)</span>
+                                    Pose <span class="optional">(optional)</span>
                                 </label>
-                                <textarea id="pose-input" class="form-control pose-textarea" placeholder="Describe the pose or action..."></textarea>
+                                <div class="pose-selection-container">
+                                    <div class="pose-preview-clickable" id="pose-preview-clickable">
+                                        <div class="pose-preview-content">
+                                            <i class="fas fa-camera"></i>
+                                            <span>Click to Select Pose</span>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
 
@@ -362,6 +369,28 @@
                     <button type="button" class="submit-btn secondary" onclick="closeModal(profileModal)">Skip for now</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Character Selection Modal -->
+    <div class="modal-overlay" id="characterModal">
+        <div class="modal-content selection-modal">
+            <button class="modal-close" onclick="closeCharacterModal()">&times;</button>
+            <h2 class="modal-title">Select Character</h2>
+            <div class="selection-grid" id="characterGrid">
+                <!-- Character options will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Pose Selection Modal -->
+    <div class="modal-overlay" id="poseModal">
+        <div class="modal-content selection-modal">
+            <button class="modal-close" onclick="closePoseModal()">&times;</button>
+            <h2 class="modal-title">Select Pose</h2>
+            <div class="selection-grid" id="poseGrid">
+                <!-- Pose options will be populated here -->
+            </div>
         </div>
     </div>
 

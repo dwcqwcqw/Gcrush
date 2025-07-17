@@ -147,20 +147,16 @@
     height: 100%;
 }
 
-.character-selection-container {
+.character-selection-container,
+.pose-selection-container {
     display: flex;
     flex-direction: column;
     height: 100%;
     aspect-ratio: 3/4;
 }
 
-.character-selection-container .form-control {
-    font-size: 1.1rem;
-    padding: 18px;
-    margin-bottom: 15px;
-}
-
-.character-preview {
+.character-preview-clickable,
+.pose-preview-clickable {
     flex: 1;
     background: rgba(0, 0, 0, 0.3);
     border: 2px dashed rgba(255, 255, 255, 0.2);
@@ -173,29 +169,70 @@
     text-align: center;
     padding: 20px;
     transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
 }
 
-.character-preview.has-image {
+.character-preview-clickable:hover,
+.pose-preview-clickable:hover {
+    border-color: rgba(168, 85, 247, 0.6);
+    background: rgba(168, 85, 247, 0.1);
+    transform: translateY(-2px);
+}
+
+.character-preview-clickable.has-selection,
+.pose-preview-clickable.has-selection {
     border-style: solid;
-    border-color: rgba(168, 85, 247, 0.3);
+    border-color: rgba(168, 85, 247, 0.5);
+    background: rgba(168, 85, 247, 0.1);
 }
 
-.character-preview img {
-    max-width: 100%;
-    max-height: 100%;
+.character-preview-content,
+.pose-preview-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    z-index: 2;
+}
+
+.character-preview-content i,
+.pose-preview-content i {
+    font-size: 2rem;
+    color: #a855f7;
+}
+
+.character-preview-clickable.has-selection .character-preview-content,
+.pose-preview-clickable.has-selection .pose-preview-content {
+    display: none;
+}
+
+.character-preview-clickable img,
+.pose-preview-clickable img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     object-fit: cover;
     border-radius: 8px;
+    z-index: 1;
 }
 
-.pose-selector {
-    aspect-ratio: 3/4;
-}
-
-.pose-textarea {
-    flex: 1;
-    min-height: 200px;
-    resize: vertical;
-    height: 100%;
+.character-preview-clickable .character-name,
+.pose-preview-clickable .pose-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.8));
+    color: white;
+    padding: 20px 10px 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-transform: capitalize;
+    z-index: 2;
 }
 
 /* Option Selectors (Background and Outfit) */
@@ -524,6 +561,118 @@
     margin: 0;
 }
 
+/* Selection Modal Styles */
+.selection-modal {
+    max-width: 800px;
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 30px;
+}
+
+.selection-modal .modal-title {
+    text-align: center;
+    margin-bottom: 30px;
+    color: #fff;
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.selection-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.selection-item {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 15px;
+    padding: 0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    overflow: hidden;
+    aspect-ratio: 3/4;
+    position: relative;
+}
+
+.selection-item:hover {
+    border-color: rgba(168, 85, 247, 0.6);
+    transform: translateY(-3px);
+    box-shadow: 0 10px 20px rgba(168, 85, 247, 0.2);
+}
+
+.selection-item.selected {
+    border-color: #a855f7;
+    background: rgba(168, 85, 247, 0.2);
+    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4);
+}
+
+.selection-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 13px;
+}
+
+.selection-item .item-name {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
+    color: white;
+    padding: 25px 10px 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    text-transform: capitalize;
+}
+
+.selection-item .selected-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: #a855f7;
+    color: white;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.selection-item.selected .selected-indicator {
+    opacity: 1;
+}
+
+/* Character Modal Specific Styles */
+#characterGrid .selection-item {
+    aspect-ratio: 3/4;
+}
+
+/* Pose Modal Specific Styles */
+#poseGrid .selection-item {
+    aspect-ratio: 4/3;
+}
+
+/* Modal Overlay Enhancements */
+.modal-overlay {
+    backdrop-filter: blur(10px);
+}
+
+.modal-content {
+    background: rgba(20, 20, 20, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .generate-media-container {
@@ -548,12 +697,24 @@
     }
     
     .character-selection-container,
-    .pose-selector {
+    .pose-selection-container {
         aspect-ratio: auto;
+        min-height: 200px;
     }
     
-    .pose-textarea {
-        min-height: 120px;
+    .selection-modal {
+        max-width: 95vw;
+        padding: 20px;
+    }
+    
+    .selection-grid {
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+    }
+    
+    .selection-item .item-name {
+        font-size: 0.8rem;
+        padding: 20px 8px 8px;
     }
     
     .option-selectors {

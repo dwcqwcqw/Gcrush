@@ -5,7 +5,9 @@ class GenerateMediaIntegrated {
     constructor() {
         this.currentMediaType = 'image';
         this.selectedCharacter = null;
+        this.selectedPose = null;
         this.characters = [];
+        this.poses = [];
         this.isGenerating = false;
         this.selectedBackground = null;
         this.selectedOutfit = null;
@@ -16,6 +18,7 @@ class GenerateMediaIntegrated {
         console.log('🎨 Initializing Generate Media for independent page...');
         this.setupEventListeners();
         this.loadCharacters();
+        this.loadPoses();
         this.initializeAdvancedSettings();
     }
 
@@ -36,13 +39,19 @@ class GenerateMediaIntegrated {
     });
 });
 
-        // Character selection
-        const characterSelect = document.getElementById('character-select');
-        if (characterSelect) {
-            characterSelect.addEventListener('change', (e) => {
-                this.selectedCharacter = e.target.value;
-                this.updateCharacterPreview();
-                console.log('👤 Character selected:', this.selectedCharacter);
+        // Character selection click
+        const characterPreview = document.getElementById('character-preview-clickable');
+        if (characterPreview) {
+            characterPreview.addEventListener('click', () => {
+                this.openCharacterModal();
+            });
+        }
+
+        // Pose selection click
+        const posePreview = document.getElementById('pose-preview-clickable');
+        if (posePreview) {
+            posePreview.addEventListener('click', () => {
+                this.openPoseModal();
             });
         }
 
@@ -149,9 +158,36 @@ class GenerateMediaIntegrated {
 
     loadFallbackCharacters() {
         this.characters = [
-            { id: 'alex', name: 'Alex', description: 'Confident and charming', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/alex.png' },
-            { id: 'ethan', name: 'Ethan', description: 'Athletic and adventurous', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/ethan.png' },
-            { id: 'cruz', name: 'Cruz', description: 'Mysterious and alluring', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/cruz.png' }
+            { id: 'freeplay', name: 'Free Play', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Freeplay/Free_Play.jpeg' },
+            { id: 'alex', name: 'Alex', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Alex/Alex1.png' },
+            { id: 'bruno', name: 'Bruno', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Bruno/Bruno1.png' },
+            { id: 'clayton', name: 'Clayton', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Clayton/Clayton1.png' },
+            { id: 'cruz', name: 'Cruz', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Cruz/Cruz1.png' },
+            { id: 'ethan', name: 'Ethan', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Ethan/Ethan1.png' },
+            { id: 'gabriel', name: 'Gabriel', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Gabriel/Gabriel1.png' },
+            { id: 'hunter', name: 'Hunter', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Hunter/Hunter1.png' },
+            { id: 'james', name: 'James', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/James/James1.png' },
+            { id: 'luca', name: 'Luca', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Luca/Luca1.png' },
+            { id: 'mason', name: 'Mason', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Mason/Mason1.png' },
+            { id: 'rohan', name: 'Rohan', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Rohan/Rohan1.png' },
+            { id: 'terrell', name: 'Terrell', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Terrell/Terrell1.png' }
+        ];
+    }
+
+    loadPoses() {
+        this.poses = [
+            { id: 'freeplay', name: 'Free Play', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/Free_Play.jpeg' },
+            { id: 'standing', name: 'Standing', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/standing.png' },
+            { id: 'sit', name: 'Sit', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/sit.png' },
+            { id: 'kneel', name: 'Kneel', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/kneel.png' },
+            { id: 'leash', name: 'Leash', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/leash.png' },
+            { id: 'flaccid_penis', name: 'Flaccid Penis', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/flaccid%20penis.png' },
+            { id: 'erect_penis', name: 'Erect Penis', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/erect%20penis.png' },
+            { id: 'blowjob', name: 'Blowjob', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/blowjob.png' },
+            { id: 'masturbation', name: 'Masturbation', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/masturbation.png' },
+            { id: 'cum', name: 'Cum', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/cum.png' },
+            { id: 'doggy_style', name: 'Doggy Style', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/doggy%20style.png' },
+            { id: 'missionary', name: 'Missionary', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/generate_media/Missionary.png' }
         ];
     }
 
@@ -172,22 +208,169 @@ class GenerateMediaIntegrated {
         console.log('✅ Character select populated with', this.characters.length, 'characters');
     }
 
+    openCharacterModal() {
+        const modal = document.getElementById('characterModal');
+        const grid = document.getElementById('characterGrid');
+        
+        if (!modal || !grid) return;
+
+        // Clear previous content
+        grid.innerHTML = '';
+
+        // Populate character grid
+        this.characters.forEach(character => {
+            const item = document.createElement('div');
+            item.className = 'selection-item';
+            item.dataset.characterId = character.id;
+            
+            if (this.selectedCharacter === character.id) {
+                item.classList.add('selected');
+            }
+
+            item.innerHTML = `
+                <img src="${character.image_url}" alt="${character.name}">
+                <div class="item-name">${character.name}</div>
+                <div class="selected-indicator">
+                    <i class="fas fa-check"></i>
+                </div>
+            `;
+
+            item.addEventListener('click', () => {
+                this.selectCharacter(character.id);
+                this.closeCharacterModal();
+            });
+
+            grid.appendChild(item);
+        });
+
+        modal.style.display = 'flex';
+    }
+
+    closeCharacterModal() {
+        const modal = document.getElementById('characterModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    selectCharacter(characterId) {
+        this.selectedCharacter = characterId;
+        this.updateCharacterPreview();
+        console.log('👤 Character selected:', characterId);
+    }
+
     updateCharacterPreview() {
-        const characterPreview = document.getElementById('character-preview');
+        const characterPreview = document.getElementById('character-preview-clickable');
         if (!characterPreview) return;
 
         if (this.selectedCharacter) {
             const character = this.characters.find(c => c.id === this.selectedCharacter);
             if (character && character.image_url) {
-                characterPreview.innerHTML = `<img src="${character.image_url}" alt="${character.name}">`;
-                characterPreview.classList.add('has-image');
+                characterPreview.innerHTML = `
+                    <img src="${character.image_url}" alt="${character.name}">
+                    <div class="character-name">${character.name}</div>
+                `;
+                characterPreview.classList.add('has-selection');
             } else {
-                characterPreview.innerHTML = 'Character preview';
-                characterPreview.classList.remove('has-image');
+                characterPreview.innerHTML = `
+                    <div class="character-preview-content">
+                        <i class="fas fa-user-plus"></i>
+                        <span>Click to Select Character</span>
+                    </div>
+                `;
+                characterPreview.classList.remove('has-selection');
             }
         } else {
-            characterPreview.innerHTML = 'Select a character to preview';
-            characterPreview.classList.remove('has-image');
+            characterPreview.innerHTML = `
+                <div class="character-preview-content">
+                    <i class="fas fa-user-plus"></i>
+                    <span>Click to Select Character</span>
+                </div>
+            `;
+            characterPreview.classList.remove('has-selection');
+        }
+    }
+
+    openPoseModal() {
+        const modal = document.getElementById('poseModal');
+        const grid = document.getElementById('poseGrid');
+        
+        if (!modal || !grid) return;
+
+        // Clear previous content
+        grid.innerHTML = '';
+
+        // Populate pose grid
+        this.poses.forEach(pose => {
+            const item = document.createElement('div');
+            item.className = 'selection-item';
+            item.dataset.poseId = pose.id;
+            
+            if (this.selectedPose === pose.id) {
+                item.classList.add('selected');
+            }
+
+            item.innerHTML = `
+                <img src="${pose.image_url}" alt="${pose.name}">
+                <div class="item-name">${pose.name}</div>
+                <div class="selected-indicator">
+                    <i class="fas fa-check"></i>
+                </div>
+            `;
+
+            item.addEventListener('click', () => {
+                this.selectPose(pose.id);
+                this.closePoseModal();
+            });
+
+            grid.appendChild(item);
+        });
+
+        modal.style.display = 'flex';
+    }
+
+    closePoseModal() {
+        const modal = document.getElementById('poseModal');
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    selectPose(poseId) {
+        this.selectedPose = poseId;
+        this.updatePosePreview();
+        console.log('📸 Pose selected:', poseId);
+    }
+
+    updatePosePreview() {
+        const posePreview = document.getElementById('pose-preview-clickable');
+        if (!posePreview) return;
+
+        if (this.selectedPose) {
+            const pose = this.poses.find(p => p.id === this.selectedPose);
+            if (pose && pose.image_url) {
+                posePreview.innerHTML = `
+                    <img src="${pose.image_url}" alt="${pose.name}">
+                    <div class="pose-name">${pose.name}</div>
+                `;
+                posePreview.classList.add('has-selection');
+            } else {
+                posePreview.innerHTML = `
+                    <div class="pose-preview-content">
+                        <i class="fas fa-camera"></i>
+                        <span>Click to Select Pose</span>
+                    </div>
+                `;
+                posePreview.classList.remove('has-selection');
+            }
+        } else {
+            posePreview.innerHTML = `
+                <div class="pose-preview-content">
+                    <i class="fas fa-camera"></i>
+                    <span>Click to Select Pose</span>
+                </div>
+            `;
+            posePreview.classList.remove('has-selection');
         }
     }
 
@@ -208,12 +391,6 @@ class GenerateMediaIntegrated {
         // Validation
         if (!this.selectedCharacter) {
             alert('Please select a character first!');
-            return;
-        }
-
-        const pose = document.getElementById('pose-input')?.value.trim();
-        if (!pose) {
-            alert('Please describe the pose!');
             return;
         }
 
@@ -238,7 +415,7 @@ class GenerateMediaIntegrated {
             // Build the prompt
             const prompt = this.buildPrompt({
                 character: this.selectedCharacter,
-                pose,
+                pose: this.selectedPose,
                 background: this.selectedBackground,
                 outfit: this.selectedOutfit,
                 customPrompt,
@@ -267,13 +444,17 @@ class GenerateMediaIntegrated {
 
     buildPrompt({ character, pose, background, outfit, customPrompt, negativePrompt }) {
         const selectedChar = this.characters.find(c => c.id === character);
+        const selectedPose = this.poses.find(p => p.id === pose);
         let prompt = '';
         
         if (selectedChar) {
-            prompt += `${selectedChar.name} (${selectedChar.description})`;
+            prompt += `${selectedChar.name}`;
         }
         
-        if (pose) prompt += `, ${pose}`;
+        if (selectedPose) {
+            prompt += `, ${selectedPose.name}`;
+        }
+        
         if (background) prompt += `, in ${background} setting`;
         if (outfit) prompt += `, wearing ${outfit}`;
         if (customPrompt) prompt += `, ${customPrompt}`;
@@ -424,5 +605,29 @@ function backToExplore() {
 function showGenerateMedia() {
     console.log('🎨 Generate Media is already shown - this is the dedicated page');
 }
+
+// Global modal control functions
+function closeCharacterModal() {
+    if (window.generateMediaApp) {
+        window.generateMediaApp.closeCharacterModal();
+    }
+}
+
+function closePoseModal() {
+    if (window.generateMediaApp) {
+        window.generateMediaApp.closePoseModal();
+    }
+}
+
+// Close modals when clicking outside
+document.addEventListener('click', (e) => {
+    if (e.target.classList.contains('modal-overlay')) {
+        if (e.target.id === 'characterModal') {
+            closeCharacterModal();
+        } else if (e.target.id === 'poseModal') {
+            closePoseModal();
+        }
+    }
+});
 
 console.log('🎨 Generate Media JS setup complete for independent page'); 
