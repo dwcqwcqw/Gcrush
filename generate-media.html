@@ -191,41 +191,61 @@
                             </button>
                         </div>
 
-                        <!-- Character Selection -->
-                        <div class="form-group character-select-group">
-                            <label for="character-select">
-                                <i class="fas fa-user"></i>
-                                Select Character <span class="required">(required)</span>
-                            </label>
-                            <select id="character-select" class="form-control">
-                                <option value="">Choose a character...</option>
-                            </select>
-                        </div>
-
-                        <!-- Main Form Grid -->
-                        <div class="form-grid">
-                            <div class="form-group pose-group">
-                                <label for="pose-input">
-                                    <i class="fas fa-running"></i>
-                                    Pose <span class="optional">(optional)</span>
+                        <!-- Character and Pose Selection (3:4 ratio, side by side) -->
+                        <div class="character-pose-grid">
+                            <div class="character-selector">
+                                <label for="character-select">
+                                    <i class="fas fa-user"></i>
+                                    Select Character <span class="required">(required)</span>
                                 </label>
-                                <textarea id="pose-input" class="form-control pose-textarea" rows="8" placeholder=""></textarea>
+                                <div class="character-selection-container">
+                                    <select id="character-select" class="form-control">
+                                        <option value="">Choose a character...</option>
+                                    </select>
+                                    <div class="character-preview" id="character-preview">
+                                        <!-- Character preview image will be shown here -->
+                                    </div>
+                                </div>
                             </div>
                             
-                            <div class="form-group-right">
-                                <div class="form-group">
-                                    <label for="background-input">
-                                        <i class="fas fa-mountain"></i>
-                                        Background <span class="optional">(optional)</span>
-                                    </label>
-                                    <textarea id="background-input" class="form-control" rows="3" placeholder=""></textarea>
+                            <div class="pose-selector">
+                                <label for="pose-input">
+                                    <i class="fas fa-running"></i>
+                                    Pose <span class="required">(required)</span>
+                                </label>
+                                <textarea id="pose-input" class="form-control pose-textarea" placeholder="Describe the pose or action..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Background and Outfit Options (button selectors) -->
+                        <div class="option-selectors">
+                            <div class="option-group">
+                                <label>
+                                    <i class="fas fa-mountain"></i>
+                                    Background <span class="optional">(optional)</span>
+                                </label>
+                                <div class="option-buttons" id="background-options">
+                                    <button type="button" class="option-btn" data-value="beach">Beach</button>
+                                    <button type="button" class="option-btn" data-value="forest">Forest</button>
+                                    <button type="button" class="option-btn" data-value="city">City</button>
+                                    <button type="button" class="option-btn" data-value="bedroom">Bedroom</button>
+                                    <button type="button" class="option-btn" data-value="office">Office</button>
+                                    <button type="button" class="option-btn" data-value="fantasy">Fantasy</button>
                                 </div>
-                                <div class="form-group">
-                                    <label for="outfit-input">
-                                        <i class="fas fa-tshirt"></i>
-                                        Outfit <span class="optional">(optional)</span>
-                                    </label>
-                                    <textarea id="outfit-input" class="form-control" rows="3" placeholder=""></textarea>
+                            </div>
+                            
+                            <div class="option-group">
+                                <label>
+                                    <i class="fas fa-tshirt"></i>
+                                    Outfit <span class="optional">(optional)</span>
+                                </label>
+                                <div class="option-buttons" id="outfit-options">
+                                    <button type="button" class="option-btn" data-value="casual">Casual</button>
+                                    <button type="button" class="option-btn" data-value="formal">Formal</button>
+                                    <button type="button" class="option-btn" data-value="swimwear">Swimwear</button>
+                                    <button type="button" class="option-btn" data-value="lingerie">Lingerie</button>
+                                    <button type="button" class="option-btn" data-value="cosplay">Cosplay</button>
+                                    <button type="button" class="option-btn" data-value="uniform">Uniform</button>
                                 </div>
                             </div>
                         </div>
@@ -234,14 +254,29 @@
                         <div class="form-group">
                             <label for="custom-prompt">
                                 <i class="fas fa-edit"></i>
-                                Custom Prompt <span class="optional">(optional)</span>
+                                Custom Prompt <span class="required">(required)</span>
                             </label>
-                            <textarea id="custom-prompt" class="form-control" rows="3" placeholder=""></textarea>
+                            <textarea id="custom-prompt" class="form-control" rows="3" placeholder="Describe what you want to generate..."></textarea>
+                        </div>
+
+                        <!-- Number of Images -->
+                        <div class="form-group">
+                            <label for="image-count">
+                                <i class="fas fa-images"></i>
+                                Number of images
+                            </label>
+                            <div class="image-count-selector">
+                                <button type="button" class="count-btn" data-count="1">1</button>
+                                <button type="button" class="count-btn active" data-count="2">2</button>
+                                <button type="button" class="count-btn" data-count="3">3</button>
+                                <button type="button" class="count-btn" data-count="4">4</button>
+                                <button type="button" class="count-btn" data-count="5">5</button>
+                            </div>
                         </div>
 
                         <!-- Advanced Settings -->
                         <div class="form-group">
-                            <button class="advanced-toggle">
+                            <button class="advanced-toggle" type="button">
                                 <i class="fas fa-cog"></i>
                                 Advanced Settings
                                 <i class="fas fa-chevron-down"></i>
@@ -249,41 +284,10 @@
                             <div class="advanced-settings">
                                 <div class="form-group">
                                     <label for="negative-prompt">
+                                        <i class="fas fa-ban"></i>
                                         Negative Prompt <span class="optional">(optional)</span>
                                     </label>
-                                    <textarea id="negative-prompt" class="form-control" rows="3" placeholder=""></textarea>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="style-select">Style</label>
-                                        <select id="style-select" class="form-control">
-                                            <option value="realistic">Realistic</option>
-                                            <option value="artistic">Artistic</option>
-                                            <option value="cinematic">Cinematic</option>
-                                            <option value="vintage">Vintage</option>
-                                            <option value="anime">Anime</option>
-                                        </select>
-                                    </div>
-                                    <div class="form-group">
-                                        <label for="quality-select">Quality</label>
-                                        <select id="quality-select" class="form-control">
-                                            <option value="standard">Standard</option>
-                                            <option value="high">High Quality</option>
-                                            <option value="ultra">Ultra HD</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="form-row">
-                                    <div class="form-group">
-                                        <label for="image-count">Number of images</label>
-                                        <select id="image-count" class="form-control">
-                                            <option value="1">1</option>
-                                            <option value="2">2</option>
-                                            <option value="3">3</option>
-                                            <option value="4">4</option>
-                                            <option value="5">5</option>
-                                        </select>
-                                    </div>
+                                    <textarea id="negative-prompt" class="form-control" rows="3" placeholder="What you don't want to see..."></textarea>
                                 </div>
                             </div>
                         </div>
@@ -306,6 +310,15 @@
                     </div>
                 </div>
             </section>
+
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loading-overlay" style="display: none;">
+                <div class="loading-content">
+                    <div class="loading-spinner"></div>
+                    <h3>Generating Your Fantasy...</h3>
+                    <p>This may take a few moments</p>
+                </div>
+            </div>
         </main>
     </div>
 

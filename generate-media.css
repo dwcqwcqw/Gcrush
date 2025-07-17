@@ -132,41 +132,144 @@
     color: #fff;
 }
 
-/* Character Selection */
-.character-select-group {
+/* Character and Pose Grid Layout (3:4 ratio, side by side) */
+.character-pose-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
     margin-bottom: 30px;
 }
 
-.character-select-group .form-control {
-    font-size: 1.1rem;
-    padding: 18px;
+.character-selector,
+.pose-selector {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
-/* Main Form Grid Layout */
-.form-grid {
+.character-selection-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    aspect-ratio: 3/4;
+}
+
+.character-selection-container .form-control {
+    font-size: 1.1rem;
+    padding: 18px;
+    margin-bottom: 15px;
+}
+
+.character-preview {
+    flex: 1;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px dashed rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #6b7280;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 20px;
+    transition: all 0.3s ease;
+}
+
+.character-preview.has-image {
+    border-style: solid;
+    border-color: rgba(168, 85, 247, 0.3);
+}
+
+.character-preview img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.pose-selector {
+    aspect-ratio: 3/4;
+}
+
+.pose-textarea {
+    flex: 1;
+    min-height: 200px;
+    resize: vertical;
+    height: 100%;
+}
+
+/* Option Selectors (Background and Outfit) */
+.option-selectors {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
     margin-bottom: 25px;
 }
 
-.pose-group {
-    margin-bottom: 0;
-}
-
-.pose-textarea {
-    min-height: 200px;
-    resize: vertical;
-}
-
-.form-group-right {
+.option-group {
     display: flex;
     flex-direction: column;
-    gap: 15px;
 }
 
-.form-group-right .form-group {
-    margin-bottom: 0;
+.option-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.option-btn {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+}
+
+.option-btn:hover {
+    border-color: rgba(168, 85, 247, 0.5);
+    background: rgba(168, 85, 247, 0.1);
+}
+
+.option-btn.active {
+    background: rgba(168, 85, 247, 0.3);
+    border-color: #a855f7;
+    color: #fff;
+}
+
+/* Image Count Selector */
+.image-count-selector {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.count-btn {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: #fff;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 50px;
+}
+
+.count-btn:hover {
+    border-color: rgba(168, 85, 247, 0.5);
+    background: rgba(168, 85, 247, 0.1);
+}
+
+.count-btn.active {
+    background: linear-gradient(135deg, #a855f7, #ec4899);
+    border-color: transparent;
+    color: #fff;
 }
 
 .form-row {
@@ -439,17 +542,42 @@
         padding: 25px;
     }
     
-    .form-grid {
+    .character-pose-grid {
         grid-template-columns: 1fr;
         gap: 15px;
     }
     
-    .form-group-right {
-        gap: 10px;
+    .character-selection-container,
+    .pose-selector {
+        aspect-ratio: auto;
     }
     
     .pose-textarea {
         min-height: 120px;
+    }
+    
+    .option-selectors {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .option-buttons {
+        gap: 6px;
+    }
+    
+    .option-btn {
+        padding: 6px 12px;
+        font-size: 0.8rem;
+    }
+    
+    .image-count-selector {
+        justify-content: center;
+        flex-wrap: wrap;
+    }
+    
+    .count-btn {
+        padding: 10px 16px;
+        font-size: 0.9rem;
     }
     
     .form-row {

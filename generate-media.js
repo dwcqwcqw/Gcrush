@@ -7,6 +7,9 @@ class GenerateMediaIntegrated {
         this.selectedCharacter = null;
         this.characters = [];
         this.isGenerating = false;
+        this.selectedBackground = null;
+        this.selectedOutfit = null;
+        this.selectedImageCount = 2;
     }
 
     init() {
@@ -38,9 +41,46 @@ class GenerateMediaIntegrated {
         if (characterSelect) {
             characterSelect.addEventListener('change', (e) => {
                 this.selectedCharacter = e.target.value;
+                this.updateCharacterPreview();
                 console.log('👤 Character selected:', this.selectedCharacter);
             });
         }
+
+        // Background option buttons
+        document.querySelectorAll('#background-options .option-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Remove active class from all background buttons
+                document.querySelectorAll('#background-options .option-btn').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                e.target.classList.add('active');
+                this.selectedBackground = e.target.dataset.value;
+                console.log('🏔️ Background selected:', this.selectedBackground);
+            });
+        });
+
+        // Outfit option buttons
+        document.querySelectorAll('#outfit-options .option-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Remove active class from all outfit buttons
+                document.querySelectorAll('#outfit-options .option-btn').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                e.target.classList.add('active');
+                this.selectedOutfit = e.target.dataset.value;
+                console.log('👕 Outfit selected:', this.selectedOutfit);
+            });
+        });
+
+        // Image count selector
+        document.querySelectorAll('.count-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Remove active class from all count buttons
+                document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked button
+                e.target.classList.add('active');
+                this.selectedImageCount = parseInt(e.target.dataset.count);
+                console.log('🖼️ Image count selected:', this.selectedImageCount);
+            });
+        });
 
         // Generate button
         const generateBtn = document.getElementById('generate-btn');
@@ -132,6 +172,25 @@ class GenerateMediaIntegrated {
         console.log('✅ Character select populated with', this.characters.length, 'characters');
     }
 
+    updateCharacterPreview() {
+        const characterPreview = document.getElementById('character-preview');
+        if (!characterPreview) return;
+
+        if (this.selectedCharacter) {
+            const character = this.characters.find(c => c.id === this.selectedCharacter);
+            if (character && character.image_url) {
+                characterPreview.innerHTML = `<img src="${character.image_url}" alt="${character.name}">`;
+                characterPreview.classList.add('has-image');
+            } else {
+                characterPreview.innerHTML = 'Character preview';
+                characterPreview.classList.remove('has-image');
+            }
+        } else {
+            characterPreview.innerHTML = 'Select a character to preview';
+            characterPreview.classList.remove('has-image');
+        }
+    }
+
     initializeAdvancedSettings() {
         // Set default values for advanced settings
         const styleSelect = document.getElementById('style-select');
@@ -152,6 +211,18 @@ class GenerateMediaIntegrated {
             return;
         }
 
+        const pose = document.getElementById('pose-input')?.value.trim();
+        if (!pose) {
+            alert('Please describe the pose!');
+            return;
+        }
+
+        const customPrompt = document.getElementById('custom-prompt')?.value.trim();
+        if (!customPrompt) {
+            alert('Please enter a custom prompt!');
+            return;
+        }
+
         if (this.isGenerating) {
             console.log('⏳ Already generating, please wait...');
             return;
@@ -162,31 +233,22 @@ class GenerateMediaIntegrated {
 
         try {
             // Get form values
-            const pose = document.getElementById('pose-input')?.value || '';
-            const background = document.getElementById('background-input')?.value || '';
-            const outfit = document.getElementById('outfit-input')?.value || '';
-            const customPrompt = document.getElementById('custom-prompt')?.value || '';
             const negativePrompt = document.getElementById('negative-prompt')?.value || '';
-            const style = document.getElementById('style-select')?.value || 'realistic';
-            const quality = document.getElementById('quality-select')?.value || 'high';
-            const imageCount = parseInt(document.getElementById('image-count')?.value || '1');
 
             // Build the prompt
             const prompt = this.buildPrompt({
                 character: this.selectedCharacter,
                 pose,
-                background,
-                outfit,
+                background: this.selectedBackground,
+                outfit: this.selectedOutfit,
                 customPrompt,
-                negativePrompt,
-                style,
-                quality
+                negativePrompt
             });
 
             console.log('📝 Generated prompt:', prompt);
 
             // Generate multiple images if requested
-            for (let i = 0; i < imageCount; i++) {
+            for (let i = 0; i < this.selectedImageCount; i++) {
                 const result = await this.simulateGeneration(prompt);
                 this.showGenerationResult(result);
             }
@@ -203,25 +265,27 @@ class GenerateMediaIntegrated {
         }
     }
 
-    buildPrompt({ character, pose, background, outfit, customPrompt, negativePrompt, style, quality }) {
+    buildPrompt({ character, pose, background, outfit, customPrompt, negativePrompt }) {
         const selectedChar = this.characters.find(c => c.id === character);
-        let prompt = `${style} style, ${quality} quality`;
+        let prompt = '';
         
         if (selectedChar) {
-            prompt += `, ${selectedChar.name} (${selectedChar.description})`;
+            prompt += `${selectedChar.name} (${selectedChar.description})`;
         }
         
         if (pose) prompt += `, ${pose}`;
-        if (background) prompt += `, background: ${background}`;
-        if (outfit) prompt += `, wearing: ${outfit}`;
+        if (background) prompt += `, in ${background} setting`;
+        if (outfit) prompt += `, wearing ${outfit}`;
         if (customPrompt) prompt += `, ${customPrompt}`;
-        if (negativePrompt) prompt += `, negative: ${negativePrompt}`;
         
-        return prompt;
+        return {
+            prompt: prompt,
+            negativePrompt: negativePrompt
+        };
     }
 
-    async simulateGeneration(prompt) {
-        console.log('🎭 Simulating generation with prompt:', prompt);
+    async simulateGeneration(promptData) {
+        console.log('🎭 Simulating generation with prompt:', promptData.prompt);
         
         // Simulate API delay
         await new Promise(resolve => setTimeout(resolve, 3000));
@@ -232,9 +296,10 @@ class GenerateMediaIntegrated {
             url: this.currentMediaType === 'image' 
                 ? 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/alex.png'
                 : 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Asset/banner3.mp4',
-            prompt: prompt,
-        timestamp: new Date().toISOString()
-    };
+            prompt: promptData.prompt,
+            negativePrompt: promptData.negativePrompt,
+            timestamp: new Date().toISOString()
+        };
     }
 
     showLoadingOverlay() {
