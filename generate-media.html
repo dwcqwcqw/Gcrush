@@ -224,14 +224,23 @@
                             </div>
                         </div>
 
-                        <!-- Outfit and Background Options (button selectors) -->
+                        <!-- Outfit and Background Options (tab-style selectors) -->
                         <div class="option-selectors">
-                            <div class="option-group">
-                                <label>
+                            <!-- Tab Headers -->
+                            <div class="option-tabs">
+                                <button type="button" class="tab-btn active" data-tab="outfit">
                                     <i class="fas fa-tshirt"></i>
-                                    Outfit <span class="optional">(optional)</span>
-                                </label>
-                                <div class="option-buttons" id="outfit-options">
+                                    Outfit
+                                </button>
+                                <button type="button" class="tab-btn" data-tab="background">
+                                    <i class="fas fa-mountain"></i>
+                                    Background
+                                </button>
+                            </div>
+                            
+                            <!-- Scrollable Option Buttons -->
+                            <div class="option-buttons-container">
+                                <div class="option-buttons active" id="outfit-options">
                                     <button type="button" class="option-btn" data-value="naked">Naked</button>
                                     <button type="button" class="option-btn" data-value="police uniform">Police Uniform</button>
                                     <button type="button" class="option-btn" data-value="leather jacket">Leather Jacket</button>
@@ -244,14 +253,11 @@
                                     <button type="button" class="option-btn" data-value="firefighter gear">Firefighter Gear</button>
                                     <button type="button" class="option-btn" data-value="sailor uniform">Sailor Uniform</button>
                                     <button type="button" class="option-btn" data-value="construction vest">Construction Vest</button>
+                                    <button type="button" class="option-btn" data-value="harness">Harness</button>
+                                    <button type="button" class="option-btn" data-value="thong">Thong</button>
+                                    <button type="button" class="option-btn" data-value="boxer">Boxer</button>
                                 </div>
-                            </div>
-                            
-                            <div class="option-group">
-                                <label>
-                                    <i class="fas fa-mountain"></i>
-                                    Background <span class="optional">(optional)</span>
-                                </label>
+                                
                                 <div class="option-buttons" id="background-options">
                                     <button type="button" class="option-btn" data-value="bedroom">Bedroom</button>
                                     <button type="button" class="option-btn" data-value="bathroom">Bathroom</button>
@@ -265,6 +271,9 @@
                                     <button type="button" class="option-btn" data-value="bar">Bar</button>
                                     <button type="button" class="option-btn" data-value="nightclub">Nightclub</button>
                                     <button type="button" class="option-btn" data-value="rooftop">Rooftop</button>
+                                    <button type="button" class="option-btn" data-value="kitchen">Kitchen</button>
+                                    <button type="button" class="option-btn" data-value="garage">Garage</button>
+                                    <button type="button" class="option-btn" data-value="balcony">Balcony</button>
                                 </div>
                             </div>
                         </div>

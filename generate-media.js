@@ -83,6 +83,28 @@ class GenerateMediaIntegrated {
             });
         }
 
+        // Tab switching functionality
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                // Remove active class from all tab buttons
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                // Add active class to clicked tab
+                e.target.classList.add('active');
+                
+                // Hide all option buttons
+                document.querySelectorAll('.option-buttons').forEach(options => options.classList.remove('active'));
+                
+                // Show selected option buttons
+                const tabType = e.target.dataset.tab;
+                const targetOptions = document.getElementById(`${tabType}-options`);
+                if (targetOptions) {
+                    targetOptions.classList.add('active');
+                }
+                
+                console.log('🔄 Tab switched to:', tabType);
+            });
+        });
+
         // Background option buttons
         document.querySelectorAll('#background-options .option-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
