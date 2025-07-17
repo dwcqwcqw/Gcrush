@@ -4,14 +4,24 @@ console.log('🎨 Generate Media JS loaded for independent page');
 class GenerateMediaIntegrated {
     constructor() {
         this.currentMediaType = 'image';
-        this.selectedCharacter = null;
-        this.selectedPose = null;
+        // Separate states for image and video
+        this.imageState = {
+            selectedCharacter: null,
+            selectedPose: null,
+            selectedBackground: null,
+            selectedOutfit: null,
+            selectedImageCount: 2
+        };
+        this.videoState = {
+            selectedCharacter: null,
+            selectedPose: null,
+            selectedBackground: null,
+            selectedOutfit: null,
+            selectedImageCount: 2
+        };
         this.characters = [];
         this.poses = [];
         this.isGenerating = false;
-        this.selectedBackground = null;
-        this.selectedOutfit = null;
-        this.selectedImageCount = 2;
     }
 
     init() {
@@ -20,6 +30,17 @@ class GenerateMediaIntegrated {
         this.loadCharacters();
         this.loadPoses();
         this.initializeAdvancedSettings();
+    }
+
+    // Get current state based on media type
+    getCurrentState() {
+        return this.currentMediaType === 'image' ? this.imageState : this.videoState;
+    }
+
+    // Set current state based on media type
+    setCurrentState(key, value) {
+        const state = this.getCurrentState();
+        state[key] = value;
     }
 
     setupEventListeners() {
@@ -36,8 +57,15 @@ class GenerateMediaIntegrated {
                 e.target.classList.add('active');
                 this.currentMediaType = e.target.dataset.type;
                 console.log('📱 Media type changed to:', this.currentMediaType);
-    });
-});
+                
+                // Update UI to reflect current state
+                this.updateCharacterPreview();
+                this.updatePosePreview();
+                this.updateBackgroundSelection();
+                this.updateOutfitSelection();
+                this.updateImageCountSelection();
+            });
+        });
 
         // Character selection click
         const characterPreview = document.getElementById('character-preview-clickable');
@@ -62,8 +90,8 @@ class GenerateMediaIntegrated {
                 document.querySelectorAll('#background-options .option-btn').forEach(b => b.classList.remove('active'));
                 // Add active class to clicked button
                 e.target.classList.add('active');
-                this.selectedBackground = e.target.dataset.value;
-                console.log('🏔️ Background selected:', this.selectedBackground);
+                this.setCurrentState('selectedBackground', e.target.dataset.value);
+                console.log('🏔️ Background selected:', e.target.dataset.value);
             });
         });
 
@@ -74,8 +102,8 @@ class GenerateMediaIntegrated {
                 document.querySelectorAll('#outfit-options .option-btn').forEach(b => b.classList.remove('active'));
                 // Add active class to clicked button
                 e.target.classList.add('active');
-                this.selectedOutfit = e.target.dataset.value;
-                console.log('👕 Outfit selected:', this.selectedOutfit);
+                this.setCurrentState('selectedOutfit', e.target.dataset.value);
+                console.log('👕 Outfit selected:', e.target.dataset.value);
             });
         });
 
@@ -86,8 +114,8 @@ class GenerateMediaIntegrated {
                 document.querySelectorAll('.count-btn').forEach(b => b.classList.remove('active'));
                 // Add active class to clicked button
                 e.target.classList.add('active');
-                this.selectedImageCount = parseInt(e.target.dataset.count);
-                console.log('🖼️ Image count selected:', this.selectedImageCount);
+                this.setCurrentState('selectedImageCount', parseInt(e.target.dataset.count));
+                console.log('🖼️ Image count selected:', parseInt(e.target.dataset.count));
             });
         });
 
@@ -223,7 +251,7 @@ class GenerateMediaIntegrated {
             item.className = 'selection-item';
             item.dataset.characterId = character.id;
             
-            if (this.selectedCharacter === character.id) {
+            if (this.getCurrentState().selectedCharacter === character.id) {
                 item.classList.add('selected');
             }
 
@@ -254,7 +282,7 @@ class GenerateMediaIntegrated {
     }
 
     selectCharacter(characterId) {
-        this.selectedCharacter = characterId;
+        this.setCurrentState('selectedCharacter', characterId);
         this.updateCharacterPreview();
         console.log('👤 Character selected:', characterId);
     }
@@ -263,8 +291,9 @@ class GenerateMediaIntegrated {
         const characterPreview = document.getElementById('character-preview-clickable');
         if (!characterPreview) return;
 
-        if (this.selectedCharacter) {
-            const character = this.characters.find(c => c.id === this.selectedCharacter);
+        const selectedCharacter = this.getCurrentState().selectedCharacter;
+        if (selectedCharacter) {
+            const character = this.characters.find(c => c.id === selectedCharacter);
             if (character && character.image_url) {
                 characterPreview.innerHTML = `
                     <img src="${character.image_url}" alt="${character.name}">
@@ -306,7 +335,7 @@ class GenerateMediaIntegrated {
             item.className = 'selection-item';
             item.dataset.poseId = pose.id;
             
-            if (this.selectedPose === pose.id) {
+            if (this.getCurrentState().selectedPose === pose.id) {
                 item.classList.add('selected');
             }
 
@@ -337,7 +366,7 @@ class GenerateMediaIntegrated {
     }
 
     selectPose(poseId) {
-        this.selectedPose = poseId;
+        this.setCurrentState('selectedPose', poseId);
         this.updatePosePreview();
         console.log('📸 Pose selected:', poseId);
     }
@@ -346,8 +375,9 @@ class GenerateMediaIntegrated {
         const posePreview = document.getElementById('pose-preview-clickable');
         if (!posePreview) return;
 
-        if (this.selectedPose) {
-            const pose = this.poses.find(p => p.id === this.selectedPose);
+        const selectedPose = this.getCurrentState().selectedPose;
+        if (selectedPose) {
+            const pose = this.poses.find(p => p.id === selectedPose);
             if (pose && pose.image_url) {
                 posePreview.innerHTML = `
                     <img src="${pose.image_url}" alt="${pose.name}">
@@ -374,6 +404,36 @@ class GenerateMediaIntegrated {
         }
     }
 
+    updateBackgroundSelection() {
+        const currentState = this.getCurrentState();
+        document.querySelectorAll('#background-options .option-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.value === currentState.selectedBackground) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    updateOutfitSelection() {
+        const currentState = this.getCurrentState();
+        document.querySelectorAll('#outfit-options .option-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.value === currentState.selectedOutfit) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
+    updateImageCountSelection() {
+        const currentState = this.getCurrentState();
+        document.querySelectorAll('.count-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (parseInt(btn.dataset.count) === currentState.selectedImageCount) {
+                btn.classList.add('active');
+            }
+        });
+    }
+
     initializeAdvancedSettings() {
         // Set default values for advanced settings
         const styleSelect = document.getElementById('style-select');
@@ -389,12 +449,13 @@ class GenerateMediaIntegrated {
         console.log('🎨 Starting media generation...');
 
         // Validation
-        if (!this.selectedCharacter) {
+        const currentState = this.getCurrentState();
+        if (!currentState.selectedCharacter) {
             alert('Please select a character first!');
             return;
         }
 
-        if (!this.selectedPose) {
+        if (!currentState.selectedPose) {
             alert('Please select a pose!');
             return;
         }
@@ -419,10 +480,10 @@ class GenerateMediaIntegrated {
 
             // Build the prompt
             const prompt = this.buildPrompt({
-                character: this.selectedCharacter,
-                pose: this.selectedPose,
-                background: this.selectedBackground,
-                outfit: this.selectedOutfit,
+                character: currentState.selectedCharacter,
+                pose: currentState.selectedPose,
+                background: currentState.selectedBackground,
+                outfit: currentState.selectedOutfit,
                 customPrompt,
                 negativePrompt
             });
@@ -430,7 +491,7 @@ class GenerateMediaIntegrated {
             console.log('📝 Generated prompt:', prompt);
 
             // Generate multiple images if requested
-            for (let i = 0; i < this.selectedImageCount; i++) {
+            for (let i = 0; i < currentState.selectedImageCount; i++) {
                 const result = await this.simulateGeneration(prompt);
                 this.showGenerationResult(result);
             }
