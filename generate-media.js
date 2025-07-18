@@ -475,13 +475,6 @@ class GenerateMediaIntegrated {
     async generateMedia() {
         console.log('🎨 Starting media generation...');
 
-        // 检查用户登录状态
-        const user = await this.checkUserAuthentication();
-        if (!user) {
-            this.showLoginModal();
-            return;
-        }
-
         // Validation
         const currentState = this.getCurrentState();
         if (!currentState.selectedCharacter) {
@@ -497,6 +490,17 @@ class GenerateMediaIntegrated {
 
         if (this.isGenerating) {
             console.log('⏳ Already generating, please wait...');
+            return;
+        }
+
+        // 检查用户登录状态
+        const user = await this.checkUserAuthentication();
+        if (!user) {
+            // 使用默认的登录框
+            const loginBtn = document.querySelector('.login-btn');
+            if (loginBtn) {
+                loginBtn.click();
+            }
             return;
         }
 
@@ -546,11 +550,18 @@ class GenerateMediaIntegrated {
             const result = await response.json();
             console.log('✅ Generation successful:', result);
 
-            // 显示结果
-            displayGenerationResult(result);
-            
-            // 更新图库
-            await loadUserGallery();
+            // 显示结果到原有的gallery系统
+            for (const imageData of result.images) {
+                const galleryResult = {
+                    type: 'image',
+                    url: imageData.url,
+                    prompt: finalPrompt,
+                    negativePrompt: negativePrompt,
+                    timestamp: imageData.created_at,
+                    seed: imageData.seed
+                };
+                this.showGenerationResult(galleryResult);
+            }
             
             this.hideLoadingOverlay();
             this.showSuccessMessage();
@@ -578,40 +589,7 @@ class GenerateMediaIntegrated {
         }
     }
 
-    // 显示登录模态框
-    showLoginModal() {
-        // 检查是否有现有的登录模态框
-        let loginModal = document.getElementById('loginModal');
-        if (!loginModal) {
-            // 创建登录模态框
-            loginModal = document.createElement('div');
-            loginModal.id = 'loginModal';
-            loginModal.className = 'modal-overlay';
-            loginModal.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>Login Required</h3>
-                        <button class="modal-close" onclick="this.closest('.modal-overlay').style.display='none'">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <p>You need to be logged in to generate images.</p>
-                        <div class="auth-buttons">
-                            <button class="auth-btn login-btn" onclick="document.querySelector('.login-btn:not(.auth-btn)').click(); this.closest('.modal-overlay').style.display='none'">
-                                <i class="fas fa-sign-in-alt"></i> Login
-                            </button>
-                            <button class="auth-btn signup-btn" onclick="document.querySelector('.create-account-btn').click(); this.closest('.modal-overlay').style.display='none'">
-                                <i class="fas fa-user-plus"></i> Sign Up
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(loginModal);
-        }
-        loginModal.style.display = 'flex';
-    }
+
 
     // 处理角色选择
     handleCharacterSelection(character) {
@@ -906,106 +884,6 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// 显示生成结果
-function displayGenerationResult(result) {
-    console.log('📸 Showing generation result:', result);
-    
-    const resultContainer = document.getElementById('generation-result');
-    if (!resultContainer) {
-        console.error('❌ Generation result container not found');
-        return;
-    }
 
-    let imagesHtml = '';
-    if (result.images && result.images.length > 0) {
-        imagesHtml = result.images.map(img => `
-            <div class="generated-image">
-                <img src="${img.url}" alt="Generated Image" style="max-width: 100%; border-radius: 10px;">
-                <div class="image-info">
-                    <p><strong>Seed:</strong> ${img.seed}</p>
-                    <button class="download-btn" onclick="downloadImage('${img.url}', '${img.filename}')">
-                        <i class="fas fa-download"></i> Download
-                    </button>
-                </div>
-            </div>
-        `).join('');
-    }
-
-    resultContainer.innerHTML = `
-        <div class="result-header">
-            <h3>Generated Images (${result.images.length})</h3>
-            <div class="result-actions">
-                <button class="regenerate-btn" onclick="window.generateMediaApp.generateMedia()">
-                    <i class="fas fa-redo"></i> Regenerate
-                </button>
-            </div>
-        </div>
-        <div class="result-content">
-            <div class="generated-images-grid">
-                ${imagesHtml}
-            </div>
-            <div class="result-info">
-                <p><strong>Character:</strong> ${result.character_name}</p>
-                <p><strong>Generation Time:</strong> ${result.generation_time}s</p>
-                <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
-            </div>
-        </div>
-    `;
-
-    resultContainer.style.display = 'block';
-}
-
-// 下载图片
-function downloadImage(url, filename) {
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = filename || 'generated_image.png';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-}
-
-// 加载用户图库
-async function loadUserGallery() {
-    console.log('🖼️ Loading user gallery...');
-    
-    const user = await checkUserAuthentication();
-    if (!user) {
-        console.log('❌ User not authenticated, skipping gallery load');
-        return;
-    }
-
-    try {
-        // 这里可以添加从数据库加载用户图片的逻辑
-        // 目前先显示一个占位符
-        const galleryContainer = document.getElementById('user-gallery');
-        if (galleryContainer) {
-            galleryContainer.innerHTML = `
-                <div class="gallery-header">
-                    <h3>My Gallery</h3>
-                </div>
-                <div class="gallery-content">
-                    <p>Your generated images will appear here...</p>
-                </div>
-            `;
-        }
-    } catch (error) {
-        console.error('❌ Error loading user gallery:', error);
-    }
-}
-
-// 检查用户认证状态
-async function checkUserAuthentication() {
-    try {
-        if (window.supabase) {
-            const { data: { user } } = await window.supabase.auth.getUser();
-            return user;
-        }
-        return null;
-    } catch (error) {
-        console.error('❌ Auth check error:', error);
-        return null;
-    }
-}
 
 console.log('🎨 Generate Media JS setup complete for independent page'); 
