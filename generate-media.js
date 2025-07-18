@@ -75,6 +75,11 @@ class GenerateMediaIntegrated {
             });
         }
 
+        // 监听角色选择变化
+        document.addEventListener('characterSelected', (event) => {
+            this.handleCharacterSelection(event.detail);
+        });
+
         // Pose selection click
         const posePreview = document.getElementById('pose-preview-clickable');
         if (posePreview) {
@@ -183,8 +188,8 @@ class GenerateMediaIntegrated {
             if (typeof window.supabase !== 'undefined' && window.supabase) {
                 const { data: characters, error } = await window.supabase
                     .from('characters')
-                    .select('id, name, description, image_url')
-                    .order('name');
+                    .select('id, name, description, system_prompt, images')
+                    .order('number');
 
                 if (error) {
                     console.error('❌ Error loading characters:', error);
@@ -470,15 +475,17 @@ class GenerateMediaIntegrated {
     async generateMedia() {
         console.log('🎨 Starting media generation...');
 
+        // 检查用户登录状态
+        const user = await this.checkUserAuthentication();
+        if (!user) {
+            this.showLoginModal();
+            return;
+        }
+
         // Validation
         const currentState = this.getCurrentState();
         if (!currentState.selectedCharacter) {
             alert('Please select a character first!');
-            return;
-        }
-
-        if (!currentState.selectedPose) {
-            alert('Please select a pose!');
             return;
         }
 
@@ -500,23 +507,50 @@ class GenerateMediaIntegrated {
             // Get form values
             const negativePrompt = document.getElementById('negative-prompt')?.value || '';
 
-            // Build the prompt
-            const prompt = this.buildPrompt({
+            // Build the complete prompt
+            const finalPrompt = this.buildCompletePrompt({
                 character: currentState.selectedCharacter,
                 pose: currentState.selectedPose,
                 background: currentState.selectedBackground,
                 outfit: currentState.selectedOutfit,
-                customPrompt,
-                negativePrompt
+                customPrompt
             });
 
-            console.log('📝 Generated prompt:', prompt);
+            console.log('📝 Final prompt:', finalPrompt);
 
-            // Generate multiple images if requested
-            for (let i = 0; i < currentState.selectedImageCount; i++) {
-                const result = await this.simulateGeneration(prompt);
-                this.showGenerationResult(result);
+            // 准备API请求数据
+            const requestData = {
+                user_id: user.id,
+                prompt: finalPrompt,
+                negative_prompt: negativePrompt,
+                batch_size: currentState.selectedImageCount || 2,
+                character_name: currentState.selectedCharacter.name
+            };
+
+            console.log('📤 Sending generation request:', requestData);
+
+            // 调用生成API
+            const response = await fetch('/api/generate-image', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(requestData)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Generation failed');
             }
+
+            const result = await response.json();
+            console.log('✅ Generation successful:', result);
+
+            // 显示结果
+            displayGenerationResult(result);
+            
+            // 更新图库
+            await loadUserGallery();
             
             this.hideLoadingOverlay();
             this.showSuccessMessage();
@@ -524,33 +558,187 @@ class GenerateMediaIntegrated {
         } catch (error) {
             console.error('❌ Error generating media:', error);
             this.hideLoadingOverlay();
-            alert('Failed to generate media. Please try again.');
+            alert(`Failed to generate media: ${error.message}`);
         } finally {
             this.isGenerating = false;
         }
     }
 
-    buildPrompt({ character, pose, background, outfit, customPrompt, negativePrompt }) {
-        const selectedChar = this.characters.find(c => c.id === character);
-        const selectedPose = this.poses.find(p => p.id === pose);
-        let prompt = '';
+    // 检查用户认证状态
+    async checkUserAuthentication() {
+        try {
+            if (window.supabase) {
+                const { data: { user } } = await window.supabase.auth.getUser();
+                return user;
+            }
+            return null;
+        } catch (error) {
+            console.error('❌ Auth check error:', error);
+            return null;
+        }
+    }
+
+    // 显示登录模态框
+    showLoginModal() {
+        // 检查是否有现有的登录模态框
+        let loginModal = document.getElementById('loginModal');
+        if (!loginModal) {
+            // 创建登录模态框
+            loginModal = document.createElement('div');
+            loginModal.id = 'loginModal';
+            loginModal.className = 'modal-overlay';
+            loginModal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3>Login Required</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').style.display='none'">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>You need to be logged in to generate images.</p>
+                        <div class="auth-buttons">
+                            <button class="auth-btn login-btn" onclick="document.querySelector('.login-btn:not(.auth-btn)').click(); this.closest('.modal-overlay').style.display='none'">
+                                <i class="fas fa-sign-in-alt"></i> Login
+                            </button>
+                            <button class="auth-btn signup-btn" onclick="document.querySelector('.create-account-btn').click(); this.closest('.modal-overlay').style.display='none'">
+                                <i class="fas fa-user-plus"></i> Sign Up
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loginModal);
+        }
+        loginModal.style.display = 'flex';
+    }
+
+    // 处理角色选择
+    handleCharacterSelection(character) {
+        console.log('👤 Character selected:', character);
         
-        if (selectedChar) {
-            prompt += `${selectedChar.name}`;
+        // 从角色的system_prompt中提取描述性内容并填充到custom prompt
+        if (character && character.system_prompt) {
+            const customPromptField = document.getElementById('custom-prompt');
+            if (customPromptField) {
+                // 提取角色描述，去除对话相关的指令
+                const characterDescription = this.extractCharacterDescription(character.system_prompt);
+                customPromptField.value = characterDescription;
+            }
+        }
+    }
+
+    // 从system_prompt中提取角色描述
+    extractCharacterDescription(systemPrompt) {
+        // 移除"You are"开头的指令性语言，保留描述性内容
+        let description = systemPrompt.replace(/^You are\s+/i, '');
+        
+        // 提取年龄、外貌、性格等描述性信息
+        const sentences = description.split(/[.!?]+/);
+        const descriptiveSentences = sentences.filter(sentence => {
+            const trimmed = sentence.trim();
+            return trimmed.length > 0 && 
+                   !trimmed.toLowerCase().includes('you are') &&
+                   !trimmed.toLowerCase().includes('you love') &&
+                   !trimmed.toLowerCase().includes('you enjoy') &&
+                   !trimmed.toLowerCase().includes('you spend');
+        });
+        
+        // 取前两句作为角色描述
+        return descriptiveSentences.slice(0, 2).join('. ').trim();
+    }
+
+    // 构建完整的提示词
+    buildCompletePrompt({ character, pose, background, outfit, customPrompt }) {
+        let promptParts = [];
+        
+        // 添加基础角色描述
+        if (customPrompt) {
+            promptParts.push(customPrompt);
         }
         
-        if (selectedPose) {
-            prompt += `, ${selectedPose.name}`;
+        // 添加姿势描述
+        if (pose) {
+            const poseDescription = this.getPoseDescription(pose);
+            if (poseDescription) {
+                promptParts.push(poseDescription);
+            }
         }
         
-        if (background) prompt += `, in ${background} setting`;
-        if (outfit) prompt += `, wearing ${outfit}`;
-        if (customPrompt) prompt += `, ${customPrompt}`;
+        // 添加服装描述
+        if (outfit) {
+            const outfitDescription = this.getOutfitDescription(outfit);
+            if (outfitDescription) {
+                promptParts.push(outfitDescription);
+            }
+        }
         
-        return {
-            prompt: prompt,
-            negativePrompt: negativePrompt
+        // 添加背景描述
+        if (background) {
+            const backgroundDescription = this.getBackgroundDescription(background);
+            if (backgroundDescription) {
+                promptParts.push(backgroundDescription);
+            }
+        }
+        
+        return promptParts.join(', ');
+    }
+
+    // 获取姿势描述
+    getPoseDescription(pose) {
+        const poseDescriptions = {
+            'sit': 'sitting comfortably in a relaxed position',
+            'stand': 'standing confidently with good posture',
+            'lie': 'lying down in a comfortable position',
+            'lean': 'leaning casually against something',
+            'kneel': 'kneeling gracefully',
+            'squat': 'squatting in a dynamic pose'
         };
+        return poseDescriptions[pose] || `in ${pose} pose`;
+    }
+
+    // 获取服装描述
+    getOutfitDescription(outfit) {
+        const outfitDescriptions = {
+            'naked': 'completely nude',
+            'police uniform': 'wearing a police uniform',
+            'leather jacket': 'wearing a leather jacket',
+            'business suit': 'wearing a business suit',
+            'military uniform': 'wearing a military uniform',
+            'tank top': 'wearing a tank top',
+            'jockstrap': 'wearing a jockstrap',
+            'cowboy outfit': 'wearing a cowboy outfit',
+            'doctor coat': 'wearing a doctor coat',
+            'firefighter gear': 'wearing firefighter gear',
+            'sailor uniform': 'wearing a sailor uniform',
+            'construction vest': 'wearing a construction vest',
+            'harness': 'wearing a harness',
+            'thong': 'wearing a thong',
+            'boxer': 'wearing boxer shorts'
+        };
+        return outfitDescriptions[outfit] || `wearing ${outfit}`;
+    }
+
+    // 获取背景描述
+    getBackgroundDescription(background) {
+        const backgroundDescriptions = {
+            'bedroom': 'in a modern bedroom',
+            'bathroom': 'in a luxurious bathroom',
+            'gym': 'in a modern gym, surrounded by equipment',
+            'locker room': 'in a locker room',
+            'office': 'in a professional office',
+            'hotel room': 'in a hotel room',
+            'beach': 'on a beautiful beach',
+            'pool': 'by a swimming pool',
+            'sauna': 'in a sauna',
+            'bar': 'in a stylish bar',
+            'nightclub': 'in a nightclub',
+            'rooftop': 'on a rooftop',
+            'kitchen': 'in a modern kitchen',
+            'garage': 'in a garage',
+            'balcony': 'on a balcony'
+        };
+        return backgroundDescriptions[background] || `in ${background}`;
     }
 
     async simulateGeneration(promptData) {
@@ -717,5 +905,107 @@ document.addEventListener('click', (e) => {
         }
     }
 });
+
+// 显示生成结果
+function displayGenerationResult(result) {
+    console.log('📸 Showing generation result:', result);
+    
+    const resultContainer = document.getElementById('generation-result');
+    if (!resultContainer) {
+        console.error('❌ Generation result container not found');
+        return;
+    }
+
+    let imagesHtml = '';
+    if (result.images && result.images.length > 0) {
+        imagesHtml = result.images.map(img => `
+            <div class="generated-image">
+                <img src="${img.url}" alt="Generated Image" style="max-width: 100%; border-radius: 10px;">
+                <div class="image-info">
+                    <p><strong>Seed:</strong> ${img.seed}</p>
+                    <button class="download-btn" onclick="downloadImage('${img.url}', '${img.filename}')">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    resultContainer.innerHTML = `
+        <div class="result-header">
+            <h3>Generated Images (${result.images.length})</h3>
+            <div class="result-actions">
+                <button class="regenerate-btn" onclick="window.generateMediaApp.generateMedia()">
+                    <i class="fas fa-redo"></i> Regenerate
+                </button>
+            </div>
+        </div>
+        <div class="result-content">
+            <div class="generated-images-grid">
+                ${imagesHtml}
+            </div>
+            <div class="result-info">
+                <p><strong>Character:</strong> ${result.character_name}</p>
+                <p><strong>Generation Time:</strong> ${result.generation_time}s</p>
+                <p><strong>Generated:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+        </div>
+    `;
+
+    resultContainer.style.display = 'block';
+}
+
+// 下载图片
+function downloadImage(url, filename) {
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename || 'generated_image.png';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
+
+// 加载用户图库
+async function loadUserGallery() {
+    console.log('🖼️ Loading user gallery...');
+    
+    const user = await checkUserAuthentication();
+    if (!user) {
+        console.log('❌ User not authenticated, skipping gallery load');
+        return;
+    }
+
+    try {
+        // 这里可以添加从数据库加载用户图片的逻辑
+        // 目前先显示一个占位符
+        const galleryContainer = document.getElementById('user-gallery');
+        if (galleryContainer) {
+            galleryContainer.innerHTML = `
+                <div class="gallery-header">
+                    <h3>My Gallery</h3>
+                </div>
+                <div class="gallery-content">
+                    <p>Your generated images will appear here...</p>
+                </div>
+            `;
+        }
+    } catch (error) {
+        console.error('❌ Error loading user gallery:', error);
+    }
+}
+
+// 检查用户认证状态
+async function checkUserAuthentication() {
+    try {
+        if (window.supabase) {
+            const { data: { user } } = await window.supabase.auth.getUser();
+            return user;
+        }
+        return null;
+    } catch (error) {
+        console.error('❌ Auth check error:', error);
+        return null;
+    }
+}
 
 console.log('🎨 Generate Media JS setup complete for independent page'); 
