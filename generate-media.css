@@ -616,6 +616,88 @@
     font-size: 0.9rem;
 }
 
+/* Gallery Loading Placeholder */
+.loading-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 200px;
+    background: rgba(30, 30, 30, 0.8);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    position: relative;
+}
+
+.loading-placeholder .loading-spinner {
+    width: 28px;
+    height: 28px;
+    border: 2px solid rgba(168, 85, 247, 0.2);
+    border-top: 2px solid #a855f7;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 8px;
+}
+
+.loading-placeholder p {
+    margin: 0;
+    font-size: 0.7rem;
+    color: #9ca3af;
+    line-height: 1.2;
+}
+
+.loading-placeholder p:first-of-type {
+    color: #fff;
+    font-weight: 500;
+    margin-bottom: 2px;
+    font-size: 0.75rem;
+}
+
+.loading-placeholder .loading-time {
+    font-size: 0.6rem;
+    color: #6b7280;
+    margin-top: 1px;
+}
+
+/* Gallery item specific styling for loading */
+.gallery-item.loading-placeholder-item {
+    background: transparent;
+    border: 1px solid rgba(168, 85, 247, 0.2);
+}
+
+.gallery-item.loading-placeholder-item .loading-placeholder {
+    background: rgba(30, 30, 30, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(168, 85, 247, 0.1);
+}
+
+/* Mobile responsive adjustments for loading placeholder */
+@media (max-width: 768px) {
+    .loading-placeholder {
+        height: 180px;
+        padding: 12px;
+    }
+    
+    .loading-placeholder .loading-spinner {
+        width: 24px;
+        height: 24px;
+        margin-bottom: 6px;
+    }
+    
+    .loading-placeholder p:first-of-type {
+        font-size: 0.7rem;
+    }
+    
+    .loading-placeholder p {
+        font-size: 0.65rem;
+    }
+    
+    .loading-placeholder .loading-time {
+        font-size: 0.55rem;
+    }
+}
+
 /* My Gallery */
 .my-gallery {
     background: rgba(30, 30, 30, 0.95);
