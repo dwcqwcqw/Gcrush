@@ -44,7 +44,7 @@ export async function onRequestPost(context) {
             }
 
             // 验证用户认证
-            const { user_id, prompt, negative_prompt, batch_size, character_name } = requestData;
+            const { user_id, prompt, negative_prompt, batch_size, character_name, loading_id } = requestData;
             if (!user_id) {
                 return new Response(JSON.stringify({ error: 'User authentication required' }), {
                     status: 401,
@@ -437,6 +437,48 @@ export async function onRequestPost(context) {
                             const errorText = await saveResponse.text();
                             console.error(`❌ Failed to save image ${i + 1} to gallery:`, errorText);
                             console.error(`📋 Response headers:`, [...saveResponse.headers.entries()]);
+                        }
+                    }
+                    
+                    // 如果有loading_id，更新加载状态为完成状态
+                    if (loading_id && generatedImages.length > 0) {
+                        console.log('🔄 Updating loading state to completed...');
+                        try {
+                            const firstImage = generatedImages[0];
+                            const updateResponse = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_gallery?id=eq.${loading_id}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                                    'Authorization': `Bearer ${env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                                    'Content-Type': 'application/json',
+                                    'Prefer': 'return=minimal'
+                                },
+                                body: JSON.stringify({
+                                    image_url: firstImage.url,
+                                    filename: firstImage.filename,
+                                    seed: firstImage.seed,
+                                    generation_params: {
+                                        status: 'completed',
+                                        completed_at: new Date().toISOString(),
+                                        width: 1080,
+                                        height: 1440,
+                                        steps: 30,
+                                        cfg: 3,
+                                        sampler_name: 'dpmpp_3m_sde_gpu',
+                                        scheduler: 'karras',
+                                        batch_size: batch_size || 1
+                                    }
+                                })
+                            });
+                            
+                            if (updateResponse.ok) {
+                                console.log('✅ Loading state updated successfully');
+                            } else {
+                                const errorText = await updateResponse.text();
+                                console.error('❌ Failed to update loading state:', errorText);
+                            }
+                        } catch (updateError) {
+                            console.error('❌ Error updating loading state:', updateError);
                         }
                     }
                 } else {

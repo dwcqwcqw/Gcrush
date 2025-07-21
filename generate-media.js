@@ -78,6 +78,9 @@ class GenerateMediaIntegrated {
         if (this.supabase) {
             console.log('✅ Supabase available, loading user gallery...');
             await this.loadUserGallery();
+            
+            // Start checking for loading state updates
+            this.startLoadingStateChecker();
         } else {
             console.error('❌ Supabase not available, cannot load gallery');
         }
@@ -1283,20 +1286,8 @@ class GenerateMediaIntegrated {
             media.controls = true;
         }
         
-        const itemInfo = document.createElement('div');
-        itemInfo.className = 'gallery-item-info';
-        
-        const title = document.createElement('h4');
-        title.textContent = result.character || 'Generated Media';
-        
-        const timestamp = document.createElement('p');
-        timestamp.textContent = new Date().toLocaleString();
-        
-        itemInfo.appendChild(title);
-        itemInfo.appendChild(timestamp);
-        
+        // 只显示图片，不显示任何文字信息
         galleryItem.appendChild(media);
-        galleryItem.appendChild(itemInfo);
         
         // 根据insertAtTop参数决定插入位置
         if (insertAtTop) {
@@ -1475,15 +1466,14 @@ class GenerateMediaIntegrated {
             galleryContent.appendChild(galleryGrid);
         }
         
-        // Clear existing items (except loading placeholders)
-        const existingItems = galleryGrid.querySelectorAll('.gallery-item:not(.loading-placeholder-item)');
-        existingItems.forEach(item => item.remove());
-        console.log(`🗑️ Cleared ${existingItems.length} existing items`);
+        // Clear all existing items (we'll reload everything including loading states)
+        galleryGrid.innerHTML = '';
+        console.log(`🗑️ Cleared all existing items`);
         
-        // Add gallery items
+        // Add gallery items (already sorted by created_at desc from Supabase)
         console.log(`📸 Adding ${this.userGallery.length} gallery items`);
         this.userGallery.forEach((item, index) => {
-            console.log(`📸 Adding item ${index + 1}:`, item.filename);
+            console.log(`📸 Adding item ${index + 1}:`, item.filename || 'loading');
             this.addGalleryItemFromData(item);
         });
         
@@ -1497,17 +1487,28 @@ class GenerateMediaIntegrated {
         
         const galleryItem = document.createElement('div');
         galleryItem.className = 'gallery-item';
-        galleryItem.innerHTML = `
-            <img src="${galleryData.image_url}" alt="Generated Image" loading="lazy">
-            <div class="gallery-item-overlay">
-                <div class="gallery-item-info">
-                    <p class="gallery-character">${galleryData.character_name || 'Unknown'}</p>
-                    <p class="gallery-prompt">${galleryData.prompt || 'No prompt'}</p>
-                </div>
-            </div>
-        `;
         
-        // Add to gallery grid at the end (since they're already sorted)
+        // Check if this is a loading state
+        const isLoading = !galleryData.image_url || galleryData.generation_params?.status === 'generating';
+        
+        if (isLoading) {
+            // Display loading placeholder for generating images
+            galleryItem.className += ' loading-placeholder-item';
+            galleryItem.innerHTML = `
+                <div class="loading-placeholder">
+                    <div class="loading-spinner"></div>
+                    <p>Generating...</p>
+                    <p class="loading-time">Started: ${new Date(galleryData.created_at).toLocaleTimeString()}</p>
+                </div>
+            `;
+        } else {
+            // Display only the image, no text overlay
+            galleryItem.innerHTML = `
+                <img src="${galleryData.image_url}" alt="Generated Image" loading="lazy">
+            `;
+        }
+        
+        // Add to gallery grid at the end (data is already sorted newest first from Supabase)
         galleryGrid.appendChild(galleryItem);
     }
 
@@ -1582,6 +1583,66 @@ class GenerateMediaIntegrated {
             
         } catch (error) {
             console.error('❌ Exception updating loading state:', error);
+        }
+    }
+
+    // Start checking for loading state updates
+    startLoadingStateChecker() {
+        if (this.loadingStateChecker) {
+            clearInterval(this.loadingStateChecker);
+        }
+        
+        console.log('🔄 Starting loading state checker...');
+        this.loadingStateChecker = setInterval(async () => {
+            await this.checkLoadingStates();
+        }, 10000); // Check every 10 seconds
+    }
+
+    // Check for loading states that might have been completed
+    async checkLoadingStates() {
+        if (!this.supabase) return;
+        
+        try {
+            // Get current user ID
+            let userId = null;
+            const authResult = await this.checkUserAuthentication();
+            if (authResult.authenticated) {
+                userId = authResult.user.id;
+            } else {
+                userId = '99f24c0c-6e5c-4859-ae86-8e8bade07b98';
+            }
+            
+            // Check for any loading states that might have been updated
+            const { data, error } = await this.supabase
+                .from('user_gallery')
+                .select('*')
+                .eq('user_id', userId)
+                .contains('generation_params', { status: 'completed' })
+                .neq('image_url', '')
+                .order('created_at', { ascending: false })
+                .limit(5);
+            
+            if (error) {
+                console.error('❌ Error checking loading states:', error);
+                return;
+            }
+            
+            // Check if we have any new completed images
+            if (data && data.length > 0) {
+                const currentGalleryUrls = this.userGallery.map(item => item.image_url);
+                const newCompletedImages = data.filter(item => 
+                    item.image_url && 
+                    !currentGalleryUrls.includes(item.image_url)
+                );
+                
+                if (newCompletedImages.length > 0) {
+                    console.log(`🎉 Found ${newCompletedImages.length} newly completed images!`);
+                    await this.loadUserGallery(); // Reload gallery to show new images
+                }
+            }
+            
+        } catch (error) {
+            console.error('❌ Exception checking loading states:', error);
         }
     }
 }
