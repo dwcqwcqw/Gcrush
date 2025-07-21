@@ -213,6 +213,7 @@ class GenerateMediaIntegrated {
 
                 this.characters = characters || [];
                 console.log('✅ Characters loaded:', this.characters.length);
+                console.log('📋 First character data:', this.characters[0]);
         } else {
                 console.warn('⚠️ Supabase not available, using fallback characters');
                 this.loadFallbackCharacters();
@@ -227,20 +228,21 @@ class GenerateMediaIntegrated {
 
     loadFallbackCharacters() {
         this.characters = [
-            { id: 'freeplay', name: 'Free Play', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Freeplay/Free_Play.jpeg' },
-            { id: 'alex', name: 'Alex', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Alex/Alex1.png' },
-            { id: 'bruno', name: 'Bruno', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Bruno/Bruno1.png' },
-            { id: 'clayton', name: 'Clayton', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Clayton/Clayton1.png' },
-            { id: 'cruz', name: 'Cruz', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Cruz/Cruz1.png' },
-            { id: 'ethan', name: 'Ethan', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Ethan/Ethan1.png' },
-            { id: 'gabriel', name: 'Gabriel', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Gabriel/Gabriel1.png' },
-            { id: 'hunter', name: 'Hunter', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Hunter/Hunter1.png' },
-            { id: 'james', name: 'James', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/James/James1.png' },
-            { id: 'luca', name: 'Luca', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Luca/Luca1.png' },
-            { id: 'mason', name: 'Mason', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Mason/Mason1.png' },
-            { id: 'rohan', name: 'Rohan', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Rohan/Rohan1.png' },
-            { id: 'terrell', name: 'Terrell', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Terrell/Terrell1.png' }
+            { id: 'freeplay', name: 'Free Play', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Freeplay/Free_Play.jpeg', prompt: 'A handsome young man' },
+            { id: 'alex', name: 'Alex', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Alex/Alex1.png', prompt: 'Alex, a 21-year-old college student, athletic swimmer with a curious mind' },
+            { id: 'bruno', name: 'Bruno', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Bruno/Bruno1.png', prompt: 'Bruno, a 45-year-old mature Latin man with a protective, daddy-like personality' },
+            { id: 'clayton', name: 'Clayton', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Clayton/Clayton1.png', prompt: 'Clayton, a confident and charismatic man' },
+            { id: 'cruz', name: 'Cruz', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Cruz/Cruz1.png', prompt: 'Cruz, a passionate and energetic young man' },
+            { id: 'ethan', name: 'Ethan', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Ethan/Ethan1.png', prompt: 'Ethan, a sophisticated and intelligent gentleman' },
+            { id: 'gabriel', name: 'Gabriel', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Gabriel/Gabriel1.png', prompt: 'Gabriel, a mysterious and alluring man' },
+            { id: 'hunter', name: 'Hunter', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Hunter/Hunter1.png', prompt: 'Hunter, a rugged and adventurous outdoorsman' },
+            { id: 'james', name: 'James', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/James/James1.png', prompt: 'James, a professional and well-dressed businessman' },
+            { id: 'luca', name: 'Luca', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Luca/Luca1.png', prompt: 'Luca, a charming and artistic young man' },
+            { id: 'mason', name: 'Mason', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Mason/Mason1.png', prompt: 'Mason, a strong and dependable man' },
+            { id: 'rohan', name: 'Rohan', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Rohan/Rohan1.png', prompt: 'Rohan, an exotic and captivating man' },
+            { id: 'terrell', name: 'Terrell', image_url: 'https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/Terrell/Terrell1.png', prompt: 'Terrell, a confident and athletic young man' }
         ];
+        console.log('📋 Fallback characters loaded with prompt fields');
     }
 
     loadPoses() {
@@ -650,13 +652,18 @@ class GenerateMediaIntegrated {
     // 处理角色选择
     handleCharacterSelection(character) {
         console.log('👤 Character selected:', character);
+        console.log('📝 Character prompt field:', character.prompt);
+        console.log('📝 Character system_prompt field:', character.system_prompt);
         
         // 从角色的prompt字段中获取内容并填充到custom prompt
         if (character && character.prompt) {
             const customPromptField = document.getElementById('custom-prompt');
             if (customPromptField) {
                 customPromptField.value = character.prompt;
+                console.log('✅ Set custom prompt to:', character.prompt);
             }
+        } else {
+            console.warn('❌ No prompt field found in character data');
         }
     }
 
