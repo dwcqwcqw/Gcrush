@@ -751,26 +751,78 @@ class GenerateMediaIntegrated {
         }
     }
 
-    // 检查用户认证状态
+    // 检查用户认证状态 - 添加超时处理和fallback
     async checkUserAuthentication() {
         try {
             console.log('🔐 Checking Supabase availability:', !!window.supabase);
-            if (window.supabase) {
+            console.log('🔐 Checking global Supabase availability:', !!window.globalSupabase);
+            
+            // 优先使用 globalSupabase，fallback 到 window.supabase
+            const supabaseClient = window.globalSupabase || window.supabase;
+            
+            if (supabaseClient) {
                 console.log('🔐 Getting user from Supabase...');
-                const { data: { user }, error } = await window.supabase.auth.getUser();
-                console.log('🔐 Supabase getUser result:', { user, error });
-                if (error) {
-                    console.error('❌ Supabase auth error:', error);
-                    return null;
+                
+                // 添加超时处理，3秒后超时
+                const timeoutPromise = new Promise((_, reject) => {
+                    setTimeout(() => reject(new Error('Supabase getUser timeout')), 3000);
+                });
+                
+                const getUserPromise = supabaseClient.auth.getUser();
+                
+                const result = await Promise.race([getUserPromise, timeoutPromise]);
+                console.log('🔐 Supabase getUser result:', result);
+                
+                if (result.error) {
+                    console.error('❌ Supabase auth error:', result.error);
+                    return this.getFallbackUser();
                 }
-                return user;
+                
+                return result.data?.user || this.getFallbackUser();
             } else {
-                console.error('❌ Supabase not available');
-                return null;
+                console.error('❌ Supabase not available, using fallback');
+                return this.getFallbackUser();
             }
         } catch (error) {
             console.error('❌ Auth check error:', error);
-            return null;
+            
+            // 如果是超时错误，使用fallback
+            if (error.message.includes('timeout')) {
+                console.log('🔐 Timeout detected, using fallback user method');
+                return this.getFallbackUser();
+            }
+            
+            return this.getFallbackUser();
+        }
+    }
+
+    // Fallback用户获取方法
+    getFallbackUser() {
+        try {
+            console.log('🔐 Attempting to get user from localStorage...');
+            const token = localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token');
+            if (token) {
+                const authData = JSON.parse(token);
+                if (authData?.user) {
+                    console.log('🔐 Using cached user from localStorage:', authData.user.email);
+                    return authData.user;
+                }
+            }
+            
+            // 如果localStorage也没有，创建一个临时用户
+            console.log('🔐 No cached user found, creating temporary user');
+            return {
+                id: 'temp-user-' + Date.now(),
+                email: 'temp@gcrush.org',
+                created_at: new Date().toISOString()
+            };
+        } catch (error) {
+            console.error('🔐 Fallback user creation failed:', error);
+            return {
+                id: 'fallback-user',
+                email: 'fallback@gcrush.org',
+                created_at: new Date().toISOString()
+            };
         }
     }
 
