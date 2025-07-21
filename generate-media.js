@@ -548,8 +548,12 @@ class GenerateMediaIntegrated {
 
         if (this.isGenerating) {
             console.log('⏳ Already generating, please wait...');
+            console.log('🔍 Current isGenerating state:', this.isGenerating);
             return;
         }
+        
+        console.log('✅ Not currently generating, proceeding...');
+        console.log('🔍 isGenerating state before starting:', this.isGenerating);
 
         // 检查用户登录状态
         const user = await this.checkUserAuthentication();
@@ -619,18 +623,33 @@ class GenerateMediaIntegrated {
 
             const result = await response.json();
             console.log('✅ Generation successful:', result);
-
-            // 显示结果到原有的gallery系统
-            for (const imageData of result.images) {
-                const galleryResult = {
-                    type: 'image',
-                    url: imageData.url,
-                    prompt: finalPrompt,
-                    negativePrompt: negativePrompt,
-                    timestamp: imageData.created_at,
-                    seed: imageData.seed
-                };
-                this.showGenerationResult(galleryResult);
+            console.log('📋 Result structure check:');
+            console.log('- result.success:', result.success);
+            console.log('- result.images exists:', !!result.images);
+            console.log('- result.images type:', typeof result.images);
+            console.log('- result.images length:', result.images ? result.images.length : 'N/A');
+            
+            if (result.images && result.images.length > 0) {
+                console.log('🖼️ Processing images:', result.images.length);
+                for (let i = 0; i < result.images.length; i++) {
+                    const imageData = result.images[i];
+                    console.log(`📸 Image ${i + 1}:`, imageData);
+                    console.log(`🔗 Image ${i + 1} URL:`, imageData.url);
+                    
+                    const galleryResult = {
+                        type: 'image',
+                        url: imageData.url,
+                        prompt: finalPrompt,
+                        negativePrompt: negativePrompt,
+                        timestamp: imageData.created_at,
+                        seed: imageData.seed
+                    };
+                    console.log(`📋 Gallery result ${i + 1}:`, galleryResult);
+                    this.showGenerationResult(galleryResult);
+                }
+            } else {
+                console.error('❌ No images found in result:', result);
+                alert('Generation completed but no images were returned. Please try again.');
             }
             
             this.hideGenerationProgress();
@@ -653,6 +672,7 @@ class GenerateMediaIntegrated {
             // 确保生成状态被重置
             this.isGenerating = false;
             console.log('🔄 Generation state reset, ready for next request');
+            console.log('🔍 Current isGenerating state:', this.isGenerating);
         }
     }
 
