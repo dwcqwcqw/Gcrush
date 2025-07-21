@@ -619,6 +619,9 @@ class GenerateMediaIntegrated {
 
         this.isGenerating = true;
         
+        // 立即在画廊第一位显示加载状态
+        this.showLoadingPlaceholder();
+        
         // 禁用Generate按钮防止重复点击
         const generateBtn = document.getElementById('generate-btn');
         if (generateBtn) {
@@ -696,6 +699,9 @@ class GenerateMediaIntegrated {
             console.log('- result.images type:', typeof result.images);
             console.log('- result.images length:', result.images ? result.images.length : 'N/A');
             
+            // 首先移除加载占位符
+            this.removeLoadingPlaceholder();
+            
             if (result.images && result.images.length > 0) {
                 console.log('🖼️ Processing images:', result.images.length);
                 for (let i = 0; i < result.images.length; i++) {
@@ -732,8 +738,11 @@ class GenerateMediaIntegrated {
 
         } catch (error) {
             console.error('❌ Error generating media:', error);
-            console.error('❌ Error stack:', error.stack);
+            console.error('❌ Error stack:', error);
             console.log('🔄 Setting isGenerating to false due to error');
+            
+            // 移除加载占位符
+            this.removeLoadingPlaceholder();
             this.hideGenerationProgress();
             
             // 显示更详细的错误信息
@@ -1123,6 +1132,64 @@ class GenerateMediaIntegrated {
         }
     }
 
+    showLoadingPlaceholder() {
+        const galleryContent = document.getElementById('gallery-content');
+        if (!galleryContent) return;
+
+        // Remove "no images" message if it exists
+        const noImagesMsg = galleryContent.querySelector('.no-images');
+        if (noImagesMsg) {
+            noImagesMsg.remove();
+        }
+
+        // Create gallery grid if it doesn't exist
+        let galleryGrid = galleryContent.querySelector('.gallery-grid');
+        if (!galleryGrid) {
+            galleryGrid = document.createElement('div');
+            galleryGrid.className = 'gallery-grid';
+            galleryContent.appendChild(galleryGrid);
+        }
+
+        // Remove any existing loading placeholder
+        const existingPlaceholder = galleryGrid.querySelector('.loading-placeholder-item');
+        if (existingPlaceholder) {
+            existingPlaceholder.remove();
+        }
+
+        // Create loading placeholder
+        const loadingItem = document.createElement('div');
+        loadingItem.className = 'gallery-item loading-placeholder-item';
+        loadingItem.innerHTML = `
+            <div class="loading-placeholder">
+                <div class="loading-spinner"></div>
+                <p>Generating image...</p>
+                <p class="loading-time">This will take less than 40 seconds</p>
+            </div>
+        `;
+
+        // Insert at the beginning of gallery
+        galleryGrid.insertBefore(loadingItem, galleryGrid.firstChild);
+        
+        // Scroll to gallery
+        galleryContent.scrollIntoView({ behavior: 'smooth' });
+        
+        console.log('✅ Loading placeholder added at top of gallery');
+    }
+
+    removeLoadingPlaceholder() {
+        const galleryContent = document.getElementById('gallery-content');
+        if (!galleryContent) return;
+
+        const galleryGrid = galleryContent.querySelector('.gallery-grid');
+        if (!galleryGrid) return;
+
+        const loadingPlaceholder = galleryGrid.querySelector('.loading-placeholder-item');
+        if (loadingPlaceholder) {
+            loadingPlaceholder.remove();
+            console.log('✅ Loading placeholder removed');
+        }
+    }
+
     showGenerationResult(result, insertAtTop = false) {
         console.log('🎨 Showing generation result:', result);
         this.addToGallery(result, insertAtTop);
@@ -1151,33 +1218,12 @@ class GenerateMediaIntegrated {
         const galleryItem = document.createElement('div');
         galleryItem.className = 'gallery-item';
         
-        // 添加加载状态
-        if (insertAtTop) {
-            galleryItem.classList.add('loading');
-            galleryItem.innerHTML = `
-                <div class="loading-placeholder">
-                    <div class="loading-spinner"></div>
-                    <p>生成中...</p>
-                </div>
-            `;
-        }
-        
         const media = document.createElement(result.type === 'video' ? 'video' : 'img');
         media.src = result.url;
         media.alt = 'Generated Media';
         if (result.type === 'video') {
             media.controls = true;
         }
-        
-        // 图片加载完成后移除加载状态
-        media.onload = () => {
-            if (insertAtTop) {
-                galleryItem.classList.remove('loading');
-                galleryItem.innerHTML = '';
-                galleryItem.appendChild(media);
-                galleryItem.appendChild(itemInfo);
-            }
-        };
         
         const itemInfo = document.createElement('div');
         itemInfo.className = 'gallery-item-info';
@@ -1191,10 +1237,8 @@ class GenerateMediaIntegrated {
         itemInfo.appendChild(title);
         itemInfo.appendChild(timestamp);
         
-        if (!insertAtTop) {
-            galleryItem.appendChild(media);
-            galleryItem.appendChild(itemInfo);
-        }
+        galleryItem.appendChild(media);
+        galleryItem.appendChild(itemInfo);
         
         // 根据insertAtTop参数决定插入位置
         if (insertAtTop) {
