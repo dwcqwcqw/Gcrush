@@ -525,42 +525,50 @@
 
 
 
-/* Generation Progress */
-.generation-progress {
+/* Generating Placeholder */
+.gallery-item.generating {
     background: rgba(30, 30, 30, 0.95);
-    border-radius: 15px;
-    padding: 30px;
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 20px;
     border: 1px solid rgba(168, 85, 247, 0.3);
+    border-radius: 15px;
+    overflow: hidden;
 }
 
-.progress-spinner {
+.generating-placeholder {
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.generating-spinner {
     width: 40px;
     height: 40px;
     border: 3px solid rgba(168, 85, 247, 0.3);
     border-top: 3px solid #a855f7;
     border-radius: 50%;
     animation: spin 1s linear infinite;
-    flex-shrink: 0;
+    margin-bottom: 15px;
 }
 
-.progress-text {
+.generating-text {
     color: #fff;
 }
 
-.progress-text h3 {
+.generating-text h4 {
     margin: 0 0 8px 0;
-    font-size: 1.2rem;
+    font-size: 1rem;
     font-weight: 600;
+    color: #fff;
 }
 
-.progress-text p {
+.generating-text p {
     margin: 0;
     color: #9ca3af;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
 }
 
 /* Loading Overlay */

@@ -818,34 +818,47 @@ class GenerateMediaIntegrated {
     showGenerationProgress() {
         const galleryContent = document.getElementById('gallery-content');
         if (galleryContent) {
-            // 创建加载状态元素
-            const loadingElement = document.createElement('div');
-            loadingElement.id = 'generation-progress';
-            loadingElement.className = 'generation-progress';
-            loadingElement.innerHTML = `
-                <div class="progress-spinner"></div>
-                <div class="progress-text">
-                    <h3>Generating Your Images...</h3>
-                    <p>Please wait, this usually takes less than 1 minute.</p>
-                </div>
-            `;
-            
             // 如果有"no images"消息，先移除
             const noImagesMsg = galleryContent.querySelector('.no-images');
             if (noImagesMsg) {
                 noImagesMsg.remove();
             }
-            
-            // 添加到gallery content的开头
-            galleryContent.insertBefore(loadingElement, galleryContent.firstChild);
+
+            // 创建gallery grid如果不存在
+            let galleryGrid = galleryContent.querySelector('.gallery-grid');
+            if (!galleryGrid) {
+                galleryGrid = document.createElement('div');
+                galleryGrid.className = 'gallery-grid';
+                galleryContent.appendChild(galleryGrid);
+            }
+
+            // 获取当前选择的图片数量
+            const currentState = this.getCurrentState();
+            const imageCount = currentState.selectedImageCount || 2;
+
+            // 为每张图片创建加载状态
+            for (let i = 0; i < imageCount; i++) {
+                const loadingItem = document.createElement('div');
+                loadingItem.className = 'gallery-item generating';
+                loadingItem.id = `generating-${i}`;
+                loadingItem.innerHTML = `
+                    <div class="generating-placeholder">
+                        <div class="generating-spinner"></div>
+                        <div class="generating-text">
+                            <h4>Generating image...</h4>
+                            <p>This will take about 15 seconds</p>
+                        </div>
+                    </div>
+                `;
+                galleryGrid.appendChild(loadingItem);
+            }
         }
     }
 
     hideGenerationProgress() {
-        const progressElement = document.getElementById('generation-progress');
-        if (progressElement) {
-            progressElement.remove();
-        }
+        // 移除所有生成中的占位符
+        const generatingItems = document.querySelectorAll('.gallery-item.generating');
+        generatingItems.forEach(item => item.remove());
     }
 
     showLoadingOverlay() {
