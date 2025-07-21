@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Gallery - Gcrush</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #4fc3f7;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #4fc3f7;
+        }
+        
+        .test-section h3 {
+            color: #4fc3f7;
+            margin-top: 0;
+        }
+        
+        .output {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        
+        button {
+            background: #4fc3f7;
+            color: #1a1a1a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background: #29b6f6;
+        }
+        
+        .success { color: #81c784; }
+        .error { color: #ef5350; }
+        .warning { color: #ffb74d; }
+        .info { color: #64b5f6; }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            background: #2d2d2d;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: inherit;
+            margin: 5px 0;
+        }
+        
+        label {
+            display: block;
+            color: #81c784;
+            margin: 10px 0 5px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Supabase Gallery Function</h1>
+        
+        <div class="test-section">
+            <h3>📋 Test Parameters</h3>
+            <label for="userId">User ID:</label>
+            <input type="text" id="userId" value="99f24c0c-6e5c-4859-ae86-8e8bade07b98" placeholder="Enter user ID">
+            
+            <button onclick="testSupabaseConnection()">🔍 Test Supabase Connection</button>
+            <button onclick="testTableStructure()">📊 Test Table Structure</button>
+            <button onclick="testDirectInsert()">💾 Test Direct Insert</button>
+            <button onclick="checkExistingData()">📖 Check Existing Data</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔧 Supabase Connection Test</h3>
+            <div id="connectionTestOutput" class="output">Click "Test Supabase Connection" to start...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Table Structure Test</h3>
+            <div id="tableTestOutput" class="output">Click "Test Table Structure" to check...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>💾 Direct Insert Test</h3>
+            <div id="insertTestOutput" class="output">Click "Test Direct Insert" to test...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>📖 Existing Data Check</h3>
+            <div id="dataCheckOutput" class="output">Click "Check Existing Data" to view...</div>
+        </div>
+    </div>
+
+    <script>
+        async function testSupabaseConnection() {
+            const output = document.getElementById('connectionTestOutput');
+            output.innerHTML = '<span class="info">🔍 Testing Supabase connection...</span>\n\n';
+            
+            try {
+                const userId = document.getElementById('userId').value;
+                
+                const response = await fetch('/api/test-supabase', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        user_id: userId,
+                        test_data: true
+                    })
+                });
+                
+                const responseText = await response.text();
+                
+                output.innerHTML += `<span class="info">📡 Response Status: ${response.status}</span>\n`;
+                output.innerHTML += `<span class="info">📄 Response Body:</span>\n${responseText}\n\n`;
+                
+                if (response.ok) {
+                    try {
+                        const result = JSON.parse(responseText);
+                        if (result.success) {
+                            output.innerHTML += `<span class="success">✅ Connection test passed!</span>\n`;
+                            output.innerHTML += `<span class="info">Environment:</span>\n`;
+                            output.innerHTML += `• Supabase URL: ${result.environment.supabase_url}\n`;
+                            output.innerHTML += `• Has API Key: ${result.environment.has_key}\n\n`;
+                            
+                            output.innerHTML += `<span class="info">Test Results:</span>\n`;
+                            output.innerHTML += `• Table Check: ${result.tests.table_check.success ? '✅ PASS' : '❌ FAIL'} (${result.tests.table_check.status})\n`;
+                            output.innerHTML += `• Insert Test: ${result.tests.insert_test.success ? '✅ PASS' : '❌ FAIL'} (${result.tests.insert_test.status})\n`;
+                            output.innerHTML += `• Read Test: ${result.tests.read_test.success ? '✅ PASS' : '❌ FAIL'} (${result.tests.read_test.status})\n`;
+                        } else {
+                            output.innerHTML += `<span class="error">❌ Test failed: ${result.error}</span>\n`;
+                        }
+                    } catch (e) {
+                        output.innerHTML += `<span class="warning">⚠️ Could not parse response as JSON</span>\n`;
+                    }
+                } else {
+                    output.innerHTML += `<span class="error">❌ Connection test failed</span>\n`;
+                }
+                
+            } catch (error) {
+                output.innerHTML += `<span class="error">❌ Exception: ${error.message}</span>\n`;
+            }
+        }
+
+        async function testTableStructure() {
+            const output = document.getElementById('tableTestOutput');
+            output.innerHTML = '<span class="info">📊 Testing table structure...</span>\n\n';
+            
+            try {
+                // Test table existence and structure
+                const response = await fetch('https://kuflobojizyttadwcbhe.supabase.co/rest/v1/user_gallery?limit=0', {
+                    method: 'HEAD',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
+                    }
+                });
+                
+                output.innerHTML += `<span class="info">📡 Table HEAD Response: ${response.status}</span>\n`;
+                
+                if (response.ok) {
+                    output.innerHTML += `<span class="success">✅ Table exists and is accessible</span>\n`;
+                } else {
+                    output.innerHTML += `<span class="error">❌ Table not accessible: ${response.status}</span>\n`;
+                }
+                
+                // Try to get table schema info
+                const schemaResponse = await fetch('https://kuflobojizyttadwcbhe.supabase.co/rest/v1/user_gallery?limit=1', {
+                    method: 'GET',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
+                    }
+                });
+                
+                const schemaData = await schemaResponse.text();
+                output.innerHTML += `<span class="info">📄 Schema Response (${schemaResponse.status}):</span>\n${schemaData}\n`;
+                
+            } catch (error) {
+                output.innerHTML += `<span class="error">❌ Exception: ${error.message}</span>\n`;
+            }
+        }
+
+        async function testDirectInsert() {
+            const output = document.getElementById('insertTestOutput');
+            output.innerHTML = '<span class="info">💾 Testing direct insert...</span>\n\n';
+            
+            try {
+                const userId = document.getElementById('userId').value;
+                const testData = {
+                    user_id: userId,
+                    image_url: 'https://example.com/test-direct.png',
+                    filename: 'test-direct.png',
+                    prompt: 'Direct test prompt',
+                    negative_prompt: 'Direct test negative',
+                    character_name: 'Direct Test Character',
+                    seed: 99999,
+                    generation_params: {
+                        test: true,
+                        method: 'direct'
+                    }
+                };
+                
+                output.innerHTML += `<span class="info">📤 Inserting data:</span>\n${JSON.stringify(testData, null, 2)}\n\n`;
+                
+                const response = await fetch('https://kuflobojizyttadwcbhe.supabase.co/rest/v1/user_gallery', {
+                    method: 'POST',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw',
+                        'Content-Type': 'application/json',
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(testData)
+                });
+                
+                const responseText = await response.text();
+                
+                output.innerHTML += `<span class="info">📡 Response Status: ${response.status}</span>\n`;
+                output.innerHTML += `<span class="info">📄 Response Body:</span>\n${responseText}\n\n`;
+                
+                if (response.ok) {
+                    output.innerHTML += `<span class="success">✅ Direct insert successful!</span>\n`;
+                } else {
+                    output.innerHTML += `<span class="error">❌ Direct insert failed</span>\n`;
+                }
+                
+            } catch (error) {
+                output.innerHTML += `<span class="error">❌ Exception: ${error.message}</span>\n`;
+            }
+        }
+
+        async function checkExistingData() {
+            const output = document.getElementById('dataCheckOutput');
+            output.innerHTML = '<span class="info">📖 Checking existing data...</span>\n\n';
+            
+            try {
+                const userId = document.getElementById('userId').value;
+                
+                const response = await fetch(`https://kuflobojizyttadwcbhe.supabase.co/rest/v1/user_gallery?user_id=eq.${userId}&order=created_at.desc&limit=10`, {
+                    method: 'GET',
+                    headers: {
+                        'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw',
+                        'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
+                    }
+                });
+                
+                const responseText = await response.text();
+                
+                output.innerHTML += `<span class="info">📡 Response Status: ${response.status}</span>\n`;
+                output.innerHTML += `<span class="info">📄 Response Body:</span>\n${responseText}\n\n`;
+                
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        output.innerHTML += `<span class="success">✅ Found ${data.length} records for user</span>\n`;
+                        
+                        if (data.length > 0) {
+                            data.forEach((item, index) => {
+                                output.innerHTML += `<span class="info">📸 Record ${index + 1}:</span>\n`;
+                                output.innerHTML += `• ID: ${item.id}\n`;
+                                output.innerHTML += `• Image URL: ${item.image_url}\n`;
+                                output.innerHTML += `• Character: ${item.character_name}\n`;
+                                output.innerHTML += `• Created: ${item.created_at}\n\n`;
+                            });
+                        }
+                    } catch (e) {
+                        output.innerHTML += `<span class="warning">⚠️ Could not parse response as JSON</span>\n`;
+                    }
+                } else {
+                    output.innerHTML += `<span class="error">❌ Failed to fetch data</span>\n`;
+                }
+                
+            } catch (error) {
+                output.innerHTML += `<span class="error">❌ Exception: ${error.message}</span>\n`;
+            }
+        }
+
+        // Auto-run connection test on load
+        window.addEventListener('load', () => {
+            setTimeout(testSupabaseConnection, 1000);
+        });
+    </script>
+</body>
+</html> 
