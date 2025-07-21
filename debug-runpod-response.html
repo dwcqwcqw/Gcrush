@@ -3,74 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Debug RunPod Response Structure</title>
+    <title>Debug RunPod Response - Gcrush</title>
     <style>
         body {
             font-family: 'Courier New', monospace;
-            background: #0a0a0a;
-            color: #00ff00;
-            padding: 20px;
+            background: #1a1a1a;
+            color: #e0e0e0;
             margin: 0;
+            padding: 20px;
+            line-height: 1.6;
         }
+        
         .container {
             max-width: 1200px;
             margin: 0 auto;
         }
-        .section {
-            background: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 8px;
-            margin: 20px 0;
-            padding: 20px;
+        
+        h1 {
+            color: #4fc3f7;
+            text-align: center;
+            margin-bottom: 30px;
         }
-        .section h2 {
-            color: #ffff00;
-            border-bottom: 1px solid #333;
-            padding-bottom: 10px;
+        
+        .form-group {
+            margin-bottom: 20px;
         }
-        button {
-            background: #007700;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin: 5px;
+        
+        label {
+            display: block;
+            color: #81c784;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            background: #2d2d2d;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
             font-family: inherit;
         }
-        button:hover {
-            background: #009900;
+        
+        textarea {
+            height: 100px;
+            resize: vertical;
         }
-        .json-display {
-            background: #000;
-            border: 1px solid #333;
-            border-radius: 4px;
+        
+        button {
+            background: #4fc3f7;
+            color: #1a1a1a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background: #29b6f6;
+        }
+        
+        .debug-section {
+            margin: 30px 0;
+            padding: 20px;
+            background: #2d2d2d;
+            border-radius: 10px;
+            border-left: 4px solid #4fc3f7;
+        }
+        
+        .debug-section h3 {
+            color: #4fc3f7;
+            margin-top: 0;
+        }
+        
+        .output {
+            background: #1e1e1e;
             padding: 15px;
+            border-radius: 5px;
             white-space: pre-wrap;
-            overflow-x: auto;
+            word-wrap: break-word;
             max-height: 400px;
             overflow-y: auto;
+            font-size: 12px;
         }
-        .error { color: #ff4444; }
-        .success { color: #44ff44; }
-        .warning { color: #ffaa44; }
-        .info { color: #4444ff; }
-        input, textarea {
-            background: #222;
-            color: #00ff00;
-            border: 1px solid #555;
-            padding: 8px;
-            border-radius: 4px;
-            font-family: inherit;
+        
+        .success { color: #81c784; }
+        .error { color: #ef5350; }
+        .warning { color: #ffb74d; }
+        .info { color: #64b5f6; }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
         }
+        
+        .tab {
+            padding: 10px 20px;
+            background: #3d3d3d;
+            border: none;
+            color: #e0e0e0;
+            cursor: pointer;
+            margin-right: 5px;
+            border-radius: 5px 5px 0 0;
+        }
+        
+        .tab.active {
+            background: #4fc3f7;
+            color: #1a1a1a;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        
+        .status-success { background: #81c784; }
+        .status-error { background: #ef5350; }
+        .status-warning { background: #ffb74d; }
+        
         .grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 20px;
         }
-        .analysis {
-            background: #001100;
-            border-left: 4px solid #00ff00;
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .error-details {
+            background: #3d1a1a;
+            border: 1px solid #ef5350;
+            border-radius: 5px;
+            padding: 15px;
+            margin: 10px 0;
+        }
+
+        .runpod-analysis {
+            background: #1a2d3d;
+            border: 1px solid #4fc3f7;
+            border-radius: 5px;
             padding: 15px;
             margin: 10px 0;
         }
@@ -78,74 +166,126 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔬 RunPod Response Structure Debugger</h1>
+        <h1>🔍 Debug RunPod Response</h1>
         
-        <div class="section">
-            <h2>📋 Test Configuration</h2>
-            <div class="grid">
-                <div>
-                    <label>User ID:</label><br>
-                    <input type="text" id="userId" value="debug-user-001" style="width: 200px;">
-                </div>
-                <div>
-                    <label>Character Name:</label><br>
-                    <input type="text" id="characterName" value="TestChar" style="width: 200px;">
-                </div>
+        <div class="debug-section">
+            <h3>📝 Test Parameters</h3>
+            <div class="form-group">
+                <label for="userId">User ID:</label>
+                <input type="text" id="userId" value="99f24c0c-6e5c-4859-ae86-8e8bade07b98" placeholder="Enter user ID">
             </div>
-            <br>
-            <label>Test Prompt:</label><br>
-            <textarea id="testPrompt" style="width: 100%; height: 60px;">A simple test image of a man</textarea>
-            <br><br>
-            <button onclick="debugAPICall()">🔍 Debug API Call</button>
-            <button onclick="clearResults()">🧹 Clear Results</button>
+            
+            <div class="form-group">
+                <label for="testPrompt">Test Prompt:</label>
+                <textarea id="testPrompt" placeholder="Enter test prompt">just one man: handsome young man, muscular, shirtless</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="characterName">Character Name:</label>
+                <input type="text" id="characterName" value="TestCharacter" placeholder="Enter character name">
+            </div>
+            
+            <button onclick="runDebugTest()">🚀 Run Debug Test</button>
+            <button onclick="clearResults()">🗑️ Clear Results</button>
+            <button onclick="testDirectRunPod()">🔗 Test Direct RunPod</button>
         </div>
 
-        <div class="section">
-            <h2>📡 Raw API Response</h2>
-            <div id="rawResponse" class="json-display">Click "Debug API Call" to see raw response...</div>
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('raw')">📄 Raw Response</button>
+            <button class="tab" onclick="showTab('analysis')">🔍 Analysis</button>
+            <button class="tab" onclick="showTab('images')">🖼️ Images</button>
+            <button class="tab" onclick="showTab('urls')">🔗 URLs</button>
+            <button class="tab" onclick="showTab('access')">🌐 Access Test</button>
+            <button class="tab" onclick="showTab('runpod')">⚡ RunPod Direct</button>
         </div>
 
-        <div class="section">
-            <h2>🔬 Response Analysis</h2>
-            <div id="responseAnalysis" class="analysis">Waiting for response to analyze...</div>
+        <div id="raw" class="tab-content active">
+            <div class="debug-section">
+                <h3>📄 Raw API Response</h3>
+                <div id="rawResponse" class="output">等待测试...</div>
+            </div>
         </div>
 
-        <div class="section">
-            <h2>🖼️ Images Array Deep Dive</h2>
-            <div id="imagesAnalysis" class="json-display">Waiting for images data...</div>
+        <div id="analysis" class="tab-content">
+            <div class="debug-section">
+                <h3>🔍 Response Structure Analysis</h3>
+                <div id="responseAnalysis" class="output">等待分析...</div>
+            </div>
         </div>
 
-        <div class="section">
-            <h2>🔗 URL Extraction Test</h2>
-            <div id="urlExtraction" class="json-display">Waiting for URL extraction test...</div>
+        <div id="images" class="tab-content">
+            <div class="debug-section">
+                <h3>🖼️ Images Array Analysis</h3>
+                <div id="imagesAnalysis" class="output">等待分析...</div>
+            </div>
         </div>
 
-        <div class="section">
-            <h2>🌐 URL Accessibility Test</h2>
-            <div id="urlAccessibility" class="json-display">Waiting for URL accessibility test...</div>
+        <div id="urls" class="tab-content">
+            <div class="debug-section">
+                <h3>🔗 URL Extraction Test</h3>
+                <div id="urlExtraction" class="output">等待测试...</div>
+            </div>
+        </div>
+
+        <div id="access" class="tab-content">
+            <div class="debug-section">
+                <h3>🌐 URL Accessibility Test</h3>
+                <div id="accessibilityTest" class="output">等待测试...</div>
+            </div>
+        </div>
+
+        <div id="runpod" class="tab-content">
+            <div class="debug-section">
+                <h3>⚡ Direct RunPod API Test</h3>
+                <div id="runpodDirect" class="output">等待测试...</div>
+            </div>
         </div>
     </div>
 
     <script>
-        async function debugAPICall() {
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        function clearResults() {
+            document.querySelectorAll('.output').forEach(output => {
+                output.innerHTML = '已清空...';
+            });
+        }
+
+        async function runDebugTest() {
             const rawDiv = document.getElementById('rawResponse');
             const analysisDiv = document.getElementById('responseAnalysis');
             const imagesDiv = document.getElementById('imagesAnalysis');
             const urlDiv = document.getElementById('urlExtraction');
-            const accessDiv = document.getElementById('urlAccessibility');
+            const accessDiv = document.getElementById('accessibilityTest');
 
             // Clear previous results
-            rawDiv.textContent = '⏳ Making API call...';
-            analysisDiv.textContent = 'Analyzing...';
-            imagesDiv.textContent = 'Waiting...';
-            urlDiv.textContent = 'Waiting...';
-            accessDiv.textContent = 'Waiting...';
+            rawDiv.innerHTML = '<span class="info">🔄 正在发送请求...</span>';
+            analysisDiv.innerHTML = '<span class="info">等待响应...</span>';
+            imagesDiv.innerHTML = '<span class="info">等待响应...</span>';
+            urlDiv.innerHTML = '<span class="info">等待响应...</span>';
+            accessDiv.innerHTML = '<span class="info">等待响应...</span>';
 
             try {
                 const requestData = {
                     user_id: document.getElementById('userId').value,
                     prompt: document.getElementById('testPrompt').value,
-                    negative_prompt: '(low quality)',
+                    negative_prompt: '(worst quality:2), (low quality:2), (blurry:2)',
                     batch_size: 1,
                     character_name: document.getElementById('characterName').value
                 };
@@ -163,18 +303,25 @@
                 const responseText = await response.text();
                 console.log('📡 Raw response text:', responseText);
 
-                // Display raw response
-                rawDiv.innerHTML = `<span class="info">Status: ${response.status}</span>\n\n${responseText}`;
+                // Display raw response with enhanced formatting
+                let rawOutput = `<span class="info">📡 Response Status: ${response.status} ${response.statusText}</span>\n`;
+                rawOutput += `<span class="info">📋 Response Headers:</span>\n`;
+                for (let [key, value] of response.headers) {
+                    rawOutput += `  ${key}: ${value}\n`;
+                }
+                rawOutput += '\n<span class="info">📄 Response Body:</span>\n';
+                rawOutput += responseText;
+                rawDiv.innerHTML = rawOutput;
 
                 let result;
                 try {
                     result = JSON.parse(responseText);
                 } catch (e) {
-                    throw new Error(`JSON Parse Error: ${e.message}`);
+                    throw new Error(`JSON Parse Error: ${e.message}\nRaw response: ${responseText}`);
                 }
 
-                // Analyze response structure
-                analyzeResponse(result, analysisDiv);
+                // Enhanced analysis
+                analyzeResponse(result, analysisDiv, response.status);
                 
                 // Deep dive into images array
                 analyzeImages(result, imagesDiv);
@@ -189,14 +336,38 @@
                 console.error('Debug error:', error);
                 rawDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
                 analysisDiv.innerHTML = `<span class="error">Analysis failed: ${error.message}</span>`;
+                imagesDiv.innerHTML = `<span class="error">Images analysis failed</span>`;
+                urlDiv.innerHTML = `<span class="error">URL extraction failed</span>`;
+                accessDiv.innerHTML = `<span class="error">Accessibility test failed</span>`;
             }
         }
 
-        function analyzeResponse(result, div) {
-            let analysis = '<span class="success">✅ Response Structure Analysis:</span>\n\n';
+        function analyzeResponse(result, div, statusCode) {
+            let analysis = '';
             
+            if (statusCode !== 200) {
+                analysis += `<div class="error-details">`;
+                analysis += `<span class="error">❌ HTTP Error ${statusCode}</span>\n\n`;
+                analysis += `<strong>Error Details:</strong>\n`;
+                analysis += `• Error message: ${result.error || 'No error message'}\n`;
+                analysis += `• Debug info: ${result.debug || 'No debug info'}\n`;
+                analysis += `• RunPod status: ${result.runpod_status || 'Not provided'}\n`;
+                analysis += `• RunPod error: ${result.runpod_error || 'Not provided'}\n`;
+                
+                if (result.runpod_output) {
+                    analysis += `\n<strong>RunPod Output Structure:</strong>\n`;
+                    analysis += `• Type: ${typeof result.runpod_output}\n`;
+                    analysis += `• Keys: ${Object.keys(result.runpod_output || {}).join(', ')}\n`;
+                    analysis += `• Full output: ${JSON.stringify(result.runpod_output, null, 2)}\n`;
+                }
+                analysis += `</div>\n\n`;
+            }
+            
+            analysis += '<span class="success">✅ Response Structure Analysis:</span>\n\n';
             analysis += `• Response type: ${typeof result}\n`;
+            analysis += `• HTTP Status: ${statusCode}\n`;
             analysis += `• Has 'success' field: ${!!result.success} (${result.success})\n`;
+            analysis += `• Has 'error' field: ${!!result.error} (${result.error})\n`;
             analysis += `• Has 'images' field: ${!!result.images}\n`;
             analysis += `• Images type: ${typeof result.images}\n`;
             analysis += `• Images is array: ${Array.isArray(result.images)}\n`;
@@ -208,12 +379,31 @@
             analysis += '<span class="warning">🔍 All Response Fields:</span>\n';
             analysis += Object.keys(result).map(key => `  - ${key}: ${typeof result[key]}`).join('\n');
             
+            if (result.debug) {
+                analysis += '\n\n<span class="info">🐛 Debug Information:</span>\n';
+                analysis += JSON.stringify(result.debug, null, 2);
+            }
+            
             div.innerHTML = analysis;
         }
 
         function analyzeImages(result, div) {
             if (!result.images || !Array.isArray(result.images)) {
-                div.innerHTML = '<span class="error">❌ No images array found in response</span>';
+                let message = '<span class="error">❌ No images array found in response</span>\n\n';
+                
+                // Check for alternative image fields
+                const possibleFields = ['image_urls', 'generated_images', 'urls', 'files', 'outputs'];
+                for (const field of possibleFields) {
+                    if (result[field]) {
+                        message += `<span class="warning">⚠️ Found alternative field '${field}': ${typeof result[field]}</span>\n`;
+                        if (Array.isArray(result[field])) {
+                            message += `  Length: ${result[field].length}\n`;
+                            message += `  Content: ${JSON.stringify(result[field], null, 2)}\n`;
+                        }
+                    }
+                }
+                
+                div.innerHTML = message;
                 return;
             }
 
@@ -231,7 +421,11 @@
                 if (typeof img === 'object') {
                     analysis += `  Keys: ${Object.keys(img).join(', ')}\n`;
                     Object.keys(img).forEach(key => {
-                        analysis += `    ${key}: ${typeof img[key]} = ${JSON.stringify(img[key]).substring(0, 100)}...\n`;
+                        const value = img[key];
+                        const preview = typeof value === 'string' && value.length > 100 
+                            ? value.substring(0, 100) + '...' 
+                            : JSON.stringify(value);
+                        analysis += `    ${key}: ${typeof value} = ${preview}\n`;
                     });
                 } else {
                     analysis += `  Value: ${JSON.stringify(img)}\n`;
@@ -243,125 +437,252 @@
         }
 
         function testUrlExtraction(result, div) {
-            if (!result.images || result.images.length === 0) {
-                div.innerHTML = '<span class="error">❌ No images to extract URLs from</span>';
+            let output = '<span class="info">🔗 URL Extraction Test:</span>\n\n';
+            
+            if (!result.images || !Array.isArray(result.images) || result.images.length === 0) {
+                output += '<span class="error">❌ No images to extract URLs from</span>';
+                div.innerHTML = output;
                 return;
             }
-
-            let extraction = '<span class="info">🔗 URL Extraction Test:</span>\n\n';
             
             result.images.forEach((img, index) => {
-                extraction += `<span class="info">Image ${index + 1} URL extraction:</span>\n`;
+                output += `<span class="info">📸 Image ${index + 1} URL Extraction:</span>\n`;
                 
-                let foundUrl = null;
-                let method = 'none';
-                
-                if (typeof img === 'object') {
-                    if (img.url) {
-                        foundUrl = img.url;
-                        method = 'img.url';
-                    } else if (img.s3_url) {
-                        foundUrl = img.s3_url;
-                        method = 'img.s3_url';
-                    } else if (img.image_url) {
-                        foundUrl = img.image_url;
-                        method = 'img.image_url';
-                    }
-                } else if (typeof img === 'string' && img.startsWith('http')) {
-                    foundUrl = img;
-                    method = 'direct string';
-                }
-                
-                if (foundUrl) {
-                    extraction += `  ✅ Found URL via ${method}:\n`;
-                    extraction += `     ${foundUrl}\n`;
+                let extractedUrl = extractImageUrl(img);
+                if (extractedUrl) {
+                    output += `  <span class="success">✅ Extracted URL: ${extractedUrl}</span>\n`;
                     
                     // Test URL conversion
-                    const convertedUrl = convertToPublicR2Url(foundUrl);
-                    extraction += `  🔄 Converted URL:\n`;
-                    extraction += `     ${convertedUrl}\n`;
+                    const convertedUrl = convertToPublicR2Url(extractedUrl);
+                    if (convertedUrl !== extractedUrl) {
+                        output += `  <span class="info">🔄 Converted URL: ${convertedUrl}</span>\n`;
+                    } else {
+                        output += `  <span class="warning">⚠️ URL not converted (already public or unknown format)</span>\n`;
+                    }
                 } else {
-                    extraction += `  ❌ No URL found\n`;
-                    extraction += `  Available fields: ${typeof img === 'object' ? Object.keys(img).join(', ') : 'N/A'}\n`;
+                    output += `  <span class="error">❌ Could not extract URL</span>\n`;
+                    output += `  <span class="warning">🔍 Image data: ${JSON.stringify(img, null, 2)}</span>\n`;
                 }
-                extraction += '\n';
+                output += '\n';
             });
-
-            div.innerHTML = extraction;
+            
+            div.innerHTML = output;
         }
 
         async function testUrlAccessibility(result, div) {
-            if (!result.images || result.images.length === 0) {
-                div.innerHTML = '<span class="error">❌ No URLs to test</span>';
+            let output = '<span class="info">🌐 URL Accessibility Test:</span>\n\n';
+            
+            if (!result.images || !Array.isArray(result.images) || result.images.length === 0) {
+                output += '<span class="error">❌ No images to test accessibility</span>';
+                div.innerHTML = output;
                 return;
             }
-
-            let accessibility = '<span class="info">🌐 URL Accessibility Test:</span>\n\n';
             
             for (let i = 0; i < result.images.length; i++) {
                 const img = result.images[i];
-                accessibility += `<span class="info">Testing Image ${i + 1}:</span>\n`;
+                const url = extractImageUrl(img);
                 
-                // Extract URL (simplified)
-                let testUrl = null;
-                if (typeof img === 'object' && img.url) {
-                    testUrl = img.url;
-                } else if (typeof img === 'string' && img.startsWith('http')) {
-                    testUrl = img;
+                if (!url) {
+                    output += `<span class="error">❌ Image ${i + 1}: No URL to test</span>\n`;
+                    continue;
                 }
                 
-                if (testUrl) {
-                    try {
-                        const testResponse = await fetch(testUrl, { method: 'HEAD' });
-                        if (testResponse.ok) {
-                            accessibility += `  ✅ URL accessible (${testResponse.status})\n`;
-                            accessibility += `     ${testUrl}\n`;
-                        } else {
-                            accessibility += `  ❌ URL not accessible (${testResponse.status})\n`;
-                            accessibility += `     ${testUrl}\n`;
-                        }
-                    } catch (error) {
-                        accessibility += `  ❌ URL test failed: ${error.message}\n`;
-                        accessibility += `     ${testUrl}\n`;
+                output += `<span class="info">🔗 Testing Image ${i + 1}: ${url}</span>\n`;
+                
+                try {
+                    const response = await fetch(url, { method: 'HEAD' });
+                    if (response.ok) {
+                        output += `  <span class="success">✅ Accessible (${response.status})</span>\n`;
+                        output += `  Content-Type: ${response.headers.get('content-type') || 'Unknown'}\n`;
+                        output += `  Content-Length: ${response.headers.get('content-length') || 'Unknown'}\n`;
+                    } else {
+                        output += `  <span class="error">❌ Not accessible (${response.status})</span>\n`;
                     }
-                } else {
-                    accessibility += `  ⚠️ No URL to test\n`;
+                } catch (error) {
+                    output += `  <span class="error">❌ Network error: ${error.message}</span>\n`;
                 }
-                accessibility += '\n';
+                output += '\n';
             }
+            
+            div.innerHTML = output;
+        }
 
-            div.innerHTML = accessibility;
+        async function testDirectRunPod() {
+            const runpodDiv = document.getElementById('runpodDirect');
+            runpodDiv.innerHTML = '<span class="info">🔄 Testing direct RunPod API...</span>';
+            
+            try {
+                // First, try to get environment config
+                const envResponse = await fetch('/api/env-config');
+                const envData = await envResponse.json();
+                
+                if (!envData.RUNPOD_API_KEY || !envData.RUNPOD_IMAGE_ENDPOINT_ID) {
+                    runpodDiv.innerHTML = '<span class="error">❌ Missing RunPod configuration</span>';
+                    return;
+                }
+                
+                const workflow = {
+                    "1": {
+                        "inputs": {
+                            "ckpt_name": "pornworksBadBoysPhoto.safetensors"
+                        },
+                        "class_type": "CheckpointLoaderSimple"
+                    },
+                    "2": {
+                        "inputs": {
+                            "text": "handsome young man, muscular, shirtless",
+                            "clip": ["1", 1]
+                        },
+                        "class_type": "CLIPTextEncode"
+                    },
+                    "3": {
+                        "inputs": {
+                            "text": "(worst quality:2), (low quality:2), (blurry:2)",
+                            "clip": ["1", 1]
+                        },
+                        "class_type": "CLIPTextEncode"
+                    },
+                    "4": {
+                        "inputs": {
+                            "width": 1440,
+                            "height": 1080,
+                            "batch_size": 1
+                        },
+                        "class_type": "EmptyLatentImage"
+                    },
+                    "5": {
+                        "inputs": {
+                            "seed": Math.floor(Math.random() * 2147483647),
+                            "steps": 30,
+                            "cfg": 3,
+                            "sampler_name": "dpmpp_3m_sde_gpu",
+                            "scheduler": "karras",
+                            "denoise": 1.0,
+                            "model": ["1", 0],
+                            "positive": ["2", 0],
+                            "negative": ["3", 0],
+                            "latent_image": ["4", 0]
+                        },
+                        "class_type": "KSampler"
+                    },
+                    "6": {
+                        "inputs": {
+                            "samples": ["5", 0],
+                            "vae": ["1", 2]
+                        },
+                        "class_type": "VAEDecode"
+                    },
+                    "7": {
+                        "inputs": {
+                            "images": ["6", 0],
+                            "filename_prefix": "gcrush-debug-test"
+                        },
+                        "class_type": "SaveImage"
+                    }
+                };
+                
+                const runpodUrl = `https://api.runpod.ai/v2/${envData.RUNPOD_IMAGE_ENDPOINT_ID}/runsync`;
+                
+                let output = `<div class="runpod-analysis">`;
+                output += `<span class="info">🔗 RunPod URL: ${runpodUrl}</span>\n`;
+                output += `<span class="info">🔑 API Key: ${envData.RUNPOD_API_KEY.substring(0, 10)}...</span>\n\n`;
+                
+                const response = await fetch(runpodUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${envData.RUNPOD_API_KEY}`
+                    },
+                    body: JSON.stringify({
+                        input: { workflow }
+                    })
+                });
+                
+                const responseText = await response.text();
+                
+                output += `<span class="info">📡 Response Status: ${response.status} ${response.statusText}</span>\n`;
+                output += `<span class="info">📄 Response Body:</span>\n`;
+                output += responseText;
+                output += `</div>`;
+                
+                if (response.ok) {
+                    try {
+                        const data = JSON.parse(responseText);
+                        output += '\n\n<span class="success">✅ RunPod Response Analysis:</span>\n';
+                        output += `• Status: ${data.status}\n`;
+                        output += `• Has output: ${!!data.output}\n`;
+                        if (data.output) {
+                            output += `• Output keys: ${Object.keys(data.output).join(', ')}\n`;
+                            output += `• Full output: ${JSON.stringify(data.output, null, 2)}\n`;
+                        }
+                    } catch (e) {
+                        output += `\n\n<span class="error">❌ Failed to parse JSON response</span>`;
+                    }
+                }
+                
+                runpodDiv.innerHTML = output;
+                
+            } catch (error) {
+                runpodDiv.innerHTML = `<span class="error">❌ Direct RunPod test failed: ${error.message}</span>`;
+            }
+        }
+
+        // Helper functions (copied from the API)
+        function extractImageUrl(imageData) {
+            if (!imageData) return null;
+            
+            if (typeof imageData === 'string' && imageData.startsWith('http')) {
+                return imageData;
+            }
+            
+            if (typeof imageData === 'object') {
+                const urlFields = ['url', 's3_url', 'image_url', 'file_url', 'path', 'src', 'filename'];
+                for (const field of urlFields) {
+                    if (imageData[field] && typeof imageData[field] === 'string' && imageData[field].startsWith('http')) {
+                        return imageData[field];
+                    }
+                }
+                
+                if (imageData.image && typeof imageData.image === 'string' && imageData.image.startsWith('http')) {
+                    return imageData.image;
+                }
+                
+                if (imageData.outputs && Array.isArray(imageData.outputs)) {
+                    for (const output of imageData.outputs) {
+                        if (output.url || output.filename) {
+                            const url = output.url || output.filename;
+                            if (typeof url === 'string' && url.startsWith('http')) {
+                                return url;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            return null;
         }
 
         function convertToPublicR2Url(runpodUrl) {
             try {
+                if (runpodUrl.includes('pub-5a18b069cd06445889010bf8c29132d6.r2.dev')) {
+                    return runpodUrl;
+                }
+                
                 if (runpodUrl.includes('c7c141ce43d175e60601edc46d904553.r2.cloudflarestorage.com')) {
-                    const urlParts = runpodUrl.split('/');
-                    const pathIndex = urlParts.findIndex(part => part === 'image-generation');
-                    
-                    if (pathIndex !== -1) {
-                        const pathAfterImageGeneration = urlParts.slice(pathIndex + 1).join('/');
-                        return `https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/${pathAfterImageGeneration}`;
+                    const urlWithoutQuery = runpodUrl.split('?')[0];
+                    const imageGenerationIndex = runpodUrl.indexOf('/image-generation/');
+                    if (imageGenerationIndex !== -1) {
+                        const pathAfterImageGeneration = runpodUrl.substring(imageGenerationIndex + '/image-generation/'.length);
+                        const cleanPath = pathAfterImageGeneration.split('?')[0];
+                        return `https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/${cleanPath}`;
                     }
                 }
+                
                 return runpodUrl;
             } catch (error) {
                 return runpodUrl;
             }
         }
-
-        function clearResults() {
-            document.getElementById('rawResponse').textContent = 'Cleared...';
-            document.getElementById('responseAnalysis').textContent = 'Cleared...';
-            document.getElementById('imagesAnalysis').textContent = 'Cleared...';
-            document.getElementById('urlExtraction').textContent = 'Cleared...';
-            document.getElementById('urlAccessibility').textContent = 'Cleared...';
-        }
-
-        // Auto-focus on load
-        window.onload = () => {
-            console.log('🔬 RunPod Response Debugger Ready');
-        };
     </script>
 </body>
 </html> 

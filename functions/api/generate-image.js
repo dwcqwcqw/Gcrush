@@ -35,7 +35,10 @@ export async function onRequestPost(context) {
                     console.error(`❌ Missing environment variable: ${envVar}`);
                     return new Response(JSON.stringify({ error: `Missing environment variable: ${envVar}` }), {
                         status: 500,
-                        headers: { 'Content-Type': 'application/json' }
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        }
                     });
                 }
             }
@@ -45,7 +48,10 @@ export async function onRequestPost(context) {
             if (!user_id) {
                 return new Response(JSON.stringify({ error: 'User authentication required' }), {
                     status: 401,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
                 });
             }
 
@@ -91,6 +97,10 @@ export async function onRequestPost(context) {
             });
 
             // 调用RunPod API
+            console.log('🔗 Calling RunPod API...');
+            console.log('🔗 RunPod URL:', `https://api.runpod.ai/v2/${env.RUNPOD_IMAGE_ENDPOINT_ID}/runsync`);
+            console.log('🔑 API Key (first 10 chars):', env.RUNPOD_API_KEY?.substring(0, 10) + '...');
+            
             const runpodResponse = await fetch(`https://api.runpod.ai/v2/${env.RUNPOD_IMAGE_ENDPOINT_ID}/runsync`, {
                 method: 'POST',
                 headers: {
@@ -102,16 +112,56 @@ export async function onRequestPost(context) {
                 })
             });
 
+            console.log('📡 RunPod Response Status:', runpodResponse.status, runpodResponse.statusText);
+            console.log('📋 RunPod Response Headers:');
+            for (let [key, value] of runpodResponse.headers) {
+                console.log(`  ${key}: ${value}`);
+            }
+
+            const runpodResponseText = await runpodResponse.text();
+            console.log('📄 RunPod Raw Response:', runpodResponseText);
+
             if (!runpodResponse.ok) {
-                const errorText = await runpodResponse.text();
-                console.error('❌ RunPod API error:', errorText);
-                return new Response(JSON.stringify({ error: 'Image generation failed' }), {
+                console.error('❌ RunPod API error - Response not OK');
+                console.error('❌ Status:', runpodResponse.status, runpodResponse.statusText);
+                console.error('❌ Response body:', runpodResponseText);
+                
+                return new Response(JSON.stringify({ 
+                    error: 'RunPod API request failed',
+                    runpod_status: runpodResponse.status,
+                    runpod_status_text: runpodResponse.statusText,
+                    runpod_response: runpodResponseText,
+                    debug: 'RunPod API returned non-200 status code'
+                }), {
                     status: 500,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
                 });
             }
 
-            const runpodResult = await runpodResponse.json();
+            let runpodResult;
+            try {
+                runpodResult = JSON.parse(runpodResponseText);
+            } catch (parseError) {
+                console.error('❌ Failed to parse RunPod JSON response:', parseError);
+                console.error('❌ Raw response that failed to parse:', runpodResponseText);
+                
+                return new Response(JSON.stringify({ 
+                    error: 'RunPod API returned invalid JSON',
+                    runpod_response: runpodResponseText,
+                    parse_error: parseError.message,
+                    debug: 'Failed to parse RunPod response as JSON'
+                }), {
+                    status: 500,
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
+            }
+
             console.log('✅ RunPod API response status:', runpodResult.status);
             console.log('🔍 Full RunPod response structure:', JSON.stringify(runpodResult, null, 2));
             
@@ -181,12 +231,18 @@ export async function onRequestPost(context) {
             }
 
             if (runpodResult.status !== 'COMPLETED') {
-                console.error('❌ RunPod generation failed:', runpodResult);
+                console.error('❌ RunPod generation failed - Status not COMPLETED');
+                console.error('❌ RunPod status:', runpodResult.status);
+                console.error('❌ RunPod error:', runpodResult.error);
+                console.error('❌ Full RunPod result:', runpodResult);
+                
                 return new Response(JSON.stringify({ 
                     error: 'Image generation failed',
                     runpod_status: runpodResult.status,
                     runpod_error: runpodResult.error || 'Unknown error',
-                    debug: runpodResult
+                    runpod_output: runpodResult.output || null,
+                    debug: 'RunPod status is not COMPLETED',
+                    full_runpod_response: runpodResult
                 }), {
                     status: 500,
                     headers: { 
@@ -304,7 +360,9 @@ export async function onRequestPost(context) {
                     error: 'No images generated',
                     debug: 'Images were expected but not found in RunPod API response',
                     runpod_output: runpodResult.output,
-                    suggestion: 'Check RunPod endpoint configuration and ComfyUI workflow'
+                    runpod_status: runpodResult.status,
+                    suggestion: 'Check RunPod endpoint configuration and ComfyUI workflow',
+                    full_runpod_response: runpodResult
                 }), {
                     status: 500,
                     headers: { 
@@ -313,21 +371,11 @@ export async function onRequestPost(context) {
                     }
                 });
             }
-            
-            if (generatedImages.length === 0) {
-                console.error('❌ No images found in RunPod response after all attempts');
-                return new Response(JSON.stringify({ 
-                    error: 'No images generated',
-                    debug: 'Images were generated by RunPod but not found in API response',
-                    runpod_output: runpodResult.output 
-                }), {
-                    status: 500,
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*'
-                    }
-                });
-            }
+
+            console.log(`✅ Successfully extracted ${generatedImages.length} images`);
+            generatedImages.forEach((img, i) => {
+                console.log(`📸 Image ${i + 1}: ${img.url}`);
+            });
 
             // 返回结果
             return new Response(JSON.stringify({
@@ -346,7 +394,13 @@ export async function onRequestPost(context) {
 
         } catch (error) {
             console.error('❌ Generate Image API error:', error);
-            return new Response(JSON.stringify({ error: 'Internal server error' }), {
+            console.error('❌ Error stack:', error.stack);
+            return new Response(JSON.stringify({ 
+                error: 'Internal server error',
+                error_message: error.message,
+                error_stack: error.stack,
+                debug: 'Unexpected error in generate-image API'
+            }), {
                 status: 500,
                 headers: { 
                     'Content-Type': 'application/json',
