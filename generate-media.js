@@ -174,6 +174,16 @@ class GenerateMediaIntegrated {
             generateBtn.addEventListener('click', (e) => {
                 e.preventDefault();
                 console.log('🎯 Generate button clicked!');
+                console.log('🎯 Button click timestamp:', new Date().toISOString());
+                console.log('🎯 isGenerating state on click:', this.isGenerating);
+                console.log('🎯 Button disabled state:', generateBtn.disabled);
+                
+                // 安全检查：如果按钮没有被禁用但isGenerating为true，强制重置
+                if (!generateBtn.disabled && this.isGenerating) {
+                    console.log('⚠️ Inconsistent state detected - forcing reset');
+                    this.isGenerating = false;
+                }
+                
                 this.generateMedia();
             });
         } else {
@@ -532,6 +542,8 @@ class GenerateMediaIntegrated {
 
     async generateMedia() {
         console.log('🎨 Starting media generation...');
+        console.log('🎯 generateMedia() called at:', new Date().toISOString());
+        console.log('🔄 Current isGenerating state at start:', this.isGenerating);
 
         // Validation
         const currentState = this.getCurrentState();
@@ -549,11 +561,14 @@ class GenerateMediaIntegrated {
         if (this.isGenerating) {
             console.log('⏳ Already generating, please wait...');
             console.log('🔍 Current isGenerating state:', this.isGenerating);
+            alert('请等待当前生成完成后再试！');
             return;
         }
         
         console.log('✅ Not currently generating, proceeding...');
         console.log('🔍 isGenerating state before starting:', this.isGenerating);
+        console.log('🔍 Current state:', currentState);
+        console.log('🔍 Custom prompt:', customPrompt);
 
         // 检查用户登录状态
         const user = await this.checkUserAuthentication();
@@ -681,6 +696,8 @@ class GenerateMediaIntegrated {
 
         } catch (error) {
             console.error('❌ Error generating media:', error);
+            console.error('❌ Error stack:', error.stack);
+            console.log('🔄 Setting isGenerating to false due to error');
             this.hideGenerationProgress();
             
             // 显示更详细的错误信息
