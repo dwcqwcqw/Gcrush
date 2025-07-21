@@ -665,8 +665,6 @@ class GenerateMediaIntegrated {
             generateBtn.style.cursor = 'not-allowed';
             console.log('🔒 Generate button disabled during generation');
         }
-        
-        this.showGenerationProgress();
 
         try {
             // Get form values
@@ -776,7 +774,6 @@ class GenerateMediaIntegrated {
                 alert('Generation completed but no images were returned. Please try again.');
             }
             
-            this.hideGenerationProgress();
             this.showSuccessMessage();
 
         } catch (error) {
@@ -786,7 +783,6 @@ class GenerateMediaIntegrated {
             
             // 移除加载占位符
             this.removeLoadingPlaceholder();
-            this.hideGenerationProgress();
             
             // 显示更详细的错误信息
             let errorMessage = error.message;
@@ -1235,11 +1231,10 @@ class GenerateMediaIntegrated {
         const galleryGrid = galleryContent.querySelector('.gallery-grid');
         if (!galleryGrid) return;
 
-        const loadingPlaceholder = galleryGrid.querySelector('.loading-placeholder-item');
-        if (loadingPlaceholder) {
-            loadingPlaceholder.remove();
-            console.log('✅ Loading placeholder removed');
-        }
+        // Remove ALL loading placeholders
+        const loadingPlaceholders = galleryGrid.querySelectorAll('.loading-placeholder-item');
+        loadingPlaceholders.forEach(placeholder => placeholder.remove());
+        console.log(`✅ ${loadingPlaceholders.length} loading placeholder(s) removed`);
     }
 
     showGenerationResult(result, insertAtTop = false) {

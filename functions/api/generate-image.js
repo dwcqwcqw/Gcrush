@@ -86,7 +86,7 @@ export async function onRequestPost(context) {
             const workflow = buildComfyUIWorkflow({
                 prompt: prompt || '',
                 negative_prompt: negative_prompt || '(worst quality:2), (low quality:2), (blurry:2), (deformed), (disfigured), (bad anatomy), (wrong anatomy), (extra limb), (missing limb), (floating limbs), (mutated hands and fingers), (disconnected limbs), (mutation), (mutated), (ugly), (disgusting), (amputation), (signature), (watermark), (username), (blurry), (artist name), (out of focus), (ugly), (duplicate), (morbid), (mutilated), (extra fingers), (mutated hands), (poorly drawn hands), (poorly drawn face), (mutation), (deformed), (bad anatomy), (bad proportions), (extra limbs), (cloned face), (disfigured), (gross proportions), (malformed limbs), (missing arms), (missing legs), (extra arms), (extra legs), (fused fingers), (too many fingers), (long neck), (cross-eyed), (mutated), (bad body), (unnatural body), (unnatural skin), (weird colors), (skin spots), (acnes), (skin blemishes), (age spot), (glans), (nsfw), (nipples), (nude), (nudity), (topless), (partial nudity), (sexual), (sex), (sexy), (erotic), (porn), (pornographic), (xxx), (adult), (mature), (explicit), (inappropriate), (uncensored), (censored), (mosaic), (bar censor), (convenient censoring), (glowing), (distorted), (blurred), (grain), (poorly drawn), (mutated), (lowres), (low resolution), (bad), (error), (pattern), (beginner), (worst), (jpeg artifacts), (low quality), (unfinished), (chromatic aberration), (scan), (scan artifacts), (amateur), (extra), (fewer), (cropped), (worst quality), (low quality), (normal quality), (lowres), (monochrome), (grayscale), (skin spots), (acnes), (skin blemishes), (DeepNegative), (fat), (paintings), (sketches), (normal quality), (lowres), (blurry), (bad anatomy), (bad hands), (cropped), (extra digit), (fewer digits), (extra fingers), (missing fingers), (bad hands), (bad hand anatomy), (missing limb), (floating limbs), (disconnected limbs), (malformed hands), (blur), (out of focus), (long body), (disgusting), (childish), (mutated), (mangled), (old), (surreal), (duplicate), (morbid), (mutilated), (poorly drawn face), (deformed), (bad anatomy), (bad proportions), (extra limbs), (cloned face), (disfigured), (gross proportions), (malformed limbs), (missing arms), (missing legs), (extra arms), (extra legs), (fused fingers), (too many fingers), (long neck), (ugly), (tiling), (poorly drawn hands), (poorly drawn), (poorly drawn face), (out of frame), (extra limbs), (disfigured), (deformed), (body out of frame), (bad anatomy), (watermark), (signature), (cut off), (low contrast), (underexposed), (score_4), (score_5), (score_6)',
-                batch_size: batch_size || 2,
+                batch_size: batch_size || 1,
                 width: 1080,  // 3:4竖长 - 宽度（适合手机）
                 height: 1440, // 3:4竖长 - 高度（适合手机）  
                 steps: 30,
@@ -408,7 +408,7 @@ export async function onRequestPost(context) {
                                 cfg: 3,
                                 sampler_name: 'dpmpp_3m_sde_gpu',
                                 scheduler: 'karras',
-                                batch_size: batch_size || 2
+                                batch_size: batch_size || 1
                             }
                         };
                         
