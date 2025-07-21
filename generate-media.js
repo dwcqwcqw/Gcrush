@@ -32,29 +32,24 @@ class GenerateMediaIntegrated {
         try {
             console.log('🔍 Initializing Supabase for Gallery...');
             
-            // Wait for global Supabase to be available
+            // Wait for Supabase to be available
             let attempts = 0;
-            while (!window.globalSupabase && !window.supabase && attempts < 50) {
+            while (!window.supabase && attempts < 50) {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 attempts++;
             }
             
             console.log('🔍 Supabase availability check:');
-            console.log('• window.globalSupabase:', !!window.globalSupabase);
             console.log('• window.supabase:', !!window.supabase);
+            console.log('• window.supabase.from:', !!(window.supabase && window.supabase.from));
+            console.log('• window.supabase.auth:', !!(window.supabase && window.supabase.auth));
             
-            // Use global Supabase client (preferred) or fallback to window.supabase
-            if (window.globalSupabase) {
-                console.log('✅ Using global Supabase client');
-                this.supabase = window.globalSupabase;
-            } else if (window.supabase && window.supabase.createClient) {
-                console.log('✅ Creating new Supabase client');
-                this.supabase = window.supabase.createClient(
-                    'https://kuflobojizyttadwcbhe.supabase.co',
-                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
-                );
+            // Use the Supabase client from supabase-manager.js
+            if (window.supabase && window.supabase.from) {
+                console.log('✅ Using existing Supabase client from supabase-manager');
+                this.supabase = window.supabase;
             } else {
-                console.warn('⚠️ Supabase not available, Gallery features disabled');
+                console.warn('⚠️ Supabase client not available or incomplete, Gallery features disabled');
                 return;
             }
             
