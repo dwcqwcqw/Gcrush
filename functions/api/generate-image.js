@@ -379,10 +379,18 @@ export async function onRequestPost(context) {
 
             // 保存图片到用户画廊数据库
             try {
+                console.log('🔍 Checking Supabase environment variables...');
+                console.log('• NEXT_PUBLIC_SUPABASE_URL:', env.NEXT_PUBLIC_SUPABASE_URL ? '✅ Available' : '❌ Missing');
+                console.log('• NEXT_PUBLIC_SUPABASE_ANON_KEY:', env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Available' : '❌ Missing');
+                
                 if (env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
                     console.log('💾 Saving images to user gallery...');
+                    console.log('📊 Generated images count:', generatedImages.length);
                     
-                    for (const image of generatedImages) {
+                    for (let i = 0; i < generatedImages.length; i++) {
+                        const image = generatedImages[i];
+                        console.log(`📸 Processing image ${i + 1}/${generatedImages.length}:`, image.filename);
+                        
                         const galleryData = {
                             user_id: user_id,
                             image_url: image.url,
@@ -402,6 +410,8 @@ export async function onRequestPost(context) {
                             }
                         };
                         
+                        console.log(`📤 Sending gallery data for image ${i + 1}:`, JSON.stringify(galleryData, null, 2));
+                        
                         const saveResponse = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_gallery`, {
                             method: 'POST',
                             headers: {
@@ -413,15 +423,28 @@ export async function onRequestPost(context) {
                             body: JSON.stringify(galleryData)
                         });
                         
+                        console.log(`📡 Supabase response status for image ${i + 1}:`, saveResponse.status, saveResponse.statusText);
+                        
                         if (saveResponse.ok) {
-                            console.log(`✅ Saved image to gallery: ${image.filename}`);
+                            console.log(`✅ Successfully saved image ${i + 1} to gallery: ${image.filename}`);
+                            const responseText = await saveResponse.text();
+                            if (responseText) {
+                                console.log(`📋 Supabase response body:`, responseText);
+                            }
                         } else {
-                            console.error(`❌ Failed to save image to gallery:`, await saveResponse.text());
+                            const errorText = await saveResponse.text();
+                            console.error(`❌ Failed to save image ${i + 1} to gallery:`, errorText);
+                            console.error(`📋 Response headers:`, [...saveResponse.headers.entries()]);
                         }
                     }
+                } else {
+                    console.error('❌ Supabase environment variables not available');
+                    console.error('• Missing NEXT_PUBLIC_SUPABASE_URL:', !env.NEXT_PUBLIC_SUPABASE_URL);
+                    console.error('• Missing NEXT_PUBLIC_SUPABASE_ANON_KEY:', !env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
                 }
             } catch (galleryError) {
                 console.error('❌ Error saving to gallery:', galleryError);
+                console.error('❌ Gallery error stack:', galleryError.stack);
                 // 不影响图片生成的主要流程，只记录错误
             }
 

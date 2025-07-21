@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Gallery Save - Gcrush</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #1a1a1a;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #4fc3f7;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .test-section {
+            background: #2d2d2d;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #4fc3f7;
+        }
+        
+        .test-section h3 {
+            color: #4fc3f7;
+            margin-top: 0;
+        }
+        
+        .output {
+            background: #1e1e1e;
+            padding: 15px;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 400px;
+            overflow-y: auto;
+            font-size: 12px;
+            margin: 10px 0;
+        }
+        
+        button {
+            background: #4fc3f7;
+            color: #1a1a1a;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin: 10px 5px;
+        }
+        
+        button:hover {
+            background: #29b6f6;
+        }
+        
+        .success { color: #81c784; }
+        .error { color: #ef5350; }
+        .warning { color: #ffb74d; }
+        .info { color: #64b5f6; }
+        
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            background: #2d2d2d;
+            border: 1px solid #555;
+            border-radius: 5px;
+            color: #e0e0e0;
+            font-family: inherit;
+            margin: 5px 0;
+        }
+        
+        label {
+            display: block;
+            color: #81c784;
+            margin: 10px 0 5px 0;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗄️ Test Gallery Save Function</h1>
+        
+        <div class="test-section">
+            <h3>📋 Test Parameters</h3>
+            <label for="userId">User ID:</label>
+            <input type="text" id="userId" value="99f24c0c-6e5c-4859-ae86-8e8bade07b98" placeholder="Enter user ID">
+            
+            <label for="imageUrl">Image URL:</label>
+            <input type="text" id="imageUrl" value="https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/test-image.png" placeholder="Enter image URL">
+            
+            <label for="testPrompt">Prompt:</label>
+            <textarea id="testPrompt" placeholder="Enter prompt">Test prompt for gallery save</textarea>
+            
+            <label for="characterName">Character Name:</label>
+            <input type="text" id="characterName" value="TestCharacter" placeholder="Enter character name">
+            
+            <button onclick="testEnvironmentVars()">🔍 Test Environment Variables</button>
+            <button onclick="testDirectGallerySave()">💾 Test Direct Gallery Save</button>
+            <button onclick="testAPIGallerySave()">🚀 Test API Gallery Save</button>
+            <button onclick="testGalleryRead()">📖 Test Gallery Read</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🌐 Environment Variables Test</h3>
+            <div id="envTestOutput" class="output">Click "Test Environment Variables" to check...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>💾 Direct Gallery Save Test</h3>
+            <div id="directSaveOutput" class="output">Click "Test Direct Gallery Save" to test...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>🚀 API Gallery Save Test</h3>
+            <div id="apiSaveOutput" class="output">Click "Test API Gallery Save" to test...</div>
+        </div>
+
+        <div class="test-section">
+            <h3>📖 Gallery Read Test</h3>
+            <div id="galleryReadOutput" class="output">Click "Test Gallery Read" to test...</div>
+        </div>
+    </div>
+
+    <!-- Load Supabase -->
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    
+    <script>
+        // Supabase configuration
+        const SUPABASE_URL = 'https://kuflobojizyttadwcbhe.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw';
+        
+        let supabase;
+        
+        // Initialize Supabase
+        try {
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            console.log('✅ Supabase client initialized');
+        } catch (error) {
+            console.error('❌ Failed to initialize Supabase:', error);
+        }
+
+        async function testEnvironmentVars() {
+            const output = document.getElementById('envTestOutput');
+            output.innerHTML = '<span class="info">🔍 Testing environment variables...</span>\n\n';
+            
+            try {
+                // Test frontend environment
+                let result = '';
+                result += '<span class="info">📱 Frontend Environment:</span>\n';
+                result += `• Supabase URL: ${SUPABASE_URL}\n`;
+                result += `• Supabase Key: ${SUPABASE_ANON_KEY.substring(0, 20)}...\n`;
+                result += `• Supabase Client: ${supabase ? '✅ Available' : '❌ Not available'}\n\n`;
+                
+                // Test backend environment via API
+                result += '<span class="info">🔧 Backend Environment (via API):</span>\n';
+                
+                const envResponse = await fetch('/api/env-config');
+                if (envResponse.ok) {
+                    const envData = await envResponse.json();
+                    result += `• RUNPOD_API_KEY: ${envData.RUNPOD_API_KEY ? '✅ Available' : '❌ Missing'}\n`;
+                    result += `• RUNPOD_IMAGE_ENDPOINT_ID: ${envData.RUNPOD_IMAGE_ENDPOINT_ID || '❌ Missing'}\n`;
+                    result += `• NEXT_PUBLIC_SUPABASE_URL: ${envData.NEXT_PUBLIC_SUPABASE_URL || '❌ Missing'}\n`;
+                    result += `• NEXT_PUBLIC_SUPABASE_ANON_KEY: ${envData.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '✅ Available' : '❌ Missing'}\n`;
+                } else {
+                    result += '❌ Failed to fetch backend environment\n';
+                }
+                
+                output.innerHTML = result;
+            } catch (error) {
+                output.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function testDirectGallerySave() {
+            const output = document.getElementById('directSaveOutput');
+            output.innerHTML = '<span class="info">💾 Testing direct gallery save...</span>\n\n';
+            
+            try {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                const galleryData = {
+                    user_id: document.getElementById('userId').value,
+                    image_url: document.getElementById('imageUrl').value,
+                    filename: 'test-direct-save.png',
+                    prompt: document.getElementById('testPrompt').value,
+                    negative_prompt: '(low quality)',
+                    character_name: document.getElementById('characterName').value,
+                    seed: Math.floor(Math.random() * 2147483647),
+                    generation_params: {
+                        width: 1080,
+                        height: 1440,
+                        steps: 30,
+                        cfg: 3,
+                        test_mode: true
+                    }
+                };
+                
+                output.innerHTML += `<span class="info">📤 Sending data:</span>\n${JSON.stringify(galleryData, null, 2)}\n\n`;
+                
+                const { data, error } = await supabase
+                    .from('user_gallery')
+                    .insert([galleryData])
+                    .select();
+                
+                if (error) {
+                    output.innerHTML += `<span class="error">❌ Error: ${error.message}</span>\n`;
+                    output.innerHTML += `<span class="error">Details: ${JSON.stringify(error, null, 2)}</span>\n`;
+                } else {
+                    output.innerHTML += `<span class="success">✅ Success! Data saved:</span>\n${JSON.stringify(data, null, 2)}\n`;
+                }
+            } catch (error) {
+                output.innerHTML += `<span class="error">❌ Exception: ${error.message}</span>\n`;
+            }
+        }
+
+        async function testAPIGallerySave() {
+            const output = document.getElementById('apiSaveOutput');
+            output.innerHTML = '<span class="info">🚀 Testing API gallery save...</span>\n\n';
+            
+            try {
+                const requestData = {
+                    user_id: document.getElementById('userId').value,
+                    prompt: document.getElementById('testPrompt').value,
+                    negative_prompt: '(low quality)',
+                    batch_size: 1,
+                    character_name: document.getElementById('characterName').value
+                };
+                
+                output.innerHTML += `<span class="info">📤 Sending API request:</span>\n${JSON.stringify(requestData, null, 2)}\n\n`;
+                
+                const response = await fetch('/api/generate-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const responseText = await response.text();
+                
+                output.innerHTML += `<span class="info">📡 API Response Status: ${response.status}</span>\n`;
+                output.innerHTML += `<span class="info">📄 API Response:</span>\n${responseText}\n\n`;
+                
+                if (response.ok) {
+                    try {
+                        const result = JSON.parse(responseText);
+                        if (result.success && result.images) {
+                            output.innerHTML += `<span class="success">✅ Images generated: ${result.images.length}</span>\n`;
+                            result.images.forEach((img, i) => {
+                                output.innerHTML += `Image ${i + 1}: ${img.url}\n`;
+                            });
+                        }
+                    } catch (e) {
+                        output.innerHTML += `<span class="warning">⚠️ Could not parse response as JSON</span>\n`;
+                    }
+                } else {
+                    output.innerHTML += `<span class="error">❌ API request failed</span>\n`;
+                }
+                
+            } catch (error) {
+                output.innerHTML += `<span class="error">❌ Exception: ${error.message}</span>\n`;
+            }
+        }
+
+        async function testGalleryRead() {
+            const output = document.getElementById('galleryReadOutput');
+            output.innerHTML = '<span class="info">📖 Testing gallery read...</span>\n\n';
+            
+            try {
+                if (!supabase) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                const userId = document.getElementById('userId').value;
+                
+                const { data, error } = await supabase
+                    .from('user_gallery')
+                    .select('*')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                if (error) {
+                    output.innerHTML += `<span class="error">❌ Error: ${error.message}</span>\n`;
+                    output.innerHTML += `<span class="error">Details: ${JSON.stringify(error, null, 2)}</span>\n`;
+                } else {
+                    output.innerHTML += `<span class="success">✅ Found ${data.length} gallery items:</span>\n\n`;
+                    if (data.length > 0) {
+                        data.forEach((item, i) => {
+                            output.innerHTML += `<span class="info">📸 Item ${i + 1}:</span>\n`;
+                            output.innerHTML += `• ID: ${item.id}\n`;
+                            output.innerHTML += `• URL: ${item.image_url}\n`;
+                            output.innerHTML += `• Character: ${item.character_name}\n`;
+                            output.innerHTML += `• Created: ${item.created_at}\n\n`;
+                        });
+                    } else {
+                        output.innerHTML += `<span class="warning">⚠️ No gallery items found for this user</span>\n`;
+                    }
+                }
+            } catch (error) {
+                output.innerHTML += `<span class="error">❌ Exception: ${error.message}</span>\n`;
+            }
+        }
+
+        // Auto-run environment test on load
+        window.addEventListener('load', () => {
+            setTimeout(testEnvironmentVars, 1000);
+        });
+    </script>
+</body>
+</html> 
