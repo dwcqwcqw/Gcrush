@@ -54,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
             globalSupabase: typeof supabase !== 'undefined'
         });
         
-        if (window.supabase) {
+        if (window.supabase && window.supabase.createClient) {
             try {
                 const client = window.supabase.createClient(
                     'https://kuflobojizyttadwcbhe.supabase.co',
@@ -74,6 +74,8 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch (error) {
                 console.error('❌ Supabase client creation failed:', error);
             }
+        } else {
+            console.warn('⚠️ Supabase not available or createClient method missing');
         }
     }, 1000);
     

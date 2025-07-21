@@ -1134,7 +1134,7 @@ class GenerateMediaIntegrated {
 
             // 获取当前选择的图片数量
             const currentState = this.getCurrentState();
-            const imageCount = currentState.selectedImageCount || 2;
+            const imageCount = currentState.selectedImageCount || 1;
 
             // 为每张图片创建加载状态
             for (let i = 0; i < imageCount; i++) {
@@ -1201,6 +1201,9 @@ class GenerateMediaIntegrated {
         const currentState = this.getCurrentState();
         const imageCount = currentState.selectedImageCount || 1;
         
+        console.log('🔍 Current state:', currentState);
+        console.log('🔍 Media type:', this.currentMediaType);
+        console.log('🔍 Selected image count:', currentState.selectedImageCount);
         console.log(`📊 Creating ${imageCount} loading placeholder(s)`);
 
         // Create loading placeholders based on selected count

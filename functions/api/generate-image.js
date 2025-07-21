@@ -60,7 +60,7 @@ export async function onRequestPost(context) {
             try {
                 // 尝试从Supabase获取用户名
                 if (env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-                    const supabaseResponse = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${user_id}&select=username`, {
+                    const supabaseResponse = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?user_id=eq.${user_id}&select=username,display_name`, {
                         headers: {
                             'apikey': env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
                             'Authorization': `Bearer ${env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
@@ -68,9 +68,11 @@ export async function onRequestPost(context) {
                     });
                     if (supabaseResponse.ok) {
                         const profiles = await supabaseResponse.json();
-                        if (profiles && profiles.length > 0 && profiles[0].username) {
-                            username = profiles[0].username;
+                        if (profiles && profiles.length > 0) {
+                            username = profiles[0].username || profiles[0].display_name || 'user';
                         }
+                    } else {
+                        console.warn('⚠️ Failed to fetch user profile:', supabaseResponse.status, await supabaseResponse.text());
                     }
                 }
             } catch (error) {
