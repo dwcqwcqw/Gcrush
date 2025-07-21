@@ -1520,10 +1520,11 @@ class GenerateMediaIntegrated {
         const galleryItem = document.createElement('div');
         galleryItem.className = 'gallery-item';
         
-        // Check if this is a loading state
-        const isLoading = !galleryData.image_url || galleryData.generation_params?.status === 'generating';
+        // Check the status of this gallery item
+        const status = galleryData.generation_params?.status;
+        const hasImage = galleryData.image_url && galleryData.image_url.trim() !== '';
         
-        if (isLoading) {
+        if (!hasImage && status === 'generating') {
             // Display loading placeholder for generating images
             galleryItem.className += ' loading-placeholder-item';
             galleryItem.innerHTML = `
@@ -1531,6 +1532,16 @@ class GenerateMediaIntegrated {
                     <div class="loading-spinner"></div>
                     <p>Generating...</p>
                     <p class="loading-time">Started: ${new Date(galleryData.created_at).toLocaleTimeString()}</p>
+                </div>
+            `;
+        } else if (!hasImage && status === 'timeout') {
+            // Display timeout error
+            galleryItem.className += ' error-placeholder-item';
+            galleryItem.innerHTML = `
+                <div class="error-placeholder">
+                    <div class="error-icon">❌</div>
+                    <p>Generation Failed</p>
+                    <p class="error-time">Timed out after 3 minutes</p>
                 </div>
             `;
         } else {
@@ -1628,6 +1639,77 @@ class GenerateMediaIntegrated {
         this.loadingStateChecker = setInterval(async () => {
             await this.checkLoadingStates();
         }, 10000); // Check every 10 seconds
+        
+        // Also start timeout checker for loading states
+        this.startLoadingTimeoutChecker();
+    }
+
+    // Check for loading states that have timed out
+    startLoadingTimeoutChecker() {
+        if (this.loadingTimeoutChecker) {
+            clearInterval(this.loadingTimeoutChecker);
+        }
+        
+        console.log('⏰ Starting loading timeout checker...');
+        this.loadingTimeoutChecker = setInterval(async () => {
+            await this.checkLoadingTimeouts();
+        }, 30000); // Check every 30 seconds
+    }
+
+    // Check for loading states that have exceeded 3 minutes
+    async checkLoadingTimeouts() {
+        if (!this.supabase) return;
+        
+        try {
+            // Get current user ID
+            let userId = null;
+            const authResult = await this.checkUserAuthentication();
+            if (authResult.authenticated) {
+                userId = authResult.user.id;
+            } else {
+                userId = '99f24c0c-6e5c-4859-ae86-8e8bade07b98';
+            }
+            
+            // Find loading states older than 3 minutes
+            const threeMinutesAgo = new Date(Date.now() - 3 * 60 * 1000).toISOString();
+            
+            const { data, error } = await this.supabase
+                .from('user_gallery')
+                .select('*')
+                .eq('user_id', userId)
+                .eq('image_url', '')
+                .contains('generation_params', { status: 'generating' })
+                .lt('created_at', threeMinutesAgo);
+            
+            if (error) {
+                console.error('❌ Error checking loading timeouts:', error);
+                return;
+            }
+            
+            if (data && data.length > 0) {
+                console.log(`⏰ Found ${data.length} timed out loading states`);
+                
+                // Update timed out loading states to error status
+                for (const item of data) {
+                    await this.supabase
+                        .from('user_gallery')
+                        .update({
+                            generation_params: {
+                                status: 'timeout',
+                                error: 'Generation timed out after 3 minutes',
+                                timeout_at: new Date().toISOString()
+                            }
+                        })
+                        .eq('id', item.id);
+                }
+                
+                // Reload gallery to show updated states
+                await this.loadUserGallery();
+            }
+            
+        } catch (error) {
+            console.error('❌ Exception checking loading timeouts:', error);
+        }
     }
 
     // Check for loading states that might have been completed

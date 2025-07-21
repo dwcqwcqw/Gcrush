@@ -622,7 +622,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 200px;
+    aspect-ratio: 4/3;
     background: rgba(30, 30, 30, 0.8);
     border-radius: 10px;
     padding: 15px;
@@ -672,6 +672,57 @@
     border: 1px solid rgba(168, 85, 247, 0.1);
 }
 
+/* Error placeholder styles */
+.error-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 4/3;
+    background: rgba(30, 30, 30, 0.8);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    position: relative;
+}
+
+.error-placeholder .error-icon {
+    font-size: 2rem;
+    margin-bottom: 8px;
+}
+
+.error-placeholder p {
+    margin: 0;
+    font-size: 0.7rem;
+    color: #ef4444;
+    line-height: 1.2;
+}
+
+.error-placeholder p:first-of-type {
+    color: #ef4444;
+    font-weight: 500;
+    margin-bottom: 2px;
+    font-size: 0.75rem;
+}
+
+.error-placeholder .error-time {
+    font-size: 0.6rem;
+    color: #dc2626;
+    margin-top: 1px;
+}
+
+/* Gallery item specific styling for errors */
+.gallery-item.error-placeholder-item {
+    background: transparent;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+.gallery-item.error-placeholder-item .error-placeholder {
+    background: rgba(30, 30, 30, 0.9);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(239, 68, 68, 0.1);
+}
+
 /* Mobile responsive adjustments for loading placeholder */
 @media (max-width: 768px) {
     .loading-placeholder {
@@ -702,19 +753,23 @@
 .my-gallery {
     background: rgba(30, 30, 30, 0.95);
     border-radius: 20px;
-    padding: 40px;
+    padding: 40px 20px;
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.1);
     margin-bottom: 40px;
-    margin-top: 20px;
+    margin-top: 60px;
+    width: 100%;
+    max-width: 1500px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .my-gallery h2 {
     color: #fff;
-    font-size: 1.8rem;
+    font-size: 2.2rem;
     font-weight: 700;
-    margin-bottom: 30px;
+    margin-bottom: 40px;
     text-align: center;
 }
 
@@ -725,7 +780,7 @@
     justify-content: center;
     background: rgba(0, 0, 0, 0.3);
     border-radius: 15px;
-    padding: 40px;
+    padding: 30px;
 }
 
 .no-images {
@@ -737,9 +792,11 @@
 
 .gallery-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 15px;
     width: 100%;
+    max-width: 1400px;
+    margin: 0 auto;
 }
 
 .gallery-item {
@@ -756,7 +813,7 @@
 
 .gallery-item img {
     width: 100%;
-    height: 200px;
+    aspect-ratio: 4/3;
     object-fit: cover;
 }
 
@@ -982,8 +1039,22 @@
     }
     
     .gallery-grid {
-        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-        gap: 15px;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        max-width: 100%;
+    }
+}
+
+/* Tablet responsive */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+    
+    .my-gallery {
+        max-width: 1200px;
+        padding: 30px 15px;
     }
 }
 
