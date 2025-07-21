@@ -76,10 +76,10 @@ export async function onRequestPost(context) {
                 prompt: prompt || '',
                 negative_prompt: negative_prompt || '',
                 batch_size: batch_size || 2,
-                width: 1080,
-                height: 1440,
+                width: 1440,  // 4:3竖长 - 宽度
+                height: 1080, // 4:3竖长 - 高度  
                 steps: 30,
-                cfg: 4,
+                cfg: 8,       // 提高CFG值从4到8，让提示词作用更大
                 sampler_name: 'dpmpp_3m_sde_gpu',
                 scheduler: 'karras',
                 checkpoint_name: 'pornworksBadBoysPhoto.safetensors',

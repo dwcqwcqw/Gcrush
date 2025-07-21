@@ -26,10 +26,17 @@ class GenerateMediaIntegrated {
 
     init() {
         console.log('🎨 Initializing Generate Media for independent page...');
+        console.log('🔍 Checking DOM elements...');
+        console.log('- Generate button exists:', !!document.getElementById('generate-btn'));
+        console.log('- Custom prompt exists:', !!document.getElementById('custom-prompt'));
+        console.log('- Negative prompt exists:', !!document.getElementById('negative-prompt'));
+        
         this.setupEventListeners();
         this.loadCharacters();
         this.loadPoses();
         this.initializeAdvancedSettings();
+        
+        console.log('✅ Generate Media setup complete');
     }
 
     // Get current state based on media type
@@ -163,9 +170,14 @@ class GenerateMediaIntegrated {
         // Generate button
         const generateBtn = document.getElementById('generate-btn');
         if (generateBtn) {
-            generateBtn.addEventListener('click', () => {
+            console.log('✅ Generate button found, binding click event');
+            generateBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('🎯 Generate button clicked!');
                 this.generateMedia();
             });
+        } else {
+            console.error('❌ Generate button not found!');
         }
 
         // Advanced settings toggle
