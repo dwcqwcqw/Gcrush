@@ -1,184 +1,241 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Test Generate Image API</title>
+    <title>Test Generate API</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Arial', sans-serif;
             max-width: 800px;
             margin: 0 auto;
             padding: 20px;
             background: #1a1a1a;
-            color: #fff;
+            color: #ffffff;
         }
-        .test-section {
+        .container {
             background: #2a2a2a;
-            padding: 20px;
+            padding: 30px;
             border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            color: #A259FF;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group {
             margin-bottom: 20px;
         }
-        button {
-            background: #a855f7;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #cccccc;
         }
-        button:hover {
-            background: #9333ea;
-        }
-        textarea {
+        input, textarea, select {
             width: 100%;
-            height: 200px;
+            padding: 10px;
+            border: 1px solid #444;
+            border-radius: 5px;
             background: #333;
             color: #fff;
-            border: 1px solid #555;
-            border-radius: 5px;
-            padding: 10px;
-            font-family: monospace;
+            box-sizing: border-box;
         }
-        .result {
-            background: #333;
+        button {
+            background: #A259FF;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #8b47e6;
+        }
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .output {
+            background: #1a1a1a;
             padding: 15px;
             border-radius: 5px;
-            margin-top: 10px;
+            border: 1px solid #444;
             white-space: pre-wrap;
             font-family: monospace;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
         }
-        .success { color: #4ade80; }
-        .error { color: #ef4444; }
-        .warning { color: #fbbf24; }
+        .success { color: #4CAF50; }
+        .error { color: #f44336; }
+        .info { color: #2196F3; }
+        .warning { color: #ff9800; }
+        .generated-image {
+            max-width: 100%;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
-    <h1>🎨 Generate Image API Test</h1>
-    
-    <div class="test-section">
-        <h2>📋 Test Configuration</h2>
-        <label>Test User ID:</label>
-        <input type="text" id="testUserId" value="test-user-123" style="width: 200px; padding: 5px; margin: 10px;">
-        <br>
-        <label>Character Name:</label>
-        <input type="text" id="characterName" value="Alex" style="width: 200px; padding: 5px; margin: 10px;">
-        <br>
-        <label>Batch Size:</label>
-        <input type="number" id="batchSize" value="1" min="1" max="5" style="width: 100px; padding: 5px; margin: 10px;">
-        <br>
-        <button onclick="testAPI()">🚀 Test Generate Image API</button>
-        <button onclick="clearResults()">🧹 Clear Results</button>
-    </div>
-
-    <div class="test-section">
-        <h2>📝 Test Prompt</h2>
-        <textarea id="testPrompt" placeholder="Enter your test prompt here...">A handsome man with dark hair, muscular build, professional photo</textarea>
-    </div>
-
-    <div class="test-section">
-        <h2>📝 Negative Prompt</h2>
-        <textarea id="negativePrompt" placeholder="Enter negative prompt here...">(worst quality:2), (low quality:2), (blurry:2), (deformed:2)</textarea>
-    </div>
-
-    <div class="test-section">
-        <h2>📊 API Response</h2>
-        <div id="apiResult" class="result">Click "Test Generate Image API" to see results...</div>
-    </div>
-
-    <div class="test-section">
-        <h2>🖼️ Generated Images</h2>
-        <div id="imageResults"></div>
+    <div class="container">
+        <h1>🎨 Test Generate Image API</h1>
+        
+        <div class="form-group">
+            <label for="userId">User ID:</label>
+            <input type="text" id="userId" value="99f24c0c-6e5c-4859-ae86-8e8bade07b98" placeholder="Enter user ID">
+        </div>
+        
+        <div class="form-group">
+            <label for="prompt">Prompt:</label>
+            <textarea id="prompt" rows="3" placeholder="Enter your prompt">A beautiful anime girl with long hair</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="negativePrompt">Negative Prompt:</label>
+            <textarea id="negativePrompt" rows="2" placeholder="Enter negative prompt">ugly, bad quality, blurry</textarea>
+        </div>
+        
+        <div class="form-group">
+            <label for="characterName">Character Name:</label>
+            <input type="text" id="characterName" value="TestCharacter" placeholder="Character name">
+        </div>
+        
+        <div class="form-group">
+            <label for="batchSize">Batch Size:</label>
+            <select id="batchSize">
+                <option value="1">1 Image</option>
+                <option value="2">2 Images</option>
+                <option value="3">3 Images</option>
+                <option value="4">4 Images</option>
+            </select>
+        </div>
+        
+        <button onclick="testGenerateAPI()" id="generateBtn">🎨 Generate Images</button>
+        <button onclick="clearOutput()">🗑️ Clear Output</button>
+        
+        <div class="output" id="output">Ready to test image generation...</div>
     </div>
 
     <script>
-        async function testAPI() {
-            const resultDiv = document.getElementById('apiResult');
-            const imageDiv = document.getElementById('imageResults');
+        async function testGenerateAPI() {
+            const output = document.getElementById('output');
+            const generateBtn = document.getElementById('generateBtn');
             
-            resultDiv.innerHTML = '⏳ Testing API...';
-            resultDiv.className = 'result warning';
-            imageDiv.innerHTML = '';
-
+            // Disable button during generation
+            generateBtn.disabled = true;
+            generateBtn.textContent = '⏳ Generating...';
+            
             try {
-                const testData = {
-                    user_id: document.getElementById('testUserId').value,
-                    prompt: document.getElementById('testPrompt').value,
-                    negative_prompt: document.getElementById('negativePrompt').value,
-                    batch_size: parseInt(document.getElementById('batchSize').value),
-                    character_name: document.getElementById('characterName').value
+                const userId = document.getElementById('userId').value;
+                const prompt = document.getElementById('prompt').value;
+                const negativePrompt = document.getElementById('negativePrompt').value;
+                const characterName = document.getElementById('characterName').value;
+                const batchSize = parseInt(document.getElementById('batchSize').value);
+                
+                if (!userId || !prompt) {
+                    output.innerHTML += '<span class="error">❌ User ID and Prompt are required</span>\n';
+                    return;
+                }
+                
+                output.innerHTML += '<span class="info">🚀 Starting image generation...</span>\n';
+                output.innerHTML += `<span class="info">📋 User ID: ${userId}</span>\n`;
+                output.innerHTML += `<span class="info">📋 Prompt: ${prompt}</span>\n`;
+                output.innerHTML += `<span class="info">📋 Character: ${characterName}</span>\n`;
+                output.innerHTML += `<span class="info">📋 Batch Size: ${batchSize}</span>\n\n`;
+                
+                const requestData = {
+                    user_id: userId,
+                    prompt: prompt,
+                    negative_prompt: negativePrompt,
+                    character_name: characterName,
+                    batch_size: batchSize
                 };
-
-                console.log('🔗 Sending test request:', testData);
-
+                
+                output.innerHTML += '<span class="info">📤 Sending request to /api/generate-image...</span>\n';
+                
                 const response = await fetch('/api/generate-image', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(testData)
+                    body: JSON.stringify(requestData)
                 });
-
-                console.log('📡 Response status:', response.status);
-                console.log('📡 Response headers:', [...response.headers.entries()]);
-
+                
+                output.innerHTML += `<span class="info">📡 Response Status: ${response.status} ${response.statusText}</span>\n`;
+                
                 const responseText = await response.text();
-                console.log('📡 Raw response:', responseText);
-
-                let result;
+                let responseData;
+                
                 try {
-                    result = JSON.parse(responseText);
-                } catch (e) {
-                    throw new Error(`JSON parse error: ${e.message}\nRaw response: ${responseText}`);
+                    responseData = JSON.parse(responseText);
+                } catch (parseError) {
+                    output.innerHTML += '<span class="error">❌ Failed to parse response as JSON</span>\n';
+                    output.innerHTML += `<span class="error">📄 Raw Response: ${responseText}</span>\n`;
+                    return;
                 }
-
+                
                 if (response.ok) {
-                    resultDiv.className = 'result success';
-                    resultDiv.innerHTML = `✅ API Success!\n\nStatus: ${response.status}\nResponse:\n${JSON.stringify(result, null, 2)}`;
+                    output.innerHTML += '<span class="success">✅ Image generation successful!</span>\n';
                     
-                    // Display images if available
-                    if (result.images && result.images.length > 0) {
-                        imageDiv.innerHTML = '<h3>🖼️ Generated Images:</h3>';
-                        result.images.forEach((img, index) => {
-                            const imgElement = document.createElement('div');
-                            imgElement.innerHTML = `
-                                <h4>Image ${index + 1}:</h4>
-                                <p><strong>URL:</strong> <a href="${img.url}" target="_blank">${img.url}</a></p>
-                                <p><strong>Filename:</strong> ${img.filename}</p>
-                                <p><strong>Seed:</strong> ${img.seed}</p>
-                                <img src="${img.url}" alt="Generated Image" style="max-width: 300px; border-radius: 10px; margin: 10px 0;" 
-                                     onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
-                                <p style="display: none; color: #ef4444;">❌ Failed to load image</p>
-                            `;
-                            imageDiv.appendChild(imgElement);
+                    if (responseData.images && responseData.images.length > 0) {
+                        output.innerHTML += `<span class="success">📸 Generated ${responseData.images.length} images:</span>\n`;
+                        
+                        responseData.images.forEach((image, index) => {
+                            output.innerHTML += `<span class="info">🖼️ Image ${index + 1}: ${image.filename}</span>\n`;
+                            output.innerHTML += `<span class="info">🔗 URL: ${image.url}</span>\n`;
+                            
+                            // Display the image
+                            const img = document.createElement('img');
+                            img.src = image.url;
+                            img.className = 'generated-image';
+                            img.alt = `Generated Image ${index + 1}`;
+                            img.onload = () => {
+                                output.innerHTML += `<span class="success">✅ Image ${index + 1} loaded successfully</span>\n`;
+                            };
+                            img.onerror = () => {
+                                output.innerHTML += `<span class="error">❌ Failed to load image ${index + 1}</span>\n`;
+                            };
+                            output.appendChild(img);
                         });
+                        
+                        if (responseData.generation_time) {
+                            output.innerHTML += `<span class="info">⏱️ Generation Time: ${responseData.generation_time}s</span>\n`;
+                        }
                     } else {
-                        imageDiv.innerHTML = '<p class="error">❌ No images found in response</p>';
+                        output.innerHTML += '<span class="warning">⚠️ No images returned in response</span>\n';
                     }
                 } else {
-                    resultDiv.className = 'result error';
-                    resultDiv.innerHTML = `❌ API Error!\n\nStatus: ${response.status}\nResponse:\n${JSON.stringify(result, null, 2)}`;
+                    output.innerHTML += '<span class="error">❌ Image generation failed</span>\n';
+                    output.innerHTML += `<span class="error">📄 Error: ${responseData.error || 'Unknown error'}</span>\n`;
+                    
+                    if (responseData.debug) {
+                        output.innerHTML += `<span class="warning">🔍 Debug: ${responseData.debug}</span>\n`;
+                    }
                 }
-
+                
+                output.innerHTML += '\n📋 Full Response:\n';
+                output.innerHTML += JSON.stringify(responseData, null, 2) + '\n\n';
+                
             } catch (error) {
-                console.error('Test error:', error);
-                resultDiv.className = 'result error';
-                resultDiv.innerHTML = `❌ Test Failed!\n\nError: ${error.message}`;
+                output.innerHTML += `<span class="error">❌ Request failed: ${error.message}</span>\n`;
+                console.error('Generate API test error:', error);
+            } finally {
+                // Re-enable button
+                generateBtn.disabled = false;
+                generateBtn.textContent = '🎨 Generate Images';
+                
+                // Scroll to bottom
+                output.scrollTop = output.scrollHeight;
             }
         }
-
-        function clearResults() {
-            document.getElementById('apiResult').innerHTML = 'Results cleared...';
-            document.getElementById('apiResult').className = 'result';
-            document.getElementById('imageResults').innerHTML = '';
+        
+        function clearOutput() {
+            document.getElementById('output').innerHTML = 'Ready to test image generation...';
         }
-
-        // Auto-focus on load
-        window.onload = () => {
-            console.log('🧪 Generate Image API Test Page Loaded');
-            console.log('Ready to test /api/generate-image endpoint');
-        };
     </script>
 </body>
 </html> 
