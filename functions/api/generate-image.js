@@ -114,10 +114,18 @@ export async function onRequestPost(context) {
             
             if (runpodResult.output) {
                 console.log('📋 Available output fields:', Object.keys(runpodResult.output));
+                console.log('🖼️ Images field exists:', !!runpodResult.output.images);
                 console.log('🖼️ Images field type:', typeof runpodResult.output.images);
-                console.log('🔗 Images_url field type:', typeof runpodResult.output.images_url);
-                console.log('📎 S3_urls field type:', typeof runpodResult.output.s3_urls);
-                console.log('🌐 Urls field type:', typeof runpodResult.output.urls);
+                console.log('🖼️ Images array length:', runpodResult.output.images ? runpodResult.output.images.length : 'N/A');
+                
+                // 检查images数组的内容
+                if (runpodResult.output.images && Array.isArray(runpodResult.output.images)) {
+                    runpodResult.output.images.forEach((img, index) => {
+                        console.log(`🔍 Image ${index + 1} structure:`, typeof img);
+                        console.log(`🔍 Image ${index + 1} keys:`, typeof img === 'object' ? Object.keys(img) : 'Not an object');
+                        console.log(`🔍 Image ${index + 1} full data:`, img);
+                    });
+                }
             }
 
             if (runpodResult.status !== 'COMPLETED') {
@@ -161,13 +169,17 @@ export async function onRequestPost(context) {
                     }
                     
                     if (imageUrl) {
+                        // 将RunPod的内部S3 URL转换为Public R2 URL
+                        const publicUrl = convertToPublicR2Url(imageUrl);
+                        console.log(`🔄 Converting URL: ${imageUrl} -> ${publicUrl}`);
+                        
                         generatedImages.push({
                             filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
-                            url: imageUrl,
+                            url: publicUrl,
                             seed: imageData.seed || Math.floor(Math.random() * 2147483647),
                             created_at: new Date().toISOString()
                         });
-                        console.log(`✅ Added image ${i + 1} to results`);
+                        console.log(`✅ Added image ${i + 1} to results with public URL`);
                     } else {
                         console.error(`❌ No URL found for image ${i + 1}:`, imageData);
                     }
@@ -208,6 +220,35 @@ export async function onRequestPost(context) {
                 }
             });
         }
+}
+
+// 将RunPod的内部S3 URL转换为Public R2 URL
+function convertToPublicR2Url(runpodUrl) {
+    try {
+        // RunPod URL格式: https://c7c141ce43d175e60601edc46d904553.r2.cloudflarestorage.com/image-generation/...
+        // 需要转换为: https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/...
+        
+        if (runpodUrl.includes('c7c141ce43d175e60601edc46d904553.r2.cloudflarestorage.com')) {
+            // 提取路径部分（image-generation/...）
+            const urlParts = runpodUrl.split('/');
+            const pathIndex = urlParts.findIndex(part => part === 'image-generation');
+            
+            if (pathIndex !== -1) {
+                // 获取image-generation之后的路径
+                const pathAfterImageGeneration = urlParts.slice(pathIndex + 1).join('/');
+                // 构建公共URL
+                const publicUrl = `https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/${pathAfterImageGeneration}`;
+                return publicUrl;
+            }
+        }
+        
+        // 如果无法转换，返回原URL
+        console.warn('⚠️ Could not convert URL to public format:', runpodUrl);
+        return runpodUrl;
+    } catch (error) {
+        console.error('❌ Error converting URL:', error);
+        return runpodUrl;
+    }
 }
 
 // 构建ComfyUI工作流
