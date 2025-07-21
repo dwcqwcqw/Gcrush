@@ -586,17 +586,30 @@ class GenerateMediaIntegrated {
         
         if (!authResult.authenticated) {
             console.log('❌ User not authenticated, showing login modal');
-            this.resetGenerationState();
+            
+            // 重置生成状态
+            this.isGenerating = false;
+            const generateBtn = document.getElementById('generate-btn');
+            if (generateBtn) {
+                generateBtn.disabled = false;
+                generateBtn.style.opacity = '1';
+                generateBtn.style.cursor = 'pointer';
+            }
             
             // 打开登录弹窗
             const authModal = document.getElementById('authModal');
             if (authModal) {
                 authModal.style.display = 'flex';
+                console.log('✅ Login modal opened');
             } else {
                 // Fallback: 点击登录按钮
                 const loginBtn = document.querySelector('.login-btn');
                 if (loginBtn) {
                     loginBtn.click();
+                    console.log('✅ Login button clicked');
+                } else {
+                    console.error('❌ No login method found');
+                    alert('Please login to generate images');
                 }
             }
             return;
@@ -796,6 +809,8 @@ class GenerateMediaIntegrated {
                         console.log('⚠️ Session expired, checking with Supabase...');
                     }
                 }
+            } else {
+                console.log('🔐 No session data in localStorage');
             }
         } catch (localStorageError) {
             console.log('⚠️ localStorage check failed, trying Supabase...');
@@ -824,6 +839,10 @@ class GenerateMediaIntegrated {
                 
                 if (result.error) {
                     console.error('❌ Supabase auth error:', result.error);
+                    // 如果是session missing错误，明确返回未认证
+                    if (result.error.message && result.error.message.includes('Auth session missing')) {
+                        console.log('🔐 Session missing - user needs to login');
+                    }
                     return { authenticated: false };
                 }
                 
