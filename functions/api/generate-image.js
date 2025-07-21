@@ -79,7 +79,7 @@ export async function onRequestPost(context) {
                 width: 1440,  // 4:3竖长 - 宽度
                 height: 1080, // 4:3竖长 - 高度  
                 steps: 30,
-                cfg: 8,       // 提高CFG值从4到8，让提示词作用更大
+                cfg: 3,       // CFG值设为3，让生成更自然
                 sampler_name: 'dpmpp_3m_sde_gpu',
                 scheduler: 'karras',
                 checkpoint_name: 'pornworksBadBoysPhoto.safetensors',
