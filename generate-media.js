@@ -88,6 +88,12 @@ class GenerateMediaIntegrated {
             });
         }
 
+        // 监听pose选择变化
+        document.addEventListener('poseSelected', (event) => {
+            const poseValue = event.detail;
+            this.appendToCustomPrompt(this.getPoseDescription(poseValue));
+        });
+
         // Tab switching functionality
         document.querySelectorAll('.tab-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -118,6 +124,10 @@ class GenerateMediaIntegrated {
                 // Add active class to clicked button
                 e.target.classList.add('active');
                 this.setCurrentState('selectedBackground', e.target.dataset.value);
+                
+                // 追加背景描述到Custom Prompt
+                this.appendToCustomPrompt(this.getBackgroundDescription(e.target.dataset.value));
+                
                 console.log('🏔️ Background selected:', e.target.dataset.value);
             });
         });
@@ -130,6 +140,10 @@ class GenerateMediaIntegrated {
                 // Add active class to clicked button
                 e.target.classList.add('active');
                 this.setCurrentState('selectedOutfit', e.target.dataset.value);
+                
+                // 追加服装描述到Custom Prompt
+                this.appendToCustomPrompt(this.getOutfitDescription(e.target.dataset.value));
+                
                 console.log('👕 Outfit selected:', e.target.dataset.value);
             });
         });
@@ -282,8 +296,11 @@ class GenerateMediaIntegrated {
                 item.classList.add('selected');
             }
 
+            // Get image URL - handle both database format (images array) and fallback format (image_url)
+            const imageUrl = this.getCharacterImageUrl(character);
+
             item.innerHTML = `
-                <img src="${character.image_url}" alt="${character.name}">
+                <img src="${imageUrl}" alt="${character.name}">
                 <div class="item-name">${character.name}</div>
                 <div class="selected-indicator">
                     <i class="fas fa-check"></i>
@@ -301,6 +318,20 @@ class GenerateMediaIntegrated {
         modal.style.display = 'flex';
     }
 
+    // 获取角色图片URL
+    getCharacterImageUrl(character) {
+        // 处理数据库格式（images数组）
+        if (character.images && Array.isArray(character.images) && character.images.length > 0) {
+            return character.images[0];
+        }
+        // 处理fallback格式（image_url字段）
+        if (character.image_url) {
+            return character.image_url;
+        }
+        // 默认路径
+        return `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/Image/${character.name}/${character.name}1.png`;
+    }
+
     closeCharacterModal() {
         const modal = document.getElementById('characterModal');
         if (modal) {
@@ -311,6 +342,14 @@ class GenerateMediaIntegrated {
     selectCharacter(characterId) {
         this.setCurrentState('selectedCharacter', characterId);
         this.updateCharacterPreview();
+        
+        // 找到选中的角色
+        const character = this.characters.find(c => c.id === characterId);
+        if (character) {
+            // 自动填充角色描述到Custom Prompt
+            this.handleCharacterSelection(character);
+        }
+        
         console.log('👤 Character selected:', characterId);
     }
 
@@ -321,9 +360,10 @@ class GenerateMediaIntegrated {
         const selectedCharacter = this.getCurrentState().selectedCharacter;
         if (selectedCharacter) {
             const character = this.characters.find(c => c.id === selectedCharacter);
-            if (character && character.image_url) {
+            if (character) {
+                const imageUrl = this.getCharacterImageUrl(character);
                 characterPreview.innerHTML = `
-                    <img src="${character.image_url}" alt="${character.name}">
+                    <img src="${imageUrl}" alt="${character.name}">
                     <div class="character-name">${character.name}</div>
                 `;
                 characterPreview.classList.add('has-selection');
@@ -395,6 +435,10 @@ class GenerateMediaIntegrated {
     selectPose(poseId) {
         this.setCurrentState('selectedPose', poseId);
         this.updatePosePreview();
+        
+        // 触发pose选择事件
+        document.dispatchEvent(new CustomEvent('poseSelected', { detail: poseId }));
+        
         console.log('📸 Pose selected:', poseId);
     }
 
@@ -602,6 +646,23 @@ class GenerateMediaIntegrated {
                 // 提取角色描述，去除对话相关的指令
                 const characterDescription = this.extractCharacterDescription(character.system_prompt);
                 customPromptField.value = characterDescription;
+            }
+        }
+    }
+
+    // 追加内容到Custom Prompt
+    appendToCustomPrompt(description) {
+        if (!description) return;
+        
+        const customPromptField = document.getElementById('custom-prompt');
+        if (customPromptField) {
+            const currentValue = customPromptField.value.trim();
+            if (currentValue) {
+                // 如果已有内容，用逗号和空格连接
+                customPromptField.value = currentValue + ', ' + description;
+            } else {
+                // 如果没有内容，直接设置
+                customPromptField.value = description;
             }
         }
     }
