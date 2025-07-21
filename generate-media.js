@@ -608,6 +608,12 @@ class GenerateMediaIntegrated {
             console.log('📡 API Response status:', response.status);
             console.log('📡 API Response statusText:', response.statusText);
             console.log('📡 API Response url:', response.url);
+            
+            // 检查响应头
+            console.log('📋 Response headers:');
+            for (let [key, value] of response.headers) {
+                console.log(`  ${key}: ${value}`);
+            }
 
             if (!response.ok) {
                 let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
