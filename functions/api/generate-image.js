@@ -49,7 +49,29 @@ export async function onRequestPost(context) {
                 });
             }
 
-            // 构建ComfyUI工作流
+            // 获取用户信息以便命名图片
+            let username = 'user';
+            try {
+                // 尝试从Supabase获取用户名
+                if (env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+                    const supabaseResponse = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/profiles?id=eq.${user_id}&select=username`, {
+                        headers: {
+                            'apikey': env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`
+                        }
+                    });
+                    if (supabaseResponse.ok) {
+                        const profiles = await supabaseResponse.json();
+                        if (profiles && profiles.length > 0 && profiles[0].username) {
+                            username = profiles[0].username;
+                        }
+                    }
+                }
+            } catch (error) {
+                console.log('Could not fetch username, using default:', error.message);
+            }
+
+            // 构建ComfyUI工作流，使用用户名命名
             const workflow = buildComfyUIWorkflow({
                 prompt: prompt || '',
                 negative_prompt: negative_prompt || '',
@@ -61,7 +83,8 @@ export async function onRequestPost(context) {
                 sampler_name: 'dpmpp_3m_sde_gpu',
                 scheduler: 'karras',
                 checkpoint_name: 'pornworksBadBoysPhoto.safetensors',
-                seed: Math.floor(Math.random() * 2147483647)
+                seed: Math.floor(Math.random() * 2147483647),
+                filename_prefix: `${username}-${character_name || 'image'}`
             });
 
             // 调用RunPod API
@@ -88,42 +111,73 @@ export async function onRequestPost(context) {
             const runpodResult = await runpodResponse.json();
             console.log('✅ RunPod API response status:', runpodResult.status);
 
-            if (runpodResult.status !== 'COMPLETED' || !runpodResult.output?.images) {
+            if (runpodResult.status !== 'COMPLETED') {
                 console.error('❌ RunPod generation failed:', runpodResult);
                 return new Response(JSON.stringify({ error: 'Image generation failed' }), {
                     status: 500,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
                 });
             }
 
-            // 上传图片到R2存储
-            const uploadedImages = [];
-            for (let i = 0; i < runpodResult.output.images.length; i++) {
-                const imageData = runpodResult.output.images[i];
-                const imageBuffer = Buffer.from(imageData.image, 'base64');
-                const timestamp = Date.now();
-                const filename = `${user_id}/images/${timestamp}_${i + 1}.png`;
-
-                // 上传到R2
-                const uploadResult = await uploadToR2(imageBuffer, filename, env);
-                if (uploadResult.success) {
-                    uploadedImages.push({
-                        filename: filename,
-                        url: `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${filename}`,
-                        seed: imageData.seed,
+            // 处理RunPod返回的图片URL（RunPod已经自动上传到他们的S3）
+            const generatedImages = [];
+            
+            // 检查是否有output.images_url（RunPod自动上传的URL）
+            if (runpodResult.output?.images_url && Array.isArray(runpodResult.output.images_url)) {
+                console.log('✅ Using RunPod uploaded images:', runpodResult.output.images_url.length);
+                for (let i = 0; i < runpodResult.output.images_url.length; i++) {
+                    const imageUrl = runpodResult.output.images_url[i];
+                    generatedImages.push({
+                        filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
+                        url: imageUrl,
+                        seed: runpodResult.output.seeds ? runpodResult.output.seeds[i] : Math.floor(Math.random() * 2147483647),
                         created_at: new Date().toISOString()
                     });
-                } else {
-                    console.error('❌ Failed to upload image:', uploadResult.error);
                 }
+            } 
+            // 备用：如果没有images_url，尝试处理base64图片数据
+            else if (runpodResult.output?.images && Array.isArray(runpodResult.output.images)) {
+                console.log('✅ Processing base64 images:', runpodResult.output.images.length);
+                for (let i = 0; i < runpodResult.output.images.length; i++) {
+                    const imageData = runpodResult.output.images[i];
+                    const imageBuffer = Buffer.from(imageData.image, 'base64');
+                    const timestamp = Date.now();
+                    const filename = `${username}/images/${timestamp}_${i + 1}.png`;
+
+                    // 上传到R2
+                    const uploadResult = await uploadToR2(imageBuffer, filename, env);
+                    if (uploadResult.success) {
+                        generatedImages.push({
+                            filename: filename,
+                            url: `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${filename}`,
+                            seed: imageData.seed || Math.floor(Math.random() * 2147483647),
+                            created_at: new Date().toISOString()
+                        });
+                    } else {
+                        console.error('❌ Failed to upload image:', uploadResult.error);
+                    }
+                }
+            } else {
+                console.error('❌ No images found in RunPod response');
+                return new Response(JSON.stringify({ error: 'No images generated' }), {
+                    status: 500,
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
+                });
             }
 
             // 返回结果
             return new Response(JSON.stringify({
                 success: true,
-                images: uploadedImages,
-                generation_time: runpodResult.output.workflow_duration,
-                character_name: character_name
+                images: generatedImages,
+                generation_time: runpodResult.output?.workflow_duration || 0,
+                character_name: character_name,
+                username: username
             }), {
                 status: 200,
                 headers: { 
@@ -200,7 +254,7 @@ function buildComfyUIWorkflow(params) {
         "7": {
             "inputs": {
                 "images": ["6", 0],
-                "filename_prefix": "Gcrush-image"
+                "filename_prefix": params.filename_prefix || "Gcrush-image"
             },
             "class_type": "SaveImage"
         }

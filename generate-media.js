@@ -627,9 +627,20 @@ class GenerateMediaIntegrated {
         } catch (error) {
             console.error('❌ Error generating media:', error);
             this.hideGenerationProgress();
-            alert(`Failed to generate media: ${error.message}`);
+            
+            // 显示更详细的错误信息
+            let errorMessage = error.message;
+            if (errorMessage.includes('500')) {
+                errorMessage = 'Server error occurred. Please try again in a moment.';
+            } else if (errorMessage.includes('405')) {
+                errorMessage = 'API endpoint error. Please refresh the page and try again.';
+            }
+            
+            alert(`Failed to generate media: ${errorMessage}`);
         } finally {
+            // 确保生成状态被重置
             this.isGenerating = false;
+            console.log('🔄 Generation state reset, ready for next request');
         }
     }
 
