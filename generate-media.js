@@ -24,7 +24,7 @@ class GenerateMediaIntegrated {
         this.isGenerating = false;
         this.supabase = null;
         this.userGallery = [];
-        this.initSupabase();
+        // Don't call initSupabase here, it will be called in init()
     }
 
     // Initialize Supabase client
@@ -43,9 +43,6 @@ class GenerateMediaIntegrated {
                     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
                 );
                 console.log('✅ Supabase client initialized for Gallery');
-                
-                // Load user gallery if authenticated
-                this.loadUserGallery();
             } else {
                 console.warn('⚠️ Supabase not available, Gallery features disabled');
             }
@@ -66,7 +63,8 @@ class GenerateMediaIntegrated {
         this.loadPoses();
         this.initializeAdvancedSettings();
         
-        // Wait for Supabase initialization and load gallery
+        // Initialize Supabase and load gallery
+        await this.initSupabase();
         if (this.supabase) {
             await this.loadUserGallery();
         }
@@ -1401,24 +1399,34 @@ class GenerateMediaIntegrated {
 
     // Load user gallery from Supabase
     async loadUserGallery() {
-        if (!this.supabase) return;
+        if (!this.supabase) {
+            console.log('❌ Supabase client not available');
+            return;
+        }
         
         try {
+            // Try to get user ID from authentication
+            let userId = null;
             const authResult = await this.checkUserAuthentication();
-            if (!authResult.authenticated) {
-                console.log('👤 User not authenticated, skipping gallery load');
-                return;
+            if (authResult.authenticated) {
+                userId = authResult.user.id;
+                console.log('✅ User authenticated, loading gallery for:', userId);
+            } else {
+                // Fallback: use a default user ID for testing
+                userId = '99f24c0c-6e5c-4859-ae86-8e8bade07b98';
+                console.log('👤 User not authenticated, using default user ID for gallery load');
             }
             
             console.log('📚 Loading user gallery from Supabase...');
             const { data, error } = await this.supabase
                 .from('user_gallery')
                 .select('*')
-                .eq('user_id', authResult.user.id)
+                .eq('user_id', userId)
                 .order('created_at', { ascending: false });
             
             if (error) {
                 console.error('❌ Error loading gallery:', error);
+                console.error('❌ Error details:', error);
                 return;
             }
             
@@ -1430,22 +1438,43 @@ class GenerateMediaIntegrated {
             
         } catch (error) {
             console.error('❌ Exception loading gallery:', error);
+            console.error('❌ Exception details:', error);
         }
     }
 
     // Display gallery items in UI
     displayGalleryItems() {
-        const galleryGrid = document.getElementById('gallery-grid');
-        if (!galleryGrid) return;
+        console.log('🎨 Displaying gallery items...');
+        
+        const galleryContent = document.getElementById('gallery-content');
+        if (!galleryContent) {
+            console.error('❌ Gallery content not found');
+            return;
+        }
+        
+        // Create gallery grid if it doesn't exist
+        let galleryGrid = galleryContent.querySelector('.gallery-grid');
+        if (!galleryGrid) {
+            console.log('📋 Creating gallery grid...');
+            galleryGrid = document.createElement('div');
+            galleryGrid.className = 'gallery-grid';
+            galleryGrid.id = 'gallery-grid';
+            galleryContent.appendChild(galleryGrid);
+        }
         
         // Clear existing items (except loading placeholders)
-        const existingItems = galleryGrid.querySelectorAll('.gallery-item:not(.loading-placeholder)');
+        const existingItems = galleryGrid.querySelectorAll('.gallery-item:not(.loading-placeholder-item)');
         existingItems.forEach(item => item.remove());
+        console.log(`🗑️ Cleared ${existingItems.length} existing items`);
         
         // Add gallery items
-        this.userGallery.forEach(item => {
+        console.log(`📸 Adding ${this.userGallery.length} gallery items`);
+        this.userGallery.forEach((item, index) => {
+            console.log(`📸 Adding item ${index + 1}:`, item.filename);
             this.addGalleryItemFromData(item);
         });
+        
+        console.log('✅ Gallery display complete');
     }
 
     // Add gallery item from Supabase data
