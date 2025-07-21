@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug RunPod Response Structure</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff00;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            margin: 20px 0;
+            padding: 20px;
+        }
+        .section h2 {
+            color: #ffff00;
+            border-bottom: 1px solid #333;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #007700;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-family: inherit;
+        }
+        button:hover {
+            background: #009900;
+        }
+        .json-display {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 15px;
+            white-space: pre-wrap;
+            overflow-x: auto;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .error { color: #ff4444; }
+        .success { color: #44ff44; }
+        .warning { color: #ffaa44; }
+        .info { color: #4444ff; }
+        input, textarea {
+            background: #222;
+            color: #00ff00;
+            border: 1px solid #555;
+            padding: 8px;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        .analysis {
+            background: #001100;
+            border-left: 4px solid #00ff00;
+            padding: 15px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔬 RunPod Response Structure Debugger</h1>
+        
+        <div class="section">
+            <h2>📋 Test Configuration</h2>
+            <div class="grid">
+                <div>
+                    <label>User ID:</label><br>
+                    <input type="text" id="userId" value="debug-user-001" style="width: 200px;">
+                </div>
+                <div>
+                    <label>Character Name:</label><br>
+                    <input type="text" id="characterName" value="TestChar" style="width: 200px;">
+                </div>
+            </div>
+            <br>
+            <label>Test Prompt:</label><br>
+            <textarea id="testPrompt" style="width: 100%; height: 60px;">A simple test image of a man</textarea>
+            <br><br>
+            <button onclick="debugAPICall()">🔍 Debug API Call</button>
+            <button onclick="clearResults()">🧹 Clear Results</button>
+        </div>
+
+        <div class="section">
+            <h2>📡 Raw API Response</h2>
+            <div id="rawResponse" class="json-display">Click "Debug API Call" to see raw response...</div>
+        </div>
+
+        <div class="section">
+            <h2>🔬 Response Analysis</h2>
+            <div id="responseAnalysis" class="analysis">Waiting for response to analyze...</div>
+        </div>
+
+        <div class="section">
+            <h2>🖼️ Images Array Deep Dive</h2>
+            <div id="imagesAnalysis" class="json-display">Waiting for images data...</div>
+        </div>
+
+        <div class="section">
+            <h2>🔗 URL Extraction Test</h2>
+            <div id="urlExtraction" class="json-display">Waiting for URL extraction test...</div>
+        </div>
+
+        <div class="section">
+            <h2>🌐 URL Accessibility Test</h2>
+            <div id="urlAccessibility" class="json-display">Waiting for URL accessibility test...</div>
+        </div>
+    </div>
+
+    <script>
+        async function debugAPICall() {
+            const rawDiv = document.getElementById('rawResponse');
+            const analysisDiv = document.getElementById('responseAnalysis');
+            const imagesDiv = document.getElementById('imagesAnalysis');
+            const urlDiv = document.getElementById('urlExtraction');
+            const accessDiv = document.getElementById('urlAccessibility');
+
+            // Clear previous results
+            rawDiv.textContent = '⏳ Making API call...';
+            analysisDiv.textContent = 'Analyzing...';
+            imagesDiv.textContent = 'Waiting...';
+            urlDiv.textContent = 'Waiting...';
+            accessDiv.textContent = 'Waiting...';
+
+            try {
+                const requestData = {
+                    user_id: document.getElementById('userId').value,
+                    prompt: document.getElementById('testPrompt').value,
+                    negative_prompt: '(low quality)',
+                    batch_size: 1,
+                    character_name: document.getElementById('characterName').value
+                };
+
+                console.log('🔍 Sending debug request:', requestData);
+
+                const response = await fetch('/api/generate-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                const responseText = await response.text();
+                console.log('📡 Raw response text:', responseText);
+
+                // Display raw response
+                rawDiv.innerHTML = `<span class="info">Status: ${response.status}</span>\n\n${responseText}`;
+
+                let result;
+                try {
+                    result = JSON.parse(responseText);
+                } catch (e) {
+                    throw new Error(`JSON Parse Error: ${e.message}`);
+                }
+
+                // Analyze response structure
+                analyzeResponse(result, analysisDiv);
+                
+                // Deep dive into images array
+                analyzeImages(result, imagesDiv);
+                
+                // Test URL extraction
+                testUrlExtraction(result, urlDiv);
+                
+                // Test URL accessibility
+                await testUrlAccessibility(result, accessDiv);
+
+            } catch (error) {
+                console.error('Debug error:', error);
+                rawDiv.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+                analysisDiv.innerHTML = `<span class="error">Analysis failed: ${error.message}</span>`;
+            }
+        }
+
+        function analyzeResponse(result, div) {
+            let analysis = '<span class="success">✅ Response Structure Analysis:</span>\n\n';
+            
+            analysis += `• Response type: ${typeof result}\n`;
+            analysis += `• Has 'success' field: ${!!result.success} (${result.success})\n`;
+            analysis += `• Has 'images' field: ${!!result.images}\n`;
+            analysis += `• Images type: ${typeof result.images}\n`;
+            analysis += `• Images is array: ${Array.isArray(result.images)}\n`;
+            analysis += `• Images length: ${result.images ? result.images.length : 'N/A'}\n`;
+            analysis += `• Has 'generation_time': ${!!result.generation_time}\n`;
+            analysis += `• Has 'character_name': ${!!result.character_name}\n`;
+            analysis += `• Has 'username': ${!!result.username}\n\n`;
+            
+            analysis += '<span class="warning">🔍 All Response Fields:</span>\n';
+            analysis += Object.keys(result).map(key => `  - ${key}: ${typeof result[key]}`).join('\n');
+            
+            div.innerHTML = analysis;
+        }
+
+        function analyzeImages(result, div) {
+            if (!result.images || !Array.isArray(result.images)) {
+                div.innerHTML = '<span class="error">❌ No images array found in response</span>';
+                return;
+            }
+
+            if (result.images.length === 0) {
+                div.innerHTML = '<span class="warning">⚠️ Images array is empty</span>';
+                return;
+            }
+
+            let analysis = `<span class="success">✅ Found ${result.images.length} images:</span>\n\n`;
+            
+            result.images.forEach((img, index) => {
+                analysis += `<span class="info">📸 Image ${index + 1}:</span>\n`;
+                analysis += `  Type: ${typeof img}\n`;
+                
+                if (typeof img === 'object') {
+                    analysis += `  Keys: ${Object.keys(img).join(', ')}\n`;
+                    Object.keys(img).forEach(key => {
+                        analysis += `    ${key}: ${typeof img[key]} = ${JSON.stringify(img[key]).substring(0, 100)}...\n`;
+                    });
+                } else {
+                    analysis += `  Value: ${JSON.stringify(img)}\n`;
+                }
+                analysis += '\n';
+            });
+
+            div.innerHTML = analysis;
+        }
+
+        function testUrlExtraction(result, div) {
+            if (!result.images || result.images.length === 0) {
+                div.innerHTML = '<span class="error">❌ No images to extract URLs from</span>';
+                return;
+            }
+
+            let extraction = '<span class="info">🔗 URL Extraction Test:</span>\n\n';
+            
+            result.images.forEach((img, index) => {
+                extraction += `<span class="info">Image ${index + 1} URL extraction:</span>\n`;
+                
+                let foundUrl = null;
+                let method = 'none';
+                
+                if (typeof img === 'object') {
+                    if (img.url) {
+                        foundUrl = img.url;
+                        method = 'img.url';
+                    } else if (img.s3_url) {
+                        foundUrl = img.s3_url;
+                        method = 'img.s3_url';
+                    } else if (img.image_url) {
+                        foundUrl = img.image_url;
+                        method = 'img.image_url';
+                    }
+                } else if (typeof img === 'string' && img.startsWith('http')) {
+                    foundUrl = img;
+                    method = 'direct string';
+                }
+                
+                if (foundUrl) {
+                    extraction += `  ✅ Found URL via ${method}:\n`;
+                    extraction += `     ${foundUrl}\n`;
+                    
+                    // Test URL conversion
+                    const convertedUrl = convertToPublicR2Url(foundUrl);
+                    extraction += `  🔄 Converted URL:\n`;
+                    extraction += `     ${convertedUrl}\n`;
+                } else {
+                    extraction += `  ❌ No URL found\n`;
+                    extraction += `  Available fields: ${typeof img === 'object' ? Object.keys(img).join(', ') : 'N/A'}\n`;
+                }
+                extraction += '\n';
+            });
+
+            div.innerHTML = extraction;
+        }
+
+        async function testUrlAccessibility(result, div) {
+            if (!result.images || result.images.length === 0) {
+                div.innerHTML = '<span class="error">❌ No URLs to test</span>';
+                return;
+            }
+
+            let accessibility = '<span class="info">🌐 URL Accessibility Test:</span>\n\n';
+            
+            for (let i = 0; i < result.images.length; i++) {
+                const img = result.images[i];
+                accessibility += `<span class="info">Testing Image ${i + 1}:</span>\n`;
+                
+                // Extract URL (simplified)
+                let testUrl = null;
+                if (typeof img === 'object' && img.url) {
+                    testUrl = img.url;
+                } else if (typeof img === 'string' && img.startsWith('http')) {
+                    testUrl = img;
+                }
+                
+                if (testUrl) {
+                    try {
+                        const testResponse = await fetch(testUrl, { method: 'HEAD' });
+                        if (testResponse.ok) {
+                            accessibility += `  ✅ URL accessible (${testResponse.status})\n`;
+                            accessibility += `     ${testUrl}\n`;
+                        } else {
+                            accessibility += `  ❌ URL not accessible (${testResponse.status})\n`;
+                            accessibility += `     ${testUrl}\n`;
+                        }
+                    } catch (error) {
+                        accessibility += `  ❌ URL test failed: ${error.message}\n`;
+                        accessibility += `     ${testUrl}\n`;
+                    }
+                } else {
+                    accessibility += `  ⚠️ No URL to test\n`;
+                }
+                accessibility += '\n';
+            }
+
+            div.innerHTML = accessibility;
+        }
+
+        function convertToPublicR2Url(runpodUrl) {
+            try {
+                if (runpodUrl.includes('c7c141ce43d175e60601edc46d904553.r2.cloudflarestorage.com')) {
+                    const urlParts = runpodUrl.split('/');
+                    const pathIndex = urlParts.findIndex(part => part === 'image-generation');
+                    
+                    if (pathIndex !== -1) {
+                        const pathAfterImageGeneration = urlParts.slice(pathIndex + 1).join('/');
+                        return `https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/${pathAfterImageGeneration}`;
+                    }
+                }
+                return runpodUrl;
+            } catch (error) {
+                return runpodUrl;
+            }
+        }
+
+        function clearResults() {
+            document.getElementById('rawResponse').textContent = 'Cleared...';
+            document.getElementById('responseAnalysis').textContent = 'Cleared...';
+            document.getElementById('imagesAnalysis').textContent = 'Cleared...';
+            document.getElementById('urlExtraction').textContent = 'Cleared...';
+            document.getElementById('urlAccessibility').textContent = 'Cleared...';
+        }
+
+        // Auto-focus on load
+        window.onload = () => {
+            console.log('🔬 RunPod Response Debugger Ready');
+        };
+    </script>
+</body>
+</html> 

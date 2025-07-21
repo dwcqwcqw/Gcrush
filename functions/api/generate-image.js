@@ -112,6 +112,36 @@ export async function onRequestPost(context) {
             console.log('✅ RunPod API response status:', runpodResult.status);
             console.log('🔍 Full RunPod response structure:', JSON.stringify(runpodResult, null, 2));
             
+            // 额外的调试信息
+            console.log('=== DETAILED RUNPOD ANALYSIS ===');
+            console.log('RunPod result type:', typeof runpodResult);
+            console.log('RunPod result keys:', Object.keys(runpodResult));
+            if (runpodResult.output) {
+                console.log('Output exists:', true);
+                console.log('Output type:', typeof runpodResult.output);
+                console.log('Output keys:', Object.keys(runpodResult.output));
+                if (runpodResult.output.images) {
+                    console.log('Images field exists:', true);
+                    console.log('Images type:', typeof runpodResult.output.images);
+                    console.log('Images is array:', Array.isArray(runpodResult.output.images));
+                    console.log('Images length:', runpodResult.output.images.length);
+                    if (Array.isArray(runpodResult.output.images)) {
+                        runpodResult.output.images.forEach((img, i) => {
+                            console.log(`Image ${i} type:`, typeof img);
+                            console.log(`Image ${i} content:`, img);
+                            if (typeof img === 'object') {
+                                console.log(`Image ${i} keys:`, Object.keys(img));
+                            }
+                        });
+                    }
+                } else {
+                    console.log('Images field exists:', false);
+                }
+            } else {
+                console.log('Output exists:', false);
+            }
+            console.log('=== END DETAILED ANALYSIS ===');
+            
             if (runpodResult.output) {
                 console.log('📋 Available output fields:', Object.keys(runpodResult.output));
                 console.log('🖼️ Images field exists:', !!runpodResult.output.images);
