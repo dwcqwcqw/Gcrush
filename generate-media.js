@@ -10,21 +10,51 @@ class GenerateMediaIntegrated {
             selectedPose: null,
             selectedBackground: null,
             selectedOutfit: null,
-            selectedImageCount: 2
+            selectedImageCount: 1
         };
         this.videoState = {
             selectedCharacter: null,
             selectedPose: null,
             selectedBackground: null,
             selectedOutfit: null,
-            selectedImageCount: 2
+            selectedImageCount: 1
         };
         this.characters = [];
         this.poses = [];
         this.isGenerating = false;
+        this.supabase = null;
+        this.userGallery = [];
+        this.initSupabase();
     }
 
-    init() {
+    // Initialize Supabase client
+    async initSupabase() {
+        try {
+            // Wait for Supabase to be available
+            let attempts = 0;
+            while (!window.supabase && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (window.supabase && window.supabase.createClient) {
+                this.supabase = window.supabase.createClient(
+                    'https://kuflobojizyttadwcbhe.supabase.co',
+                    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
+                );
+                console.log('✅ Supabase client initialized for Gallery');
+                
+                // Load user gallery if authenticated
+                this.loadUserGallery();
+            } else {
+                console.warn('⚠️ Supabase not available, Gallery features disabled');
+            }
+        } catch (error) {
+            console.error('❌ Supabase client creation failed:', error);
+        }
+    }
+
+    async init() {
         console.log('🎨 Initializing Generate Media for independent page...');
         console.log('🔍 Checking DOM elements...');
         console.log('- Generate button exists:', !!document.getElementById('generate-btn'));
@@ -35,6 +65,11 @@ class GenerateMediaIntegrated {
         this.loadCharacters();
         this.loadPoses();
         this.initializeAdvancedSettings();
+        
+        // Wait for Supabase initialization and load gallery
+        if (this.supabase) {
+            await this.loadUserGallery();
+        }
         
         console.log('✅ Generate Media setup complete');
     }
@@ -648,13 +683,21 @@ class GenerateMediaIntegrated {
 
             console.log('📝 Final prompt:', finalPrompt);
 
+            // 保存加载状态到数据库
+            const loadingId = await this.saveLoadingState(
+                finalPrompt, 
+                currentState.selectedCharacter.name, 
+                authResult.user.id
+            );
+
             // 准备API请求数据
             const requestData = {
                 user_id: authResult.user.id,
                 prompt: finalPrompt,
                 negative_prompt: negativePrompt,
-                batch_size: currentState.selectedImageCount || 2,
-                character_name: currentState.selectedCharacter.name
+                batch_size: currentState.selectedImageCount || 1,
+                character_name: currentState.selectedCharacter.name,
+                loading_id: loadingId // 传递加载ID用于后续更新
             };
 
             console.log('📤 Sending generation request:', requestData);
@@ -1150,30 +1193,36 @@ class GenerateMediaIntegrated {
             galleryContent.appendChild(galleryGrid);
         }
 
-        // Remove any existing loading placeholder
-        const existingPlaceholder = galleryGrid.querySelector('.loading-placeholder-item');
-        if (existingPlaceholder) {
-            existingPlaceholder.remove();
+        // Remove any existing loading placeholders
+        const existingPlaceholders = galleryGrid.querySelectorAll('.loading-placeholder-item');
+        existingPlaceholders.forEach(placeholder => placeholder.remove());
+
+        // Get the number of images to generate
+        const currentState = this.getCurrentState();
+        const imageCount = currentState.selectedImageCount || 1;
+        
+        console.log(`📊 Creating ${imageCount} loading placeholder(s)`);
+
+        // Create loading placeholders based on selected count
+        for (let i = 0; i < imageCount; i++) {
+            const loadingItem = document.createElement('div');
+            loadingItem.className = 'gallery-item loading-placeholder-item';
+            loadingItem.innerHTML = `
+                <div class="loading-placeholder">
+                    <div class="loading-spinner"></div>
+                    <p>Generating image...</p>
+                    <p class="loading-time">This will take less than 40 seconds</p>
+                </div>
+            `;
+
+            // Insert at the beginning of gallery (newest first)
+            galleryGrid.insertBefore(loadingItem, galleryGrid.firstChild);
         }
-
-        // Create loading placeholder
-        const loadingItem = document.createElement('div');
-        loadingItem.className = 'gallery-item loading-placeholder-item';
-        loadingItem.innerHTML = `
-            <div class="loading-placeholder">
-                <div class="loading-spinner"></div>
-                <p>Generating image...</p>
-                <p class="loading-time">This will take less than 40 seconds</p>
-            </div>
-        `;
-
-        // Insert at the beginning of gallery
-        galleryGrid.insertBefore(loadingItem, galleryGrid.firstChild);
         
         // Scroll to gallery
         galleryContent.scrollIntoView({ behavior: 'smooth' });
         
-        console.log('✅ Loading placeholder added at top of gallery');
+        console.log(`✅ ${imageCount} loading placeholder(s) added at top of gallery`);
     }
 
     removeLoadingPlaceholder() {
@@ -1343,35 +1392,157 @@ class GenerateMediaIntegrated {
             window.open(result.url, '_blank');
         };
         
-        // 创建信息区域
-        const itemInfo = document.createElement('div');
-        itemInfo.className = 'gallery-item-info';
-        itemInfo.style.padding = '10px';
-        itemInfo.style.background = 'rgba(0,0,0,0.5)';
-        itemInfo.style.borderRadius = '0 0 10px 10px';
-        
-        const title = document.createElement('h4');
-        title.textContent = 'Generated Image';
-        title.style.margin = '0 0 5px 0';
-        title.style.color = '#fff';
-        title.style.fontSize = '0.9rem';
-        
-        const timestamp = document.createElement('p');
-        timestamp.textContent = new Date().toLocaleString();
-        timestamp.style.margin = '0';
-        timestamp.style.color = '#ccc';
-        timestamp.style.fontSize = '0.8rem';
-        
-        itemInfo.appendChild(title);
-        itemInfo.appendChild(timestamp);
-        
+        // 只显示图片，不显示额外信息
         galleryItem.appendChild(img);
-        galleryItem.appendChild(itemInfo);
         
         // 添加到gallery grid的开头（最新的在前面）
         galleryGrid.insertBefore(galleryItem, galleryGrid.firstChild);
         
         console.log('✅ Gallery item added successfully');
+    }
+
+    // Load user gallery from Supabase
+    async loadUserGallery() {
+        if (!this.supabase) return;
+        
+        try {
+            const authResult = await this.checkUserAuthentication();
+            if (!authResult.authenticated) {
+                console.log('👤 User not authenticated, skipping gallery load');
+                return;
+            }
+            
+            console.log('📚 Loading user gallery from Supabase...');
+            const { data, error } = await this.supabase
+                .from('user_gallery')
+                .select('*')
+                .eq('user_id', authResult.user.id)
+                .order('created_at', { ascending: false });
+            
+            if (error) {
+                console.error('❌ Error loading gallery:', error);
+                return;
+            }
+            
+            this.userGallery = data || [];
+            console.log(`✅ Loaded ${this.userGallery.length} gallery items`);
+            
+            // Display gallery items
+            this.displayGalleryItems();
+            
+        } catch (error) {
+            console.error('❌ Exception loading gallery:', error);
+        }
+    }
+
+    // Display gallery items in UI
+    displayGalleryItems() {
+        const galleryGrid = document.getElementById('gallery-grid');
+        if (!galleryGrid) return;
+        
+        // Clear existing items (except loading placeholders)
+        const existingItems = galleryGrid.querySelectorAll('.gallery-item:not(.loading-placeholder)');
+        existingItems.forEach(item => item.remove());
+        
+        // Add gallery items
+        this.userGallery.forEach(item => {
+            this.addGalleryItemFromData(item);
+        });
+    }
+
+    // Add gallery item from Supabase data
+    addGalleryItemFromData(galleryData) {
+        const galleryGrid = document.getElementById('gallery-grid');
+        if (!galleryGrid) return;
+        
+        const galleryItem = document.createElement('div');
+        galleryItem.className = 'gallery-item';
+        galleryItem.innerHTML = `
+            <img src="${galleryData.image_url}" alt="Generated Image" loading="lazy">
+            <div class="gallery-item-overlay">
+                <div class="gallery-item-info">
+                    <p class="gallery-character">${galleryData.character_name || 'Unknown'}</p>
+                    <p class="gallery-prompt">${galleryData.prompt || 'No prompt'}</p>
+                </div>
+            </div>
+        `;
+        
+        // Add to gallery grid at the end (since they're already sorted)
+        galleryGrid.appendChild(galleryItem);
+    }
+
+    // Save loading state to Supabase
+    async saveLoadingState(prompt, characterName, userId) {
+        if (!this.supabase || !userId) return null;
+        
+        try {
+            console.log('💾 Saving loading state to gallery...');
+            
+            const loadingData = {
+                user_id: userId,
+                image_url: '', // Empty for loading state
+                filename: `loading_${Date.now()}.png`,
+                prompt: prompt,
+                character_name: characterName,
+                generation_params: {
+                    status: 'generating',
+                    started_at: new Date().toISOString()
+                }
+            };
+            
+            const { data, error } = await this.supabase
+                .from('user_gallery')
+                .insert([loadingData])
+                .select()
+                .single();
+            
+            if (error) {
+                console.error('❌ Error saving loading state:', error);
+                return null;
+            }
+            
+            console.log('✅ Loading state saved with ID:', data.id);
+            return data.id;
+            
+        } catch (error) {
+            console.error('❌ Exception saving loading state:', error);
+            return null;
+        }
+    }
+
+    // Update loading state with generated image
+    async updateLoadingStateWithImage(loadingId, imageUrl, filename, seed) {
+        if (!this.supabase || !loadingId) return;
+        
+        try {
+            console.log('🔄 Updating loading state with generated image...');
+            
+            const { error } = await this.supabase
+                .from('user_gallery')
+                .update({
+                    image_url: imageUrl,
+                    filename: filename,
+                    seed: seed,
+                    generation_params: {
+                        status: 'completed',
+                        completed_at: new Date().toISOString()
+                    }
+                })
+                .eq('id', loadingId);
+            
+            if (error) {
+                console.error('❌ Error updating loading state:', error);
+                return;
+            }
+            
+            console.log('✅ Loading state updated successfully');
+            
+            // Reload gallery to show updated item
+            this.loadUserGallery();
+            
+        } catch (error) {
+            console.error('❌ Exception updating loading state:', error);
+        }
     }
 }
 
@@ -1380,10 +1551,10 @@ function initGenerateMediaPage() {
     console.log('🎨 Initializing Generate Media page...');
     
     // Wait for auth to be ready
-    const initGenerateMedia = () => {
+    const initGenerateMedia = async () => {
         if (typeof window.supabase !== 'undefined') {
             window.generateMediaApp = new GenerateMediaIntegrated();
-            window.generateMediaApp.init();
+            await window.generateMediaApp.init();
         } else {
             console.log('⏳ Waiting for Supabase to load...');
             setTimeout(initGenerateMedia, 100);
