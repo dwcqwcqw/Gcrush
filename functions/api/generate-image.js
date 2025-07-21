@@ -424,6 +424,13 @@ function extractImageUrl(imageData) {
     
     // 如果是对象，检查各种可能的URL字段
     if (typeof imageData === 'object') {
+        // 首先检查RunPod特有的data字段（这是我们从日志中发现的）
+        if (imageData.data && typeof imageData.data === 'string' && imageData.data.startsWith('http')) {
+            console.log('✅ Found URL in data field (RunPod format):', imageData.data);
+            return imageData.data;
+        }
+        
+        // 检查常见的URL字段
         const urlFields = ['url', 's3_url', 'image_url', 'file_url', 'path', 'src', 'filename'];
         for (const field of urlFields) {
             if (imageData[field] && typeof imageData[field] === 'string' && imageData[field].startsWith('http')) {

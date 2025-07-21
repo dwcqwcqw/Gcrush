@@ -636,6 +636,11 @@
             }
             
             if (typeof imageData === 'object') {
+                // 首先检查RunPod特有的data字段
+                if (imageData.data && typeof imageData.data === 'string' && imageData.data.startsWith('http')) {
+                    return imageData.data;
+                }
+                
                 const urlFields = ['url', 's3_url', 'image_url', 'file_url', 'path', 'src', 'filename'];
                 for (const field of urlFields) {
                     if (imageData[field] && typeof imageData[field] === 'string' && imageData[field].startsWith('http')) {
