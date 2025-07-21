@@ -91,6 +91,7 @@
     <div class="test-section">
         <h2>🚀 Quick Tests</h2>
         <button class="test-button" onclick="testUserAuth()">Test User Auth</button>
+        <button class="test-button" onclick="testUrlConversion()">Test URL Conversion</button>
         <button class="test-button" onclick="testSingleGenerate()">Test Single Generate</button>
         <button class="test-button" onclick="testDoubleGenerate()">Test Double Generate</button>
         <button class="test-button" onclick="clearLogs()">Clear Logs</button>
@@ -322,13 +323,75 @@
             checkSystemStatus();
         });
 
+                 // 测试URL转换函数
+        function testUrlConversion() {
+            log('🔗 Testing URL conversion...', 'info');
+            
+            // 测试实际的RunPod URL
+            const testUrls = [
+                'https://c7c141ce43d175e60601edc46d904553.r2.cloudflarestorage.com/image-generation/07-25/sync-e2892d37-33ef-4f17-a310-4d4acb5e3fde-u1/ae02d9a8.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=test',
+                'https://c7c141ce43d175e60601edc46d904553.r2.cloudflarestorage.com/image-generation/07-25/sync-1753081004558/user-undefined_00001_.png',
+                'https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/07-25/sync-test/test.png'
+            ];
+            
+            testUrls.forEach((url, index) => {
+                log(`Testing URL ${index + 1}: ${url}`, 'info');
+                const converted = convertToPublicR2Url(url);
+                log(`Converted to: ${converted}`, converted !== url ? 'success' : 'warning');
+            });
+        }
+        
+        // 模拟URL转换函数（复制自后端）
+        function convertToPublicR2Url(runpodUrl) {
+            try {
+                // 检查是否已经是公共URL
+                if (runpodUrl.includes('pub-5a18b069cd06445889010bf8c29132d6.r2.dev')) {
+                    return runpodUrl;
+                }
+                
+                // RunPod URL格式转换
+                if (runpodUrl.includes('c7c141ce43d175e60601edc46d904553.r2.cloudflarestorage.com')) {
+                    // 移除查询参数
+                    const urlWithoutQuery = runpodUrl.split('?')[0];
+                    
+                    // 提取路径部分（image-generation/...）
+                    const urlParts = urlWithoutQuery.split('/');
+                    const pathIndex = urlParts.findIndex(part => part === 'image-generation');
+                    
+                    if (pathIndex !== -1 && pathIndex < urlParts.length - 1) {
+                        // 获取image-generation之后的完整路径
+                        const pathAfterImageGeneration = urlParts.slice(pathIndex + 1).join('/');
+                        // 构建公共URL，保持原始的目录结构
+                        const publicUrl = `https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/${pathAfterImageGeneration}`;
+                        return publicUrl;
+                    }
+                    
+                    // 如果找不到image-generation路径，尝试直接提取后面的路径
+                    const imageGenerationIndex = runpodUrl.indexOf('/image-generation/');
+                    if (imageGenerationIndex !== -1) {
+                        const pathAfterImageGeneration = runpodUrl.substring(imageGenerationIndex + '/image-generation/'.length);
+                        // 移除查询参数
+                        const cleanPath = pathAfterImageGeneration.split('?')[0];
+                        const publicUrl = `https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/${cleanPath}`;
+                        return publicUrl;
+                    }
+                }
+                
+                return runpodUrl;
+            } catch (error) {
+                return runpodUrl;
+            }
+        }
+
         // 导出函数供控制台使用
         window.testFunctions = {
             testUserAuth,
             testSingleGenerate,
             testDoubleGenerate,
+            testUrlConversion,
             clearLogs,
-            checkSystemStatus
+            checkSystemStatus,
+            convertToPublicR2Url
         };
     </script>
 </body>
