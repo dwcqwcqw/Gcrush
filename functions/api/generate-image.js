@@ -110,6 +110,15 @@ export async function onRequestPost(context) {
 
             const runpodResult = await runpodResponse.json();
             console.log('✅ RunPod API response status:', runpodResult.status);
+            console.log('🔍 Full RunPod response structure:', JSON.stringify(runpodResult, null, 2));
+            
+            if (runpodResult.output) {
+                console.log('📋 Available output fields:', Object.keys(runpodResult.output));
+                console.log('🖼️ Images field type:', typeof runpodResult.output.images);
+                console.log('🔗 Images_url field type:', typeof runpodResult.output.images_url);
+                console.log('📎 S3_urls field type:', typeof runpodResult.output.s3_urls);
+                console.log('🌐 Urls field type:', typeof runpodResult.output.urls);
+            }
 
             if (runpodResult.status !== 'COMPLETED') {
                 console.error('❌ RunPod generation failed:', runpodResult);
@@ -125,11 +134,33 @@ export async function onRequestPost(context) {
             // 处理RunPod返回的图片URL（RunPod已经自动上传到他们的S3）
             const generatedImages = [];
             
-            // 检查是否有output.images_url（RunPod自动上传的URL）
+            // 检查多种可能的URL字段名
+            let imageUrls = null;
             if (runpodResult.output?.images_url && Array.isArray(runpodResult.output.images_url)) {
-                console.log('✅ Using RunPod uploaded images:', runpodResult.output.images_url.length);
-                for (let i = 0; i < runpodResult.output.images_url.length; i++) {
-                    const imageUrl = runpodResult.output.images_url[i];
+                imageUrls = runpodResult.output.images_url;
+                console.log('✅ Found images_url field');
+            } else if (runpodResult.output?.s3_urls && Array.isArray(runpodResult.output.s3_urls)) {
+                imageUrls = runpodResult.output.s3_urls;
+                console.log('✅ Found s3_urls field');
+            } else if (runpodResult.output?.urls && Array.isArray(runpodResult.output.urls)) {
+                imageUrls = runpodResult.output.urls;
+                console.log('✅ Found urls field');
+            } else if (runpodResult.output?.image_urls && Array.isArray(runpodResult.output.image_urls)) {
+                imageUrls = runpodResult.output.image_urls;
+                console.log('✅ Found image_urls field');
+            } else if (runpodResult.output?.uploaded_images && Array.isArray(runpodResult.output.uploaded_images)) {
+                imageUrls = runpodResult.output.uploaded_images;
+                console.log('✅ Found uploaded_images field');
+            } else if (runpodResult.output?.s3_image_urls && Array.isArray(runpodResult.output.s3_image_urls)) {
+                imageUrls = runpodResult.output.s3_image_urls;
+                console.log('✅ Found s3_image_urls field');
+            }
+            
+            if (imageUrls && imageUrls.length > 0) {
+                console.log('✅ Using RunPod uploaded images:', imageUrls.length);
+                for (let i = 0; i < imageUrls.length; i++) {
+                    const imageUrl = imageUrls[i];
+                    console.log(`🖼️ Image ${i + 1} URL:`, imageUrl);
                     generatedImages.push({
                         filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
                         url: imageUrl,
@@ -138,26 +169,49 @@ export async function onRequestPost(context) {
                     });
                 }
             } 
-            // 备用：如果没有images_url，尝试处理base64图片数据
+            // 备用：如果没有URL数组，检查images数组中是否有URL信息
             else if (runpodResult.output?.images && Array.isArray(runpodResult.output.images)) {
-                console.log('✅ Processing base64 images:', runpodResult.output.images.length);
+                console.log('✅ Checking images array:', runpodResult.output.images.length);
                 for (let i = 0; i < runpodResult.output.images.length; i++) {
                     const imageData = runpodResult.output.images[i];
-                    const imageBuffer = Buffer.from(imageData.image, 'base64');
-                    const timestamp = Date.now();
-                    const filename = `${username}/images/${timestamp}_${i + 1}.png`;
-
-                    // 上传到R2
-                    const uploadResult = await uploadToR2(imageBuffer, filename, env);
-                    if (uploadResult.success) {
+                    console.log(`📋 Image ${i + 1} data structure:`, Object.keys(imageData));
+                    
+                    // 检查是否有URL字段
+                    if (imageData.url) {
+                        console.log(`🔗 Found URL in image ${i + 1}:`, imageData.url);
                         generatedImages.push({
-                            filename: filename,
-                            url: `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${filename}`,
+                            filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
+                            url: imageData.url,
                             seed: imageData.seed || Math.floor(Math.random() * 2147483647),
                             created_at: new Date().toISOString()
                         });
-                    } else {
-                        console.error('❌ Failed to upload image:', uploadResult.error);
+                    } else if (imageData.s3_url) {
+                        console.log(`🔗 Found S3 URL in image ${i + 1}:`, imageData.s3_url);
+                        generatedImages.push({
+                            filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
+                            url: imageData.s3_url,
+                            seed: imageData.seed || Math.floor(Math.random() * 2147483647),
+                            created_at: new Date().toISOString()
+                        });
+                    } else if (imageData.image) {
+                        // 处理base64数据
+                        console.log(`📋 Processing base64 image ${i + 1}`);
+                        const imageBuffer = Buffer.from(imageData.image, 'base64');
+                        const timestamp = Date.now();
+                        const filename = `${username}/images/${timestamp}_${i + 1}.png`;
+
+                        // 上传到R2
+                        const uploadResult = await uploadToR2(imageBuffer, filename, env);
+                        if (uploadResult.success) {
+                            generatedImages.push({
+                                filename: filename,
+                                url: `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${filename}`,
+                                seed: imageData.seed || Math.floor(Math.random() * 2147483647),
+                                created_at: new Date().toISOString()
+                            });
+                        } else {
+                            console.error('❌ Failed to upload image:', uploadResult.error);
+                        }
                     }
                 }
             } else {
