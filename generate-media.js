@@ -567,6 +567,16 @@ class GenerateMediaIntegrated {
         }
 
         this.isGenerating = true;
+        
+        // 禁用Generate按钮防止重复点击
+        const generateBtn = document.getElementById('generate-btn');
+        if (generateBtn) {
+            generateBtn.disabled = true;
+            generateBtn.style.opacity = '0.6';
+            generateBtn.style.cursor = 'not-allowed';
+            console.log('🔒 Generate button disabled during generation');
+        }
+        
         this.showGenerationProgress();
 
         try {
@@ -642,6 +652,9 @@ class GenerateMediaIntegrated {
                     console.log(`📸 Image ${i + 1}:`, imageData);
                     console.log(`🔗 Image ${i + 1} URL:`, imageData.url);
                     
+                    // 测试图片URL是否可访问
+                    console.log(`🌐 Testing image URL accessibility:`, imageData.url);
+                    
                     const galleryResult = {
                         type: 'image',
                         url: imageData.url,
@@ -651,7 +664,12 @@ class GenerateMediaIntegrated {
                         seed: imageData.seed
                     };
                     console.log(`📋 Gallery result ${i + 1}:`, galleryResult);
+                    
+                    // 添加到画廊
                     this.showGenerationResult(galleryResult);
+                    
+                    // 预加载图片以测试可访问性
+                    this.preloadImage(imageData.url, i + 1);
                 }
             } else {
                 console.error('❌ No images found in result:', result);
@@ -679,6 +697,15 @@ class GenerateMediaIntegrated {
             this.isGenerating = false;
             console.log('🔄 Generation state reset, ready for next request');
             console.log('🔍 Current isGenerating state:', this.isGenerating);
+            
+            // 确保Generate按钮可以再次点击
+            const generateBtn = document.getElementById('generate-btn');
+            if (generateBtn) {
+                generateBtn.disabled = false;
+                generateBtn.style.opacity = '1';
+                generateBtn.style.cursor = 'pointer';
+                console.log('✅ Generate button re-enabled');
+            }
         }
     }
 
@@ -995,6 +1022,113 @@ class GenerateMediaIntegrated {
     regenerateMedia() {
         console.log('🔄 Regenerating media...');
         this.generateMedia();
+    }
+
+    // 预加载图片并测试可访问性
+    preloadImage(url, index) {
+        console.log(`🔍 Preloading image ${index}:`, url);
+        
+        const img = new Image();
+        img.onload = () => {
+            console.log(`✅ Image ${index} loaded successfully:`, url);
+        };
+        img.onerror = () => {
+            console.error(`❌ Image ${index} failed to load:`, url);
+            // 可以在这里添加重试逻辑或显示错误状态
+        };
+        img.src = url;
+    }
+
+    // 改进的画廊结果显示方法
+    showGenerationResult(result) {
+        console.log('🖼️ Adding result to gallery:', result);
+        
+        const galleryContent = document.getElementById('gallery-content');
+        if (!galleryContent) {
+            console.error('❌ Gallery content not found');
+            return;
+        }
+
+        // 创建或获取gallery grid
+        let galleryGrid = galleryContent.querySelector('.gallery-grid');
+        if (!galleryGrid) {
+            galleryGrid = document.createElement('div');
+            galleryGrid.className = 'gallery-grid';
+            galleryContent.appendChild(galleryGrid);
+        }
+
+        // 移除"no images"消息
+        const noImagesMsg = galleryContent.querySelector('.no-images');
+        if (noImagesMsg) {
+            noImagesMsg.remove();
+        }
+
+        // 创建新的gallery item
+        const galleryItem = document.createElement('div');
+        galleryItem.className = 'gallery-item';
+        
+        // 创建图片元素
+        const img = document.createElement('img');
+        img.src = result.url;
+        img.alt = 'Generated Image';
+        img.style.width = '100%';
+        img.style.height = 'auto';
+        img.style.borderRadius = '10px';
+        img.style.cursor = 'pointer';
+        
+        // 添加加载状态处理
+        img.onload = () => {
+            console.log('✅ Gallery image loaded:', result.url);
+            img.style.opacity = '1';
+        };
+        
+        img.onerror = () => {
+            console.error('❌ Gallery image failed to load:', result.url);
+            img.style.display = 'none';
+            const errorMsg = document.createElement('div');
+            errorMsg.textContent = '❌ Image failed to load';
+            errorMsg.style.color = '#ff4444';
+            errorMsg.style.padding = '20px';
+            errorMsg.style.textAlign = 'center';
+            galleryItem.appendChild(errorMsg);
+        };
+        
+        img.style.opacity = '0.5'; // 初始加载状态
+        
+        // 点击图片放大查看
+        img.onclick = () => {
+            window.open(result.url, '_blank');
+        };
+        
+        // 创建信息区域
+        const itemInfo = document.createElement('div');
+        itemInfo.className = 'gallery-item-info';
+        itemInfo.style.padding = '10px';
+        itemInfo.style.background = 'rgba(0,0,0,0.5)';
+        itemInfo.style.borderRadius = '0 0 10px 10px';
+        
+        const title = document.createElement('h4');
+        title.textContent = 'Generated Image';
+        title.style.margin = '0 0 5px 0';
+        title.style.color = '#fff';
+        title.style.fontSize = '0.9rem';
+        
+        const timestamp = document.createElement('p');
+        timestamp.textContent = new Date().toLocaleString();
+        timestamp.style.margin = '0';
+        timestamp.style.color = '#ccc';
+        timestamp.style.fontSize = '0.8rem';
+        
+        itemInfo.appendChild(title);
+        itemInfo.appendChild(timestamp);
+        
+        galleryItem.appendChild(img);
+        galleryItem.appendChild(itemInfo);
+        
+        // 添加到gallery grid的开头（最新的在前面）
+        galleryGrid.insertBefore(galleryItem, galleryGrid.firstChild);
+        
+        console.log('✅ Gallery item added successfully');
     }
 }
 
