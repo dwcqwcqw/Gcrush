@@ -714,15 +714,41 @@ class GenerateMediaIntegrated {
 
             console.log('📤 Sending generation request:', requestData);
 
-            // 调用生成API
+            // 调用生成API - 设置4分钟超时（比后端稍长）
             console.log('🔗 Making request to:', '/api/generate-image');
-            const response = await fetch('/api/generate-image', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(requestData)
-            });
+            console.log('⏱️ Setting 4-minute timeout for frontend request...');
+            
+            // 创建AbortController用于前端超时控制
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+            }, 240000); // 4分钟 = 240秒
+            
+            let response;
+            try {
+                response = await fetch('/api/generate-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData),
+                    signal: controller.signal
+                });
+                
+                // 清除超时器
+                clearTimeout(timeoutId);
+                
+            } catch (fetchError) {
+                clearTimeout(timeoutId);
+                
+                if (fetchError.name === 'AbortError') {
+                    console.error('❌ Frontend request timeout after 4 minutes');
+                    throw new Error('Request timeout: Image generation is taking longer than expected. Please try again.');
+                } else {
+                    console.error('❌ Frontend fetch error:', fetchError);
+                    throw new Error(`Network error: ${fetchError.message}`);
+                }
+            }
 
             console.log('📡 API Response status:', response.status);
             console.log('📡 API Response statusText:', response.statusText);
@@ -802,7 +828,13 @@ class GenerateMediaIntegrated {
             let errorMessage = error.message;
             let shouldRetry = false;
             
-            if (errorMessage.includes('500')) {
+            if (errorMessage.includes('timeout') || errorMessage.includes('Request timeout')) {
+                errorMessage = 'Image generation is taking longer than expected. This is normal during peak hours. Please try again or wait a few minutes.';
+                shouldRetry = true;
+            } else if (errorMessage.includes('408')) {
+                errorMessage = 'The image generation timed out after 3 minutes. The server may be busy. Please try again.';
+                shouldRetry = true;
+            } else if (errorMessage.includes('500')) {
                 errorMessage = 'Server error occurred. This might be a temporary issue with the RunPod endpoint.';
                 shouldRetry = true;
             } else if (errorMessage.includes('405')) {
@@ -810,7 +842,7 @@ class GenerateMediaIntegrated {
             } else if (errorMessage.includes('No images generated')) {
                 errorMessage = 'Image generation completed but no images were returned. This may be due to RunPod endpoint configuration issues.';
                 shouldRetry = true;
-            } else if (errorMessage.includes('fetch')) {
+            } else if (errorMessage.includes('Network error') || errorMessage.includes('fetch')) {
                 errorMessage = 'Network error. Please check your connection and try again.';
                 shouldRetry = true;
             }

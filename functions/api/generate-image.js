@@ -98,21 +98,68 @@ export async function onRequestPost(context) {
                 filename_prefix: `gcrush-${username}-${character_name || 'image'}`
             });
 
-            // 调用RunPod API
+            // 调用RunPod API - 设置3分钟超时
             console.log('🔗 Calling RunPod API...');
             console.log('🔗 RunPod URL:', `https://api.runpod.ai/v2/${env.RUNPOD_IMAGE_ENDPOINT_ID}/runsync`);
             console.log('🔑 API Key (first 10 chars):', env.RUNPOD_API_KEY?.substring(0, 10) + '...');
+            console.log('⏱️ Setting 3-minute timeout for image generation...');
             
-            const runpodResponse = await fetch(`https://api.runpod.ai/v2/${env.RUNPOD_IMAGE_ENDPOINT_ID}/runsync`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${env.RUNPOD_API_KEY}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    input: { workflow }
-                })
-            });
+            // 创建AbortController用于超时控制
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+            }, 180000); // 3分钟 = 180秒
+            
+            let runpodResponse;
+            try {
+                runpodResponse = await fetch(`https://api.runpod.ai/v2/${env.RUNPOD_IMAGE_ENDPOINT_ID}/runsync`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${env.RUNPOD_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        input: { workflow }
+                    }),
+                    signal: controller.signal
+                });
+                
+                // 清除超时器
+                clearTimeout(timeoutId);
+                
+            } catch (fetchError) {
+                clearTimeout(timeoutId);
+                
+                if (fetchError.name === 'AbortError') {
+                    console.error('❌ RunPod API timeout after 3 minutes');
+                    return new Response(JSON.stringify({ 
+                        error: 'Image generation timeout',
+                        message: 'The image generation took longer than 3 minutes. Please try again.',
+                        timeout: true,
+                        debug: 'RunPod API request timed out after 3 minutes'
+                    }), {
+                        status: 408, // Request Timeout
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    });
+                } else {
+                    console.error('❌ RunPod API fetch error:', fetchError);
+                    return new Response(JSON.stringify({ 
+                        error: 'Network error',
+                        message: 'Failed to connect to image generation service. Please try again.',
+                        network_error: true,
+                        debug: fetchError.message
+                    }), {
+                        status: 500,
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Access-Control-Allow-Origin': '*'
+                        }
+                    });
+                }
+            }
 
             console.log('📡 RunPod Response Status:', runpodResponse.status, runpodResponse.statusText);
             console.log('📋 RunPod Response Headers:');

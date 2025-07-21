@@ -156,14 +156,34 @@
                 };
                 
                 output.innerHTML += '<span class="info">📤 Sending request to /api/generate-image...</span>\n';
+                output.innerHTML += '<span class="warning">⏱️ This may take up to 3 minutes, please be patient...</span>\n';
                 
-                const response = await fetch('/api/generate-image', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(requestData)
-                });
+                // Set 4-minute timeout for test
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => {
+                    controller.abort();
+                }, 240000); // 4 minutes
+                
+                let response;
+                try {
+                    response = await fetch('/api/generate-image', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(requestData),
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+                } catch (fetchError) {
+                    clearTimeout(timeoutId);
+                    if (fetchError.name === 'AbortError') {
+                        output.innerHTML += '<span class="error">❌ Request timed out after 4 minutes</span>\n';
+                        return;
+                    } else {
+                        throw fetchError;
+                    }
+                }
                 
                 output.innerHTML += `<span class="info">📡 Response Status: ${response.status} ${response.statusText}</span>\n`;
                 
