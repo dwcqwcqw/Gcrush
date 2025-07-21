@@ -706,13 +706,34 @@ class GenerateMediaIntegrated {
             
             // 显示更详细的错误信息
             let errorMessage = error.message;
+            let shouldRetry = false;
+            
             if (errorMessage.includes('500')) {
-                errorMessage = 'Server error occurred. Please try again in a moment.';
+                errorMessage = 'Server error occurred. This might be a temporary issue with the RunPod endpoint.';
+                shouldRetry = true;
             } else if (errorMessage.includes('405')) {
                 errorMessage = 'API endpoint error. Please refresh the page and try again.';
+            } else if (errorMessage.includes('No images generated')) {
+                errorMessage = 'Image generation completed but no images were returned. This may be due to RunPod endpoint configuration issues.';
+                shouldRetry = true;
+            } else if (errorMessage.includes('fetch')) {
+                errorMessage = 'Network error. Please check your connection and try again.';
+                shouldRetry = true;
             }
             
-            alert(`Failed to generate media: ${errorMessage}`);
+            // 显示错误信息，如果可以重试则提供重试选项
+            if (shouldRetry) {
+                const retry = confirm(`${errorMessage}\n\nWould you like to try again?`);
+                if (retry) {
+                    // 短暂延迟后重试
+                    setTimeout(() => {
+                        this.generateMedia();
+                    }, 2000);
+                    return; // 不重置生成状态，让重试继续
+                }
+            } else {
+                alert(`Failed to generate media: ${errorMessage}`);
+            }
         } finally {
             // 确保生成状态被重置
             this.isGenerating = false;

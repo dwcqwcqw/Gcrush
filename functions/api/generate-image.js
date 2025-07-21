@@ -176,76 +176,117 @@ export async function onRequestPost(context) {
             const generatedImages = [];
             
             // 从RunPod响应中提取实际的S3 URL
-            // 问题：我们需要检查RunPod实际返回的数据结构
             console.log('🔍 Analyzing RunPod response for image extraction...');
             
-            // 方法1：检查output.images数组
-            if (runpodResult.output?.images && Array.isArray(runpodResult.output.images) && runpodResult.output.images.length > 0) {
-                console.log('✅ Found images in output.images:', runpodResult.output.images.length);
+            // 首先检查RunPod output的结构
+            if (runpodResult.output) {
+                console.log('📋 RunPod output structure:', Object.keys(runpodResult.output));
                 
-                for (let i = 0; i < runpodResult.output.images.length; i++) {
-                    const imageData = runpodResult.output.images[i];
-                    console.log(`📋 Image ${i + 1} data:`, imageData);
+                // 方法1：检查ComfyUI的标准输出格式 - 通常是数字键名的节点
+                const outputKeys = Object.keys(runpodResult.output);
+                for (const key of outputKeys) {
+                    const outputData = runpodResult.output[key];
+                    console.log(`🔍 Checking output key '${key}':`, outputData);
                     
-                    let imageUrl = extractImageUrl(imageData);
-                    if (imageUrl) {
-                        const publicUrl = convertToPublicR2Url(imageUrl);
-                        console.log(`🔄 Converting URL: ${imageUrl} -> ${publicUrl}`);
+                    // ComfyUI SaveImage节点通常输出格式为 { "images": [...] }
+                    if (outputData && outputData.images && Array.isArray(outputData.images)) {
+                        console.log(`✅ Found images in output.${key}.images:`, outputData.images.length);
                         
-                        generatedImages.push({
-                            filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
-                            url: publicUrl,
-                            seed: imageData.seed || Math.floor(Math.random() * 2147483647),
-                            created_at: new Date().toISOString()
-                        });
-                        console.log(`✅ Added image ${i + 1} to results`);
+                        for (let i = 0; i < outputData.images.length; i++) {
+                            const imageData = outputData.images[i];
+                            console.log(`📋 Image ${i + 1} data:`, imageData);
+                            
+                            let imageUrl = extractImageUrl(imageData);
+                            if (imageUrl) {
+                                const publicUrl = convertToPublicR2Url(imageUrl);
+                                console.log(`🔄 Converting URL: ${imageUrl} -> ${publicUrl}`);
+                                
+                                generatedImages.push({
+                                    filename: imageData.filename || `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
+                                    url: publicUrl,
+                                    seed: imageData.seed || Math.floor(Math.random() * 2147483647),
+                                    created_at: new Date().toISOString()
+                                });
+                                console.log(`✅ Added image ${i + 1} to results`);
+                            }
+                        }
+                        
+                        // 如果找到图片就跳出循环
+                        if (generatedImages.length > 0) break;
                     }
                 }
-            }
-            
-            // 方法2：如果images数组为空，检查其他可能的字段
-            if (generatedImages.length === 0) {
-                console.log('⚠️ No images found in output.images, checking alternative locations...');
                 
-                // 检查是否有其他字段包含图片URL
-                const possibleImageFields = ['image_urls', 's3_urls', 'urls', 'generated_images', 'results'];
-                for (const field of possibleImageFields) {
-                    if (runpodResult.output?.[field]) {
-                        console.log(`🔍 Checking field: ${field}`, runpodResult.output[field]);
-                        if (Array.isArray(runpodResult.output[field])) {
-                            runpodResult.output[field].forEach((item, i) => {
-                                const imageUrl = extractImageUrl(item);
-                                if (imageUrl) {
-                                    const publicUrl = convertToPublicR2Url(imageUrl);
-                                    generatedImages.push({
-                                        filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
-                                        url: publicUrl,
-                                        seed: Math.floor(Math.random() * 2147483647),
-                                        created_at: new Date().toISOString()
-                                    });
-                                    console.log(`✅ Found image via ${field}[${i}]`);
-                                }
+                // 方法2：检查传统的images数组
+                if (generatedImages.length === 0 && runpodResult.output.images && Array.isArray(runpodResult.output.images)) {
+                    console.log('✅ Found images in output.images:', runpodResult.output.images.length);
+                    
+                    for (let i = 0; i < runpodResult.output.images.length; i++) {
+                        const imageData = runpodResult.output.images[i];
+                        console.log(`📋 Image ${i + 1} data:`, imageData);
+                        
+                        let imageUrl = extractImageUrl(imageData);
+                        if (imageUrl) {
+                            const publicUrl = convertToPublicR2Url(imageUrl);
+                            console.log(`🔄 Converting URL: ${imageUrl} -> ${publicUrl}`);
+                            
+                            generatedImages.push({
+                                filename: imageData.filename || `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
+                                url: publicUrl,
+                                seed: imageData.seed || Math.floor(Math.random() * 2147483647),
+                                created_at: new Date().toISOString()
                             });
+                            console.log(`✅ Added image ${i + 1} to results`);
+                        }
+                    }
+                }
+                
+                // 方法3：检查其他可能的字段
+                if (generatedImages.length === 0) {
+                    console.log('⚠️ No images found in standard locations, checking alternative fields...');
+                    
+                    const possibleImageFields = ['image_urls', 's3_urls', 'urls', 'generated_images', 'results', 'files'];
+                    for (const field of possibleImageFields) {
+                        if (runpodResult.output[field]) {
+                            console.log(`🔍 Checking field: ${field}`, runpodResult.output[field]);
+                            if (Array.isArray(runpodResult.output[field])) {
+                                runpodResult.output[field].forEach((item, i) => {
+                                    const imageUrl = extractImageUrl(item);
+                                    if (imageUrl) {
+                                        const publicUrl = convertToPublicR2Url(imageUrl);
+                                        generatedImages.push({
+                                            filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
+                                            url: publicUrl,
+                                            seed: Math.floor(Math.random() * 2147483647),
+                                            created_at: new Date().toISOString()
+                                        });
+                                        console.log(`✅ Found image via ${field}[${i}]`);
+                                    }
+                                });
+                                
+                                // 如果找到图片就跳出循环
+                                if (generatedImages.length > 0) break;
+                            }
                         }
                     }
                 }
             }
             
-            // 方法3：如果还是没有找到，从日志中提取URL（最后的手段）
+            // 最后的fallback机制 - 但现在不再自动创建假URL，而是返回错误
             if (generatedImages.length === 0) {
-                console.log('⚠️ No images found in structured data, attempting URL extraction from logs...');
-                // 这里我们需要一个fallback机制，基于我们知道图片确实被生成了
-                // 我们可以构造一个基于时间戳的URL
-                const timestamp = Date.now();
-                const mockImageUrl = `https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/07-25/sync-${timestamp}/user-${character_name}_00001_.png`;
+                console.error('❌ No images found in RunPod response after comprehensive analysis');
+                console.log('🔍 Full RunPod output for debugging:', JSON.stringify(runpodResult.output, null, 2));
                 
-                console.log('🔧 Creating fallback image entry:', mockImageUrl);
-                generatedImages.push({
-                    filename: `${username}-${character_name || 'image'}_${timestamp}_1.png`,
-                    url: mockImageUrl,
-                    seed: Math.floor(Math.random() * 2147483647),
-                    created_at: new Date().toISOString(),
-                    note: 'Fallback URL - check RunPod logs for actual URL'
+                return new Response(JSON.stringify({ 
+                    error: 'No images generated',
+                    debug: 'Images were expected but not found in RunPod API response',
+                    runpod_output: runpodResult.output,
+                    suggestion: 'Check RunPod endpoint configuration and ComfyUI workflow'
+                }), {
+                    status: 500,
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Access-Control-Allow-Origin': '*'
+                    }
                 });
             }
             
@@ -305,7 +346,7 @@ function extractImageUrl(imageData) {
     
     // 如果是对象，检查各种可能的URL字段
     if (typeof imageData === 'object') {
-        const urlFields = ['url', 's3_url', 'image_url', 'file_url', 'path', 'src'];
+        const urlFields = ['url', 's3_url', 'image_url', 'file_url', 'path', 'src', 'filename'];
         for (const field of urlFields) {
             if (imageData[field] && typeof imageData[field] === 'string' && imageData[field].startsWith('http')) {
                 console.log(`✅ Found URL in field '${field}':`, imageData[field]);
@@ -317,6 +358,19 @@ function extractImageUrl(imageData) {
         if (imageData.image && typeof imageData.image === 'string' && imageData.image.startsWith('http')) {
             console.log('✅ Found URL in nested image field:', imageData.image);
             return imageData.image;
+        }
+        
+        // 检查ComfyUI特有的字段
+        if (imageData.outputs && Array.isArray(imageData.outputs)) {
+            for (const output of imageData.outputs) {
+                if (output.url || output.filename) {
+                    const url = output.url || output.filename;
+                    if (typeof url === 'string' && url.startsWith('http')) {
+                        console.log('✅ Found URL in outputs array:', url);
+                        return url;
+                    }
+                }
+            }
         }
     }
     
@@ -348,6 +402,12 @@ function convertToPublicR2Url(runpodUrl) {
                 console.log('✅ Converted to public URL:', publicUrl);
                 return publicUrl;
             }
+        }
+        
+        // 检查是否已经是公共URL
+        if (runpodUrl.includes('pub-5a18b069cd06445889010bf8c29132d6.r2.dev')) {
+            console.log('✅ URL is already in public format:', runpodUrl);
+            return runpodUrl;
         }
         
         // 如果无法转换，返回原URL
