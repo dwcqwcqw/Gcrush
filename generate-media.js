@@ -77,8 +77,8 @@ class GenerateMediaIntegrated {
         // Character selection click
         const characterPreview = document.getElementById('character-preview-clickable');
         if (characterPreview) {
-            characterPreview.addEventListener('click', () => {
-                this.openCharacterModal();
+            characterPreview.addEventListener('click', async () => {
+                await this.openCharacterModal();
             });
         }
 
@@ -301,13 +301,22 @@ class GenerateMediaIntegrated {
         console.log('✅ Character select populated with', this.characters.length, 'characters');
     }
 
-    openCharacterModal() {
+    async openCharacterModal() {
         const modal = document.getElementById('characterModal');
         const grid = document.getElementById('characterGrid');
         
         if (!modal || !grid) return;
 
         // Clear previous content
+        grid.innerHTML = '<div class="loading-indicator">Loading characters...</div>';
+
+        // Ensure characters are loaded
+        if (!this.characters || this.characters.length === 0) {
+            console.log('🔄 Characters not loaded yet, loading now...');
+            await this.loadCharacters();
+        }
+
+        // Clear loading indicator
         grid.innerHTML = '';
 
         // Populate character grid
@@ -572,17 +581,27 @@ class GenerateMediaIntegrated {
 
         // 检查用户登录状态
         console.log('🔐 Checking user authentication...');
-        const user = await this.checkUserAuthentication();
-        console.log('🔐 User authentication result:', user);
-        if (!user) {
-            console.log('❌ User not authenticated, showing login');
-            // 使用默认的登录框
-            const loginBtn = document.querySelector('.login-btn');
-            if (loginBtn) {
-                loginBtn.click();
+        const authResult = await this.checkUserAuthentication();
+        console.log('🔐 User authentication result:', authResult);
+        
+        if (!authResult.authenticated) {
+            console.log('❌ User not authenticated, showing login modal');
+            this.resetGenerationState();
+            
+            // 打开登录弹窗
+            const authModal = document.getElementById('authModal');
+            if (authModal) {
+                authModal.style.display = 'flex';
+            } else {
+                // Fallback: 点击登录按钮
+                const loginBtn = document.querySelector('.login-btn');
+                if (loginBtn) {
+                    loginBtn.click();
+                }
             }
             return;
         }
+        
         console.log('✅ User authenticated, proceeding with generation');
 
         this.isGenerating = true;
@@ -615,7 +634,7 @@ class GenerateMediaIntegrated {
 
             // 准备API请求数据
             const requestData = {
-                user_id: user.id,
+                user_id: authResult.user.id,
                 prompt: finalPrompt,
                 negative_prompt: negativePrompt,
                 batch_size: currentState.selectedImageCount || 2,
@@ -684,8 +703,8 @@ class GenerateMediaIntegrated {
                     };
                     console.log(`📋 Gallery result ${i + 1}:`, galleryResult);
                     
-                    // 添加到画廊
-                    this.showGenerationResult(galleryResult);
+                    // 添加到画廊（新图片显示在第一个位置）
+                    this.showGenerationResult(galleryResult, true);
                     
                     // 预加载图片以测试可访问性
                     this.preloadImage(imageData.url, i + 1);
@@ -751,8 +770,38 @@ class GenerateMediaIntegrated {
         }
     }
 
-    // 检查用户认证状态 - 添加超时处理和fallback
+    // 检查用户认证状态 - 快速检查本地存储优先
     async checkUserAuthentication() {
+        console.log('🔐 Starting fast authentication check...');
+        
+        // 首先快速检查localStorage中的session token
+        try {
+            console.log('🔐 Quick check: localStorage session...');
+            const sessionData = localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token');
+            if (sessionData) {
+                const session = JSON.parse(sessionData);
+                if (session && session.user && session.expires_at) {
+                    const expiresAt = new Date(session.expires_at * 1000);
+                    const now = new Date();
+                    
+                    // 检查token是否还有效（还有5分钟以上）
+                    if (expiresAt.getTime() - now.getTime() > 5 * 60 * 1000) {
+                        console.log('✅ Valid session found in localStorage:', session.user.email);
+                        return {
+                            authenticated: true,
+                            user: session.user,
+                            source: 'localStorage'
+                        };
+                    } else {
+                        console.log('⚠️ Session expired, checking with Supabase...');
+                    }
+                }
+            }
+        } catch (localStorageError) {
+            console.log('⚠️ localStorage check failed, trying Supabase...');
+        }
+        
+        // 如果localStorage检查失败，再尝试Supabase
         try {
             console.log('🔐 Checking Supabase availability:', !!window.supabase);
             console.log('🔐 Checking global Supabase availability:', !!window.globalSupabase);
@@ -763,9 +812,9 @@ class GenerateMediaIntegrated {
             if (supabaseClient) {
                 console.log('🔐 Getting user from Supabase...');
                 
-                // 添加超时处理，3秒后超时
+                // 添加超时处理，缩短到1.5秒
                 const timeoutPromise = new Promise((_, reject) => {
-                    setTimeout(() => reject(new Error('Supabase getUser timeout')), 3000);
+                    setTimeout(() => reject(new Error('Supabase getUser timeout')), 1500);
                 });
                 
                 const getUserPromise = supabaseClient.auth.getUser();
@@ -775,24 +824,25 @@ class GenerateMediaIntegrated {
                 
                 if (result.error) {
                     console.error('❌ Supabase auth error:', result.error);
-                    return this.getFallbackUser();
+                    return { authenticated: false };
                 }
                 
-                return result.data?.user || this.getFallbackUser();
+                if (!result.data?.user) {
+                    return { authenticated: false };
+                }
+                
+                return {
+                    authenticated: true,
+                    user: result.data.user,
+                    source: 'supabase'
+                };
             } else {
-                console.error('❌ Supabase not available, using fallback');
-                return this.getFallbackUser();
+                console.error('❌ Supabase not available');
+                return { authenticated: false };
             }
         } catch (error) {
-            console.error('❌ Auth check error:', error);
-            
-            // 如果是超时错误，使用fallback
-            if (error.message.includes('timeout')) {
-                console.log('🔐 Timeout detected, using fallback user method');
-                return this.getFallbackUser();
-            }
-            
-            return this.getFallbackUser();
+            console.error('❌ Supabase auth check error:', error);
+            return { authenticated: false };
         }
     }
 
@@ -1054,13 +1104,13 @@ class GenerateMediaIntegrated {
         }
     }
 
-    showGenerationResult(result) {
+    showGenerationResult(result, insertAtTop = false) {
         console.log('🎨 Showing generation result:', result);
-        this.addToGallery(result);
+        this.addToGallery(result, insertAtTop);
         this.showSuccessMessage();
     }
 
-    addToGallery(result) {
+    addToGallery(result, insertAtTop = false) {
         const galleryContent = document.getElementById('gallery-content');
         if (!galleryContent) return;
 
@@ -1082,12 +1132,33 @@ class GenerateMediaIntegrated {
         const galleryItem = document.createElement('div');
         galleryItem.className = 'gallery-item';
         
+        // 添加加载状态
+        if (insertAtTop) {
+            galleryItem.classList.add('loading');
+            galleryItem.innerHTML = `
+                <div class="loading-placeholder">
+                    <div class="loading-spinner"></div>
+                    <p>生成中...</p>
+                </div>
+            `;
+        }
+        
         const media = document.createElement(result.type === 'video' ? 'video' : 'img');
         media.src = result.url;
         media.alt = 'Generated Media';
         if (result.type === 'video') {
             media.controls = true;
         }
+        
+        // 图片加载完成后移除加载状态
+        media.onload = () => {
+            if (insertAtTop) {
+                galleryItem.classList.remove('loading');
+                galleryItem.innerHTML = '';
+                galleryItem.appendChild(media);
+                galleryItem.appendChild(itemInfo);
+            }
+        };
         
         const itemInfo = document.createElement('div');
         itemInfo.className = 'gallery-item-info';
@@ -1101,11 +1172,17 @@ class GenerateMediaIntegrated {
         itemInfo.appendChild(title);
         itemInfo.appendChild(timestamp);
         
-        galleryItem.appendChild(media);
-        galleryItem.appendChild(itemInfo);
+        if (!insertAtTop) {
+            galleryItem.appendChild(media);
+            galleryItem.appendChild(itemInfo);
+        }
         
-        // Add to beginning of gallery
-        galleryGrid.insertBefore(galleryItem, galleryGrid.firstChild);
+        // 根据insertAtTop参数决定插入位置
+        if (insertAtTop) {
+            galleryGrid.insertBefore(galleryItem, galleryGrid.firstChild);
+        } else {
+            galleryGrid.appendChild(galleryItem);
+        }
         
         // Scroll to gallery
         galleryContent.scrollIntoView({ behavior: 'smooth' });

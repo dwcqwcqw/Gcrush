@@ -85,8 +85,8 @@ export async function onRequestPost(context) {
                 prompt: prompt || '',
                 negative_prompt: negative_prompt || '(worst quality:2), (low quality:2), (blurry:2), (deformed), (disfigured), (bad anatomy), (wrong anatomy), (extra limb), (missing limb), (floating limbs), (mutated hands and fingers), (disconnected limbs), (mutation), (mutated), (ugly), (disgusting), (amputation), (signature), (watermark), (username), (blurry), (artist name), (out of focus), (ugly), (duplicate), (morbid), (mutilated), (extra fingers), (mutated hands), (poorly drawn hands), (poorly drawn face), (mutation), (deformed), (bad anatomy), (bad proportions), (extra limbs), (cloned face), (disfigured), (gross proportions), (malformed limbs), (missing arms), (missing legs), (extra arms), (extra legs), (fused fingers), (too many fingers), (long neck), (cross-eyed), (mutated), (bad body), (unnatural body), (unnatural skin), (weird colors), (skin spots), (acnes), (skin blemishes), (age spot), (glans), (nsfw), (nipples), (nude), (nudity), (topless), (partial nudity), (sexual), (sex), (sexy), (erotic), (porn), (pornographic), (xxx), (adult), (mature), (explicit), (inappropriate), (uncensored), (censored), (mosaic), (bar censor), (convenient censoring), (glowing), (distorted), (blurred), (grain), (poorly drawn), (mutated), (lowres), (low resolution), (bad), (error), (pattern), (beginner), (worst), (jpeg artifacts), (low quality), (unfinished), (chromatic aberration), (scan), (scan artifacts), (amateur), (extra), (fewer), (cropped), (worst quality), (low quality), (normal quality), (lowres), (monochrome), (grayscale), (skin spots), (acnes), (skin blemishes), (DeepNegative), (fat), (paintings), (sketches), (normal quality), (lowres), (blurry), (bad anatomy), (bad hands), (cropped), (extra digit), (fewer digits), (extra fingers), (missing fingers), (bad hands), (bad hand anatomy), (missing limb), (floating limbs), (disconnected limbs), (malformed hands), (blur), (out of focus), (long body), (disgusting), (childish), (mutated), (mangled), (old), (surreal), (duplicate), (morbid), (mutilated), (poorly drawn face), (deformed), (bad anatomy), (bad proportions), (extra limbs), (cloned face), (disfigured), (gross proportions), (malformed limbs), (missing arms), (missing legs), (extra arms), (extra legs), (fused fingers), (too many fingers), (long neck), (ugly), (tiling), (poorly drawn hands), (poorly drawn), (poorly drawn face), (out of frame), (extra limbs), (disfigured), (deformed), (body out of frame), (bad anatomy), (watermark), (signature), (cut off), (low contrast), (underexposed), (score_4), (score_5), (score_6)',
                 batch_size: batch_size || 2,
-                width: 1440,  // 4:3竖长 - 宽度
-                height: 1080, // 4:3竖长 - 高度  
+                width: 1080,  // 3:4竖长 - 宽度（适合手机）
+                height: 1440, // 3:4竖长 - 高度（适合手机）  
                 steps: 30,
                 cfg: 3,       // CFG值设为3，让生成更自然
                 sampler_name: 'dpmpp_3m_sde_gpu',
@@ -376,6 +376,54 @@ export async function onRequestPost(context) {
             generatedImages.forEach((img, i) => {
                 console.log(`📸 Image ${i + 1}: ${img.url}`);
             });
+
+            // 保存图片到用户画廊数据库
+            try {
+                if (env.NEXT_PUBLIC_SUPABASE_URL && env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+                    console.log('💾 Saving images to user gallery...');
+                    
+                    for (const image of generatedImages) {
+                        const galleryData = {
+                            user_id: user_id,
+                            image_url: image.url,
+                            filename: image.filename,
+                            prompt: prompt,
+                            negative_prompt: negative_prompt,
+                            character_name: character_name,
+                            seed: image.seed,
+                            generation_params: {
+                                width: 1080,
+                                height: 1440,
+                                steps: 30,
+                                cfg: 3,
+                                sampler_name: 'dpmpp_3m_sde_gpu',
+                                scheduler: 'karras',
+                                batch_size: batch_size || 2
+                            }
+                        };
+                        
+                        const saveResponse = await fetch(`${env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/user_gallery`, {
+                            method: 'POST',
+                            headers: {
+                                'apikey': env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+                                'Authorization': `Bearer ${env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+                                'Content-Type': 'application/json',
+                                'Prefer': 'return=minimal'
+                            },
+                            body: JSON.stringify(galleryData)
+                        });
+                        
+                        if (saveResponse.ok) {
+                            console.log(`✅ Saved image to gallery: ${image.filename}`);
+                        } else {
+                            console.error(`❌ Failed to save image to gallery:`, await saveResponse.text());
+                        }
+                    }
+                }
+            } catch (galleryError) {
+                console.error('❌ Error saving to gallery:', galleryError);
+                // 不影响图片生成的主要流程，只记录错误
+            }
 
             // 返回结果
             return new Response(JSON.stringify({
