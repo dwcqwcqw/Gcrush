@@ -134,84 +134,42 @@ export async function onRequestPost(context) {
             // 处理RunPod返回的图片URL（RunPod已经自动上传到他们的S3）
             const generatedImages = [];
             
-            // 检查多种可能的URL字段名
-            let imageUrls = null;
-            if (runpodResult.output?.images_url && Array.isArray(runpodResult.output.images_url)) {
-                imageUrls = runpodResult.output.images_url;
-                console.log('✅ Found images_url field');
-            } else if (runpodResult.output?.s3_urls && Array.isArray(runpodResult.output.s3_urls)) {
-                imageUrls = runpodResult.output.s3_urls;
-                console.log('✅ Found s3_urls field');
-            } else if (runpodResult.output?.urls && Array.isArray(runpodResult.output.urls)) {
-                imageUrls = runpodResult.output.urls;
-                console.log('✅ Found urls field');
-            } else if (runpodResult.output?.image_urls && Array.isArray(runpodResult.output.image_urls)) {
-                imageUrls = runpodResult.output.image_urls;
-                console.log('✅ Found image_urls field');
-            } else if (runpodResult.output?.uploaded_images && Array.isArray(runpodResult.output.uploaded_images)) {
-                imageUrls = runpodResult.output.uploaded_images;
-                console.log('✅ Found uploaded_images field');
-            } else if (runpodResult.output?.s3_image_urls && Array.isArray(runpodResult.output.s3_image_urls)) {
-                imageUrls = runpodResult.output.s3_image_urls;
-                console.log('✅ Found s3_image_urls field');
-            }
-            
-            if (imageUrls && imageUrls.length > 0) {
-                console.log('✅ Using RunPod uploaded images:', imageUrls.length);
-                for (let i = 0; i < imageUrls.length; i++) {
-                    const imageUrl = imageUrls[i];
-                    console.log(`🖼️ Image ${i + 1} URL:`, imageUrl);
-                    generatedImages.push({
-                        filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
-                        url: imageUrl,
-                        seed: runpodResult.output.seeds ? runpodResult.output.seeds[i] : Math.floor(Math.random() * 2147483647),
-                        created_at: new Date().toISOString()
-                    });
-                }
-            } 
-            // 备用：如果没有URL数组，检查images数组中是否有URL信息
-            else if (runpodResult.output?.images && Array.isArray(runpodResult.output.images)) {
-                console.log('✅ Checking images array:', runpodResult.output.images.length);
+            // 从RunPod响应中提取实际的S3 URL
+            // 根据日志，RunPod在output.images数组中返回了包含URL的对象
+            if (runpodResult.output?.images && Array.isArray(runpodResult.output.images)) {
+                console.log('✅ Processing RunPod images array:', runpodResult.output.images.length);
+                
                 for (let i = 0; i < runpodResult.output.images.length; i++) {
                     const imageData = runpodResult.output.images[i];
-                    console.log(`📋 Image ${i + 1} data structure:`, Object.keys(imageData));
+                    console.log(`📋 Image ${i + 1} data:`, imageData);
                     
-                    // 检查是否有URL字段
+                    // 检查各种可能的URL字段
+                    let imageUrl = null;
                     if (imageData.url) {
-                        console.log(`🔗 Found URL in image ${i + 1}:`, imageData.url);
-                        generatedImages.push({
-                            filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
-                            url: imageData.url,
-                            seed: imageData.seed || Math.floor(Math.random() * 2147483647),
-                            created_at: new Date().toISOString()
-                        });
+                        imageUrl = imageData.url;
+                        console.log(`🔗 Found URL in image ${i + 1}:`, imageUrl);
                     } else if (imageData.s3_url) {
-                        console.log(`🔗 Found S3 URL in image ${i + 1}:`, imageData.s3_url);
+                        imageUrl = imageData.s3_url;
+                        console.log(`🔗 Found S3 URL in image ${i + 1}:`, imageUrl);
+                    } else if (imageData.image_url) {
+                        imageUrl = imageData.image_url;
+                        console.log(`🔗 Found image_url in image ${i + 1}:`, imageUrl);
+                    } else if (typeof imageData === 'string' && imageData.startsWith('http')) {
+                        // 如果imageData本身就是URL字符串
+                        imageUrl = imageData;
+                        console.log(`🔗 Image ${i + 1} is direct URL:`, imageUrl);
+                    }
+                    
+                    if (imageUrl) {
                         generatedImages.push({
                             filename: `${username}-${character_name || 'image'}_${Date.now()}_${i + 1}.png`,
-                            url: imageData.s3_url,
+                            url: imageUrl,
                             seed: imageData.seed || Math.floor(Math.random() * 2147483647),
                             created_at: new Date().toISOString()
                         });
-                    } else if (imageData.image) {
-                        // 处理base64数据
-                        console.log(`📋 Processing base64 image ${i + 1}`);
-                        const imageBuffer = Buffer.from(imageData.image, 'base64');
-                        const timestamp = Date.now();
-                        const filename = `${username}/images/${timestamp}_${i + 1}.png`;
-
-                        // 上传到R2
-                        const uploadResult = await uploadToR2(imageBuffer, filename, env);
-                        if (uploadResult.success) {
-                            generatedImages.push({
-                                filename: filename,
-                                url: `https://pub-a8c0ec3eb521478ab957033bdc7837e9.r2.dev/${filename}`,
-                                seed: imageData.seed || Math.floor(Math.random() * 2147483647),
-                                created_at: new Date().toISOString()
-                            });
-                        } else {
-                            console.error('❌ Failed to upload image:', uploadResult.error);
-                        }
+                        console.log(`✅ Added image ${i + 1} to results`);
+                    } else {
+                        console.error(`❌ No URL found for image ${i + 1}:`, imageData);
                     }
                 }
             } else {
