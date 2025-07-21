@@ -846,7 +846,7 @@ class GenerateMediaIntegrated {
                         <div class="generating-spinner"></div>
                         <div class="generating-text">
                             <h4>Generating image...</h4>
-                            <p>This will take about 15 seconds</p>
+                            <p>This will take less than 40 seconds</p>
                         </div>
                     </div>
                 `;

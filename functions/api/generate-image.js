@@ -1,5 +1,5 @@
-export default {
-    async fetch(request, env, ctx) {
+export async function onRequestPost(context) {
+    const { request, env, ctx } = context;
         // 处理CORS预检请求
         if (request.method === 'OPTIONS') {
             return new Response(null, {
@@ -142,8 +142,7 @@ export default {
                 }
             });
         }
-    }
-};
+}
 
 // 构建ComfyUI工作流
 function buildComfyUIWorkflow(params) {
