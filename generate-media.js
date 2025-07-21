@@ -202,7 +202,7 @@ class GenerateMediaIntegrated {
             if (typeof window.supabase !== 'undefined' && window.supabase) {
                 const { data: characters, error } = await window.supabase
                     .from('characters')
-                    .select('id, name, description, system_prompt, images')
+                    .select('id, name, description, prompt, images')
                     .order('number');
 
                 if (error) {
@@ -549,7 +549,7 @@ class GenerateMediaIntegrated {
         }
 
         this.isGenerating = true;
-        this.showLoadingOverlay();
+        this.showGenerationProgress();
 
         try {
             // Get form values
@@ -578,6 +578,7 @@ class GenerateMediaIntegrated {
             console.log('📤 Sending generation request:', requestData);
 
             // 调用生成API
+            console.log('🔗 Making request to:', '/api/generate-image');
             const response = await fetch('/api/generate-image', {
                 method: 'POST',
                 headers: {
@@ -586,9 +587,20 @@ class GenerateMediaIntegrated {
                 body: JSON.stringify(requestData)
             });
 
+            console.log('📡 API Response status:', response.status);
+            console.log('📡 API Response statusText:', response.statusText);
+            console.log('📡 API Response url:', response.url);
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Generation failed');
+                let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorMessage;
+                } catch (e) {
+                    // 如果响应不是JSON，使用状态文本
+                    console.error('❌ Response is not JSON:', e);
+                }
+                throw new Error(errorMessage);
             }
 
             const result = await response.json();
@@ -607,12 +619,12 @@ class GenerateMediaIntegrated {
                 this.showGenerationResult(galleryResult);
             }
             
-            this.hideLoadingOverlay();
+            this.hideGenerationProgress();
             this.showSuccessMessage();
 
         } catch (error) {
             console.error('❌ Error generating media:', error);
-            this.hideLoadingOverlay();
+            this.hideGenerationProgress();
             alert(`Failed to generate media: ${error.message}`);
         } finally {
             this.isGenerating = false;
@@ -639,13 +651,11 @@ class GenerateMediaIntegrated {
     handleCharacterSelection(character) {
         console.log('👤 Character selected:', character);
         
-        // 从角色的system_prompt中提取描述性内容并填充到custom prompt
-        if (character && character.system_prompt) {
+        // 从角色的prompt字段中获取内容并填充到custom prompt
+        if (character && character.prompt) {
             const customPromptField = document.getElementById('custom-prompt');
             if (customPromptField) {
-                // 提取角色描述，去除对话相关的指令
-                const characterDescription = this.extractCharacterDescription(character.system_prompt);
-                customPromptField.value = characterDescription;
+                customPromptField.value = character.prompt;
             }
         }
     }
@@ -796,6 +806,39 @@ class GenerateMediaIntegrated {
             negativePrompt: promptData.negativePrompt,
             timestamp: new Date().toISOString()
         };
+    }
+
+    showGenerationProgress() {
+        const galleryContent = document.getElementById('gallery-content');
+        if (galleryContent) {
+            // 创建加载状态元素
+            const loadingElement = document.createElement('div');
+            loadingElement.id = 'generation-progress';
+            loadingElement.className = 'generation-progress';
+            loadingElement.innerHTML = `
+                <div class="progress-spinner"></div>
+                <div class="progress-text">
+                    <h3>Generating Your Images...</h3>
+                    <p>Please wait, this usually takes less than 1 minute.</p>
+                </div>
+            `;
+            
+            // 如果有"no images"消息，先移除
+            const noImagesMsg = galleryContent.querySelector('.no-images');
+            if (noImagesMsg) {
+                noImagesMsg.remove();
+            }
+            
+            // 添加到gallery content的开头
+            galleryContent.insertBefore(loadingElement, galleryContent.firstChild);
+        }
+    }
+
+    hideGenerationProgress() {
+        const progressElement = document.getElementById('generation-progress');
+        if (progressElement) {
+            progressElement.remove();
+        }
     }
 
     showLoadingOverlay() {
