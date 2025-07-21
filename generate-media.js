@@ -1488,6 +1488,19 @@ class GenerateMediaIntegrated {
             return;
         }
         
+        // Remove any existing "no images" message
+        const noImagesMsg = galleryContent.querySelector('.no-images');
+        if (noImagesMsg) {
+            noImagesMsg.remove();
+        }
+        
+        // Check if we have any gallery items
+        if (!this.userGallery || this.userGallery.length === 0) {
+            console.log('📭 No gallery items, showing empty message');
+            galleryContent.innerHTML = '<p class="no-images">No images generated yet</p>';
+            return;
+        }
+        
         // Create gallery grid if it doesn't exist
         let galleryGrid = galleryContent.querySelector('.gallery-grid');
         if (!galleryGrid) {

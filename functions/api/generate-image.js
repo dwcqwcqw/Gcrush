@@ -87,8 +87,8 @@ export async function onRequestPost(context) {
                 prompt: prompt || '',
                 negative_prompt: negative_prompt || '(worst quality:2), (low quality:2), (blurry:2), (deformed), (disfigured), (bad anatomy), (wrong anatomy), (extra limb), (missing limb), (floating limbs), (mutated hands and fingers), (disconnected limbs), (mutation), (mutated), (ugly), (disgusting), (amputation), (signature), (watermark), (username), (blurry), (artist name), (out of focus), (ugly), (duplicate), (morbid), (mutilated), (extra fingers), (mutated hands), (poorly drawn hands), (poorly drawn face), (mutation), (deformed), (bad anatomy), (bad proportions), (extra limbs), (cloned face), (disfigured), (gross proportions), (malformed limbs), (missing arms), (missing legs), (extra arms), (extra legs), (fused fingers), (too many fingers), (long neck), (cross-eyed), (mutated), (bad body), (unnatural body), (unnatural skin), (weird colors), (skin spots), (acnes), (skin blemishes), (age spot), (glans), (nsfw), (nipples), (nude), (nudity), (topless), (partial nudity), (sexual), (sex), (sexy), (erotic), (porn), (pornographic), (xxx), (adult), (mature), (explicit), (inappropriate), (uncensored), (censored), (mosaic), (bar censor), (convenient censoring), (glowing), (distorted), (blurred), (grain), (poorly drawn), (mutated), (lowres), (low resolution), (bad), (error), (pattern), (beginner), (worst), (jpeg artifacts), (low quality), (unfinished), (chromatic aberration), (scan), (scan artifacts), (amateur), (extra), (fewer), (cropped), (worst quality), (low quality), (normal quality), (lowres), (monochrome), (grayscale), (skin spots), (acnes), (skin blemishes), (DeepNegative), (fat), (paintings), (sketches), (normal quality), (lowres), (blurry), (bad anatomy), (bad hands), (cropped), (extra digit), (fewer digits), (extra fingers), (missing fingers), (bad hands), (bad hand anatomy), (missing limb), (floating limbs), (disconnected limbs), (malformed hands), (blur), (out of focus), (long body), (disgusting), (childish), (mutated), (mangled), (old), (surreal), (duplicate), (morbid), (mutilated), (poorly drawn face), (deformed), (bad anatomy), (bad proportions), (extra limbs), (cloned face), (disfigured), (gross proportions), (malformed limbs), (missing arms), (missing legs), (extra arms), (extra legs), (fused fingers), (too many fingers), (long neck), (ugly), (tiling), (poorly drawn hands), (poorly drawn), (poorly drawn face), (out of frame), (extra limbs), (disfigured), (deformed), (body out of frame), (bad anatomy), (watermark), (signature), (cut off), (low contrast), (underexposed), (score_4), (score_5), (score_6)',
                 batch_size: batch_size || 1,
-                width: 512,   // 4:3横长 - 宽度
-                height: 384,  // 4:3横长 - 高度  
+                width: 768,   // 3:4竖长 - 宽度
+                height: 1024, // 3:4竖长 - 高度  
                 steps: 30,
                 cfg: 3,       // CFG值设为3，让生成更自然
                 sampler_name: 'dpmpp_3m_sde_gpu',
@@ -449,8 +449,8 @@ export async function onRequestPost(context) {
                             character_name: character_name,
                             seed: image.seed,
                             generation_params: {
-                                width: 512,
-                                height: 384,
+                                width: 768,
+                                height: 1024,
                                 steps: 30,
                                 cfg: 3,
                                 sampler_name: 'dpmpp_3m_sde_gpu',
@@ -507,8 +507,8 @@ export async function onRequestPost(context) {
                                                                          generation_params: {
                                          status: 'completed',
                                          completed_at: new Date().toISOString(),
-                                         width: 512,
-                                         height: 384,
+                                         width: 768,
+                                         height: 1024,
                                         steps: 30,
                                         cfg: 3,
                                         sampler_name: 'dpmpp_3m_sde_gpu',
