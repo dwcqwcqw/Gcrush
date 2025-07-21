@@ -199,7 +199,8 @@ function buildComfyUIWorkflow(params) {
         },
         "7": {
             "inputs": {
-                "images": ["6", 0]
+                "images": ["6", 0],
+                "filename_prefix": "Gcrush-image"
             },
             "class_type": "SaveImage"
         }
