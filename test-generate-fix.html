@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generate Fix Test - Gcrush</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        .test-section {
+            background: #2a2a2a;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 10px;
+            border: 1px solid #444;
+        }
+        .test-button {
+            background: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #45a049;
+        }
+        .test-button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        .log-area {
+            background: #000;
+            color: #0f0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .error { color: #ff4444; }
+        .success { color: #44ff44; }
+        .warning { color: #ffaa44; }
+        .info { color: #4444ff; }
+        .image-result {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid #666;
+            border-radius: 5px;
+        }
+        .image-result img {
+            max-width: 300px;
+            border-radius: 5px;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-ready { background: #4CAF50; }
+        .status-generating { background: #ff9800; }
+        .status-error { background: #f44336; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Generate Fix Test</h1>
+    <p>测试图片生成和二次生成的修复效果</p>
+
+    <!-- 状态显示 -->
+    <div class="test-section">
+        <h2>📊 System Status</h2>
+        <div id="systemStatus">
+            <div><span class="status-indicator status-ready"></span>Supabase: <span id="supabaseStatus">Checking...</span></div>
+            <div><span class="status-indicator status-ready"></span>Auth: <span id="authStatus">Checking...</span></div>
+            <div><span class="status-indicator status-ready"></span>Generate API: <span id="apiStatus">Ready</span></div>
+        </div>
+    </div>
+
+    <!-- 快速测试 -->
+    <div class="test-section">
+        <h2>🚀 Quick Tests</h2>
+        <button class="test-button" onclick="testUserAuth()">Test User Auth</button>
+        <button class="test-button" onclick="testSingleGenerate()">Test Single Generate</button>
+        <button class="test-button" onclick="testDoubleGenerate()">Test Double Generate</button>
+        <button class="test-button" onclick="clearLogs()">Clear Logs</button>
+    </div>
+
+    <!-- 日志显示 -->
+    <div class="test-section">
+        <h2>📝 Test Logs</h2>
+        <div id="testLogs" class="log-area">Waiting for tests...</div>
+    </div>
+
+    <!-- 结果显示 -->
+    <div class="test-section">
+        <h2>🖼️ Generation Results</h2>
+        <div id="generationResults"></div>
+    </div>
+
+    <script>
+        let isGenerating = false;
+        let testCount = 0;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logArea = document.getElementById('testLogs');
+            const colorClass = type === 'error' ? 'error' : 
+                              type === 'success' ? 'success' : 
+                              type === 'warning' ? 'warning' : 'info';
+            
+            logArea.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        function clearLogs() {
+            document.getElementById('testLogs').innerHTML = 'Logs cleared...\n';
+            document.getElementById('generationResults').innerHTML = '';
+        }
+
+        function updateStatus(element, status, isGood = true) {
+            const statusElement = document.getElementById(element);
+            statusElement.textContent = status;
+            const indicator = statusElement.parentElement.querySelector('.status-indicator');
+            indicator.className = `status-indicator ${isGood ? 'status-ready' : 'status-error'}`;
+        }
+
+        async function checkSystemStatus() {
+            log('🔍 Checking system status...', 'info');
+            
+            // Check Supabase
+            try {
+                if (window.globalSupabase || window.supabase) {
+                    updateStatus('supabaseStatus', 'Available');
+                    log('✅ Supabase client available', 'success');
+                } else {
+                    updateStatus('supabaseStatus', 'Not Available', false);
+                    log('❌ Supabase client not available', 'error');
+                }
+            } catch (error) {
+                updateStatus('supabaseStatus', 'Error', false);
+                log(`❌ Supabase check failed: ${error.message}`, 'error');
+            }
+
+            // Check Auth
+            try {
+                const authToken = localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token');
+                if (authToken) {
+                    const authData = JSON.parse(authToken);
+                    if (authData?.user) {
+                        updateStatus('authStatus', `Logged in: ${authData.user.email}`);
+                        log(`✅ User authenticated: ${authData.user.email}`, 'success');
+                    } else {
+                        updateStatus('authStatus', 'No user data', false);
+                        log('⚠️ Auth token exists but no user data', 'warning');
+                    }
+                } else {
+                    updateStatus('authStatus', 'Not logged in', false);
+                    log('❌ No auth token found', 'error');
+                }
+            } catch (error) {
+                updateStatus('authStatus', 'Error', false);
+                log(`❌ Auth check failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function testUserAuth() {
+            log('🔐 Testing user authentication...', 'info');
+            
+            try {
+                // 模拟generate-media.js的用户检查逻辑
+                const supabaseClient = window.globalSupabase || window.supabase;
+                
+                if (supabaseClient) {
+                    log('📡 Supabase client found, testing getUser...', 'info');
+                    
+                    const timeoutPromise = new Promise((_, reject) => {
+                        setTimeout(() => reject(new Error('Timeout')), 3000);
+                    });
+                    
+                    const getUserPromise = supabaseClient.auth.getUser();
+                    
+                    const result = await Promise.race([getUserPromise, timeoutPromise]);
+                    
+                    if (result.data?.user) {
+                        log(`✅ User auth successful: ${result.data.user.email}`, 'success');
+                        return result.data.user;
+                    } else {
+                        log('⚠️ No user data in response', 'warning');
+                    }
+                } else {
+                    log('⚠️ No Supabase client, using fallback...', 'warning');
+                }
+                
+                // Fallback to localStorage
+                const token = localStorage.getItem('sb-kuflobojizyttadwcbhe-auth-token');
+                if (token) {
+                    const authData = JSON.parse(token);
+                    if (authData?.user) {
+                        log(`✅ Fallback auth successful: ${authData.user.email}`, 'success');
+                        return authData.user;
+                    }
+                }
+                
+                log('❌ All auth methods failed', 'error');
+                return null;
+                
+            } catch (error) {
+                if (error.message.includes('Timeout')) {
+                    log('⚠️ Auth check timed out, using fallback', 'warning');
+                } else {
+                    log(`❌ Auth test failed: ${error.message}`, 'error');
+                }
+                return null;
+            }
+        }
+
+        async function testSingleGenerate() {
+            if (isGenerating) {
+                log('⚠️ Already generating, please wait...', 'warning');
+                return;
+            }
+
+            testCount++;
+            isGenerating = true;
+            log(`🎨 Starting test generation #${testCount}...`, 'info');
+
+            try {
+                // 检查用户认证
+                const user = await testUserAuth();
+                if (!user) {
+                    log('❌ User authentication failed, cannot generate', 'error');
+                    return;
+                }
+
+                // 准备测试数据
+                const testData = {
+                    user_id: user.id,
+                    prompt: 'A handsome young man, standing pose, high quality',
+                    negative_prompt: '(worst quality:2), (low quality:2)',
+                    batch_size: 1,
+                    character_name: 'TestCharacter'
+                };
+
+                log('📤 Sending generation request...', 'info');
+                log(`📋 Request data: ${JSON.stringify(testData, null, 2)}`, 'info');
+
+                const response = await fetch('/api/generate-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(testData)
+                });
+
+                log(`📡 API Response: ${response.status} ${response.statusText}`, response.ok ? 'success' : 'error');
+
+                const result = await response.json();
+                log(`📋 Response data: ${JSON.stringify(result, null, 2)}`, response.ok ? 'success' : 'error');
+
+                if (response.ok && result.images) {
+                    log(`✅ Generation successful! Got ${result.images.length} images`, 'success');
+                    displayResults(result.images, testCount);
+                } else {
+                    log(`❌ Generation failed: ${result.error || 'Unknown error'}`, 'error');
+                }
+
+            } catch (error) {
+                log(`❌ Test failed: ${error.message}`, 'error');
+            } finally {
+                isGenerating = false;
+                log(`🔄 Test #${testCount} completed, ready for next test`, 'info');
+            }
+        }
+
+        async function testDoubleGenerate() {
+            log('🔄 Testing double generation (sequential)...', 'info');
+            
+            // 第一次生成
+            await testSingleGenerate();
+            
+            // 等待1秒后第二次生成
+            setTimeout(async () => {
+                log('🔄 Starting second generation...', 'info');
+                await testSingleGenerate();
+            }, 1000);
+        }
+
+        function displayResults(images, testNum) {
+            const resultsArea = document.getElementById('generationResults');
+            
+            images.forEach((img, index) => {
+                const resultDiv = document.createElement('div');
+                resultDiv.className = 'image-result';
+                resultDiv.innerHTML = `
+                    <h4>Test #${testNum} - Image ${index + 1}</h4>
+                    <p><strong>URL:</strong> <a href="${img.url}" target="_blank">${img.url}</a></p>
+                    <p><strong>Filename:</strong> ${img.filename}</p>
+                    <p><strong>Seed:</strong> ${img.seed}</p>
+                    <img src="${img.url}" alt="Generated Image" 
+                         onload="this.style.border='2px solid #4CAF50'" 
+                         onerror="this.style.border='2px solid #f44336'; this.alt='❌ Failed to load'">
+                    ${img.note ? `<p><em>Note: ${img.note}</em></p>` : ''}
+                `;
+                resultsArea.appendChild(resultDiv);
+            });
+        }
+
+        // 页面加载时初始化
+        window.addEventListener('load', () => {
+            log('🚀 Test page loaded', 'success');
+            checkSystemStatus();
+        });
+
+        // 导出函数供控制台使用
+        window.testFunctions = {
+            testUserAuth,
+            testSingleGenerate,
+            testDoubleGenerate,
+            clearLogs,
+            checkSystemStatus
+        };
+    </script>
+</body>
+</html> 
