@@ -30,22 +30,36 @@ class GenerateMediaIntegrated {
     // Initialize Supabase client
     async initSupabase() {
         try {
-            // Wait for Supabase to be available
+            console.log('🔍 Initializing Supabase for Gallery...');
+            
+            // Wait for global Supabase to be available
             let attempts = 0;
-            while (!window.supabase && attempts < 50) {
+            while (!window.globalSupabase && !window.supabase && attempts < 50) {
                 await new Promise(resolve => setTimeout(resolve, 100));
                 attempts++;
             }
             
-            if (window.supabase && window.supabase.createClient) {
+            console.log('🔍 Supabase availability check:');
+            console.log('• window.globalSupabase:', !!window.globalSupabase);
+            console.log('• window.supabase:', !!window.supabase);
+            
+            // Use global Supabase client (preferred) or fallback to window.supabase
+            if (window.globalSupabase) {
+                console.log('✅ Using global Supabase client');
+                this.supabase = window.globalSupabase;
+            } else if (window.supabase && window.supabase.createClient) {
+                console.log('✅ Creating new Supabase client');
                 this.supabase = window.supabase.createClient(
                     'https://kuflobojizyttadwcbhe.supabase.co',
                     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt1ZmxvYm9qaXp5dHRhZHdjYmhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE5ODkyMTgsImV4cCI6MjA2NzU2NTIxOH0._Y2UVfmu87WCKozIEgsvCoCRqB90aywNNYGjHl2aDDw'
                 );
-                console.log('✅ Supabase client initialized for Gallery');
             } else {
                 console.warn('⚠️ Supabase not available, Gallery features disabled');
+                return;
             }
+            
+            console.log('✅ Supabase client initialized for Gallery');
+            
         } catch (error) {
             console.error('❌ Supabase client creation failed:', error);
         }
@@ -65,8 +79,12 @@ class GenerateMediaIntegrated {
         
         // Initialize Supabase and load gallery
         await this.initSupabase();
+        console.log('🔍 After initSupabase, this.supabase:', !!this.supabase);
         if (this.supabase) {
+            console.log('✅ Supabase available, loading user gallery...');
             await this.loadUserGallery();
+        } else {
+            console.error('❌ Supabase not available, cannot load gallery');
         }
         
         console.log('✅ Generate Media setup complete');
