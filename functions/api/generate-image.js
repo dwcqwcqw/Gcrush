@@ -71,10 +71,13 @@ export async function onRequestPost(context) {
                 console.log('Could not fetch username, using default:', error.message);
             }
 
+            console.log('📝 Received prompt:', prompt);
+            console.log('📝 Received negative_prompt:', negative_prompt);
+            
             // 构建ComfyUI工作流，使用用户名命名
             const workflow = buildComfyUIWorkflow({
                 prompt: prompt || '',
-                negative_prompt: negative_prompt || '',
+                negative_prompt: negative_prompt || '(worst quality:2), (low quality:2), (blurry:2), (deformed), (disfigured), (bad anatomy), (wrong anatomy), (extra limb), (missing limb), (floating limbs), (mutated hands and fingers), (disconnected limbs), (mutation), (mutated), (ugly), (disgusting), (amputation), (signature), (watermark), (username), (blurry), (artist name), (out of focus), (ugly), (duplicate), (morbid), (mutilated), (extra fingers), (mutated hands), (poorly drawn hands), (poorly drawn face), (mutation), (deformed), (bad anatomy), (bad proportions), (extra limbs), (cloned face), (disfigured), (gross proportions), (malformed limbs), (missing arms), (missing legs), (extra arms), (extra legs), (fused fingers), (too many fingers), (long neck), (cross-eyed), (mutated), (bad body), (unnatural body), (unnatural skin), (weird colors), (skin spots), (acnes), (skin blemishes), (age spot), (glans), (nsfw), (nipples), (nude), (nudity), (topless), (partial nudity), (sexual), (sex), (sexy), (erotic), (porn), (pornographic), (xxx), (adult), (mature), (explicit), (inappropriate), (uncensored), (censored), (mosaic), (bar censor), (convenient censoring), (glowing), (distorted), (blurred), (grain), (poorly drawn), (mutated), (lowres), (low resolution), (bad), (error), (pattern), (beginner), (worst), (jpeg artifacts), (low quality), (unfinished), (chromatic aberration), (scan), (scan artifacts), (amateur), (extra), (fewer), (cropped), (worst quality), (low quality), (normal quality), (lowres), (monochrome), (grayscale), (skin spots), (acnes), (skin blemishes), (DeepNegative), (fat), (paintings), (sketches), (normal quality), (lowres), (blurry), (bad anatomy), (bad hands), (cropped), (extra digit), (fewer digits), (extra fingers), (missing fingers), (bad hands), (bad hand anatomy), (missing limb), (floating limbs), (disconnected limbs), (malformed hands), (blur), (out of focus), (long body), (disgusting), (childish), (mutated), (mangled), (old), (surreal), (duplicate), (morbid), (mutilated), (poorly drawn face), (deformed), (bad anatomy), (bad proportions), (extra limbs), (cloned face), (disfigured), (gross proportions), (malformed limbs), (missing arms), (missing legs), (extra arms), (extra legs), (fused fingers), (too many fingers), (long neck), (ugly), (tiling), (poorly drawn hands), (poorly drawn), (poorly drawn face), (out of frame), (extra limbs), (disfigured), (deformed), (body out of frame), (bad anatomy), (watermark), (signature), (cut off), (low contrast), (underexposed), (score_4), (score_5), (score_6)',
                 batch_size: batch_size || 2,
                 width: 1440,  // 4:3竖长 - 宽度
                 height: 1080, // 4:3竖长 - 高度  
@@ -324,12 +327,17 @@ function extractImageUrl(imageData) {
 // 将RunPod的内部S3 URL转换为Public R2 URL
 function convertToPublicR2Url(runpodUrl) {
     try {
-        // RunPod URL格式: https://c7c141ce43d175e60601edc46d904553.r2.cloudflarestorage.com/image-generation/...
-        // 需要转换为: https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/...
+        console.log('🔗 Converting URL:', runpodUrl);
+        
+        // RunPod URL格式: https://c7c141ce43d175e60601edc46d904553.r2.cloudflarestorage.com/image-generation/07-25/sync-xxx/file.png?X-Amz-...
+        // 需要转换为: https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/07-25/sync-xxx/file.png
         
         if (runpodUrl.includes('c7c141ce43d175e60601edc46d904553.r2.cloudflarestorage.com')) {
+            // 移除查询参数
+            const urlWithoutQuery = runpodUrl.split('?')[0];
+            
             // 提取路径部分（image-generation/...）
-            const urlParts = runpodUrl.split('/');
+            const urlParts = urlWithoutQuery.split('/');
             const pathIndex = urlParts.findIndex(part => part === 'image-generation');
             
             if (pathIndex !== -1) {
@@ -337,6 +345,7 @@ function convertToPublicR2Url(runpodUrl) {
                 const pathAfterImageGeneration = urlParts.slice(pathIndex + 1).join('/');
                 // 构建公共URL
                 const publicUrl = `https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/${pathAfterImageGeneration}`;
+                console.log('✅ Converted to public URL:', publicUrl);
                 return publicUrl;
             }
         }

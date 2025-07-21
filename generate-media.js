@@ -571,8 +571,11 @@ class GenerateMediaIntegrated {
         console.log('🔍 Custom prompt:', customPrompt);
 
         // 检查用户登录状态
+        console.log('🔐 Checking user authentication...');
         const user = await this.checkUserAuthentication();
+        console.log('🔐 User authentication result:', user);
         if (!user) {
+            console.log('❌ User not authenticated, showing login');
             // 使用默认的登录框
             const loginBtn = document.querySelector('.login-btn');
             if (loginBtn) {
@@ -580,6 +583,7 @@ class GenerateMediaIntegrated {
             }
             return;
         }
+        console.log('✅ User authenticated, proceeding with generation');
 
         this.isGenerating = true;
         
@@ -729,11 +733,20 @@ class GenerateMediaIntegrated {
     // 检查用户认证状态
     async checkUserAuthentication() {
         try {
+            console.log('🔐 Checking Supabase availability:', !!window.supabase);
             if (window.supabase) {
-                const { data: { user } } = await window.supabase.auth.getUser();
+                console.log('🔐 Getting user from Supabase...');
+                const { data: { user }, error } = await window.supabase.auth.getUser();
+                console.log('🔐 Supabase getUser result:', { user, error });
+                if (error) {
+                    console.error('❌ Supabase auth error:', error);
+                    return null;
+                }
                 return user;
+            } else {
+                console.error('❌ Supabase not available');
+                return null;
             }
-            return null;
         } catch (error) {
             console.error('❌ Auth check error:', error);
             return null;
