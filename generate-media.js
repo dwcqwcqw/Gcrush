@@ -1561,11 +1561,200 @@ class GenerateMediaIntegrated {
             // Display only the image, no text overlay
             galleryItem.innerHTML = `
                 <img src="${galleryData.image_url}" alt="Generated Image" loading="lazy">
+                <div class="click-indicator">
+                    <i class="fas fa-expand"></i> View
+                </div>
             `;
+            
+            // Add click event to open image viewer
+            galleryItem.addEventListener('click', () => {
+                this.openImageViewer(galleryData.image_url, galleryData.id);
+            });
         }
         
         // Add to gallery grid at the end (data is already sorted newest first from Supabase)
         galleryGrid.appendChild(galleryItem);
+    }
+
+    // Open full-screen image viewer
+    openImageViewer(imageUrl, imageId) {
+        console.log('🖼️ Opening image viewer for:', imageId);
+        
+        // Get all images from gallery (only those with valid URLs)
+        const allImages = this.userGallery.filter(item => 
+            item.image_url && item.image_url.trim() !== ''
+        );
+        
+        if (allImages.length === 0) return;
+        
+        // Find current image index
+        const currentIndex = allImages.findIndex(item => item.id === imageId);
+        if (currentIndex === -1) return;
+        
+        // Create viewer overlay
+        const viewerOverlay = document.createElement('div');
+        viewerOverlay.className = 'image-viewer-overlay';
+        viewerOverlay.innerHTML = `
+            <div class="image-viewer-container">
+                <button class="image-viewer-close" aria-label="Close viewer">
+                    <i class="fas fa-times"></i>
+                </button>
+                
+                <div class="image-viewer-content">
+                    <div class="image-viewer-main">
+                        <img src="${imageUrl}" alt="Gallery Image" class="viewer-image">
+                        <div class="image-viewer-info">
+                            <span class="image-counter">${currentIndex + 1} / ${allImages.length}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="image-viewer-nav">
+                        <button class="nav-btn prev-btn" ${currentIndex === 0 ? 'disabled' : ''} aria-label="Previous image">
+                            <i class="fas fa-chevron-up"></i>
+                        </button>
+                        <button class="nav-btn next-btn" ${currentIndex === allImages.length - 1 ? 'disabled' : ''} aria-label="Next image">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(viewerOverlay);
+        document.body.style.overflow = 'hidden';
+        
+        // Initialize viewer
+        this.initializeImageViewer(viewerOverlay, allImages, currentIndex);
+    }
+
+    // Initialize image viewer functionality
+    initializeImageViewer(viewerOverlay, allImages, startIndex) {
+        let currentIndex = startIndex;
+        
+        const viewerImage = viewerOverlay.querySelector('.viewer-image');
+        const imageCounter = viewerOverlay.querySelector('.image-counter');
+        const prevBtn = viewerOverlay.querySelector('.prev-btn');
+        const nextBtn = viewerOverlay.querySelector('.next-btn');
+        const closeBtn = viewerOverlay.querySelector('.image-viewer-close');
+        
+        // Update image and UI
+        const updateImage = (index) => {
+            if (index < 0 || index >= allImages.length) return;
+            
+            currentIndex = index;
+            const currentImage = allImages[index];
+            
+            // Fade out current image
+            viewerImage.style.opacity = '0';
+            
+            setTimeout(() => {
+                viewerImage.src = currentImage.image_url;
+                imageCounter.textContent = `${index + 1} / ${allImages.length}`;
+                
+                // Update navigation buttons
+                prevBtn.disabled = index === 0;
+                nextBtn.disabled = index === allImages.length - 1;
+                
+                // Fade in new image
+                viewerImage.style.opacity = '1';
+            }, 150);
+        };
+        
+        // Navigation event handlers
+        prevBtn.addEventListener('click', () => {
+            if (currentIndex > 0) {
+                updateImage(currentIndex - 1);
+            }
+        });
+        
+        nextBtn.addEventListener('click', () => {
+            if (currentIndex < allImages.length - 1) {
+                updateImage(currentIndex + 1);
+            }
+        });
+        
+        // Close viewer
+        const closeViewer = () => {
+            document.body.style.overflow = '';
+            viewerOverlay.remove();
+        };
+        
+        closeBtn.addEventListener('click', closeViewer);
+        
+        // Close on overlay click (but not on image or nav buttons)
+        viewerOverlay.addEventListener('click', (e) => {
+            if (e.target === viewerOverlay) {
+                closeViewer();
+            }
+        });
+        
+        // Keyboard navigation
+        const handleKeydown = (e) => {
+            switch (e.key) {
+                case 'Escape':
+                    closeViewer();
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    if (currentIndex > 0) updateImage(currentIndex - 1);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    if (currentIndex < allImages.length - 1) updateImage(currentIndex + 1);
+                    break;
+            }
+        };
+        
+        document.addEventListener('keydown', handleKeydown);
+        
+        // Touch/swipe support for mobile
+        let touchStartY = 0;
+        let touchEndY = 0;
+        
+        const handleTouchStart = (e) => {
+            touchStartY = e.touches[0].clientY;
+        };
+        
+        const handleTouchMove = (e) => {
+            e.preventDefault(); // Prevent scrolling
+        };
+        
+        const handleTouchEnd = (e) => {
+            touchEndY = e.changedTouches[0].clientY;
+            const deltaY = touchStartY - touchEndY;
+            const minSwipeDistance = 50;
+            
+            if (Math.abs(deltaY) > minSwipeDistance) {
+                if (deltaY > 0) {
+                    // Swipe up - next image
+                    if (currentIndex < allImages.length - 1) {
+                        updateImage(currentIndex + 1);
+                    }
+                } else {
+                    // Swipe down - previous image
+                    if (currentIndex > 0) {
+                        updateImage(currentIndex - 1);
+                    }
+                }
+            }
+        };
+        
+        const imageContainer = viewerOverlay.querySelector('.image-viewer-main');
+        imageContainer.addEventListener('touchstart', handleTouchStart, { passive: true });
+        imageContainer.addEventListener('touchmove', handleTouchMove, { passive: false });
+        imageContainer.addEventListener('touchend', handleTouchEnd, { passive: true });
+        
+        // Clean up event listeners when viewer closes
+        const originalRemove = viewerOverlay.remove;
+        viewerOverlay.remove = function() {
+            document.removeEventListener('keydown', handleKeydown);
+            originalRemove.call(this);
+        };
+        
+        // Add entrance animation
+        setTimeout(() => {
+            viewerOverlay.classList.add('active');
+        }, 10);
     }
 
     // Save loading state to Supabase
