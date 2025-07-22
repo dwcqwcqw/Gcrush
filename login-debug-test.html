@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Debug Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #1a1a1a;
+            color: white;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #333;
+            border-radius: 8px;
+        }
+        .test-button {
+            background: #A259FF;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        .test-button:hover {
+            background: #8A4FFF;
+        }
+        .log {
+            background: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .auth-button {
+            background: transparent;
+            border: 2px solid #A259FF;
+            color: #A259FF;
+            padding: 10px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            margin: 10px;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal-content {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-close {
+            float: right;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Login Button Debug Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Login Button (Simulated)</h2>
+        <button class="auth-button login-btn">
+            <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+        <button class="test-button" onclick="testLoginButton()">Test Login Click</button>
+    </div>
+
+    <div class="test-section">
+        <h2>2. Test Modal Display</h2>
+        <button class="test-button" onclick="testModalShow()">Show Modal</button>
+        <button class="test-button" onclick="testModalHide()">Hide Modal</button>
+    </div>
+
+    <div class="test-section">
+        <h2>3. Test Auth Container</h2>
+        <button class="test-button" onclick="testAuthContainer()">Test Auth Container</button>
+        <div id="auth-container-test"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>Debug Log</h2>
+        <div id="debug-log" class="log"></div>
+        <button class="test-button" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <!-- Test Modal -->
+    <div class="modal-overlay" id="authModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="testModalHide()">&times;</button>
+            <h2>Test Auth Modal</h2>
+            <div id="auth-container">
+                <p>Auth container content will appear here</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authView = 'sign_in';
+        let authModal, authContainer;
+        
+        // Initialize elements
+        document.addEventListener('DOMContentLoaded', () => {
+            authModal = document.getElementById('authModal');
+            authContainer = document.getElementById('auth-container');
+            log('DOM loaded, elements initialized');
+        });
+
+        function log(message) {
+            const logDiv = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[DEBUG] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('debug-log').textContent = '';
+        }
+
+        function testLoginButton() {
+            log('Testing login button click...');
+            
+            // Simulate the login button click logic from auth-simple.js
+            try {
+                log('Setting authView to sign_in');
+                authView = 'sign_in';
+                
+                log('Calling renderAuthUI()');
+                renderAuthUI();
+                
+                log('Calling openModal()');
+                openModal(authModal);
+                
+                log('Login button test completed');
+            } catch (error) {
+                log(`Error in login button test: ${error.message}`);
+            }
+        }
+
+        function testModalShow() {
+            log('Testing modal show...');
+            if (authModal) {
+                authModal.style.display = 'flex';
+                authModal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                log('Modal shown successfully');
+            } else {
+                log('Modal element not found!');
+            }
+        }
+
+        function testModalHide() {
+            log('Testing modal hide...');
+            if (authModal) {
+                authModal.style.display = 'none';
+                authModal.classList.remove('active');
+                document.body.style.overflow = '';
+                log('Modal hidden successfully');
+            } else {
+                log('Modal element not found!');
+            }
+        }
+
+        function testAuthContainer() {
+            log('Testing auth container...');
+            const testContainer = document.getElementById('auth-container-test');
+            if (testContainer) {
+                testContainer.innerHTML = `
+                    <div style="border: 1px solid #A259FF; padding: 10px; margin: 10px 0;">
+                        <h3>Test Auth Form</h3>
+                        <input type="email" placeholder="Email" style="margin: 5px; padding: 5px;">
+                        <input type="password" placeholder="Password" style="margin: 5px; padding: 5px;">
+                        <button style="margin: 5px; padding: 5px 10px;">Test Login</button>
+                    </div>
+                `;
+                log('Auth container test content added');
+            } else {
+                log('Auth container test element not found!');
+            }
+        }
+
+        function renderAuthUI() {
+            log('renderAuthUI() called');
+            
+            if (!authContainer) {
+                log('ERROR: Auth container not found!');
+                return;
+            }
+            
+            const isSignUp = authView === 'sign_up';
+            log(`Rendering UI for: ${authView}`);
+            
+            authContainer.innerHTML = `
+                <div class="auth-form" style="color: white;">
+                    <h2>${isSignUp ? 'Create Account' : 'Sign In'}</h2>
+                    <form id="testAuthForm">
+                        <div style="margin: 10px 0;">
+                            <input type="email" placeholder="Email" required style="width: 100%; padding: 8px; margin: 5px 0;">
+                        </div>
+                        <div style="margin: 10px 0;">
+                            <input type="password" placeholder="Password" required style="width: 100%; padding: 8px; margin: 5px 0;">
+                        </div>
+                        <button type="submit" style="width: 100%; padding: 10px; background: #A259FF; color: white; border: none; border-radius: 5px;">
+                            ${isSignUp ? 'Create Account' : 'Sign In'}
+                        </button>
+                    </form>
+                </div>
+            `;
+            
+            log('Auth UI rendered successfully');
+            
+            // Add form submit handler
+            const form = document.getElementById('testAuthForm');
+            if (form) {
+                form.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    log('Form submitted (test)');
+                });
+                log('Form submit handler added');
+            }
+        }
+
+        function openModal(modal) {
+            log('openModal() called');
+            
+            if (!modal) {
+                log('ERROR: Modal not found!');
+                return;
+            }
+            
+            try {
+                modal.style.display = 'flex';
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                log('Modal opened successfully');
+            } catch (error) {
+                log(`Error opening modal: ${error.message}`);
+            }
+        }
+
+        // Add click handler to the login button
+        document.addEventListener('DOMContentLoaded', () => {
+            const loginBtn = document.querySelector('.login-btn');
+            if (loginBtn) {
+                loginBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    log('Login button clicked (direct handler)');
+                    testLoginButton();
+                });
+                log('Login button handler added');
+            }
+        });
+    </script>
+</body>
+</html> 

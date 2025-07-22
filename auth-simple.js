@@ -292,12 +292,21 @@ function setupAuthStateListener() {
 
 // Render authentication UI
 function renderAuthUI() {
+    console.log('🎨 renderAuthUI() called, authView:', authView);
+    
     if (!authContainer) {
-        console.error('Auth container not found!');
-        return;
+        console.error('❌ Auth container not found!');
+        // Try to find it again
+        authContainer = document.getElementById('auth-container');
+        if (!authContainer) {
+            console.error('❌ Still cannot find auth container!');
+            return;
+        }
+        console.log('✅ Found auth container on retry');
     }
     
     const isSignUp = authView === 'sign_up';
+    console.log('🎨 Rendering auth UI for:', isSignUp ? 'sign_up' : 'sign_in');
     
     authContainer.innerHTML = `
         <div class="auth-form">
@@ -359,10 +368,15 @@ function renderAuthUI() {
         </div>
     `;
     
+    console.log('✅ Auth UI HTML rendered');
+    
     // Add event listeners
     const form = document.getElementById('authForm');
     if (form) {
         form.addEventListener('submit', handleAuthSubmit);
+        console.log('✅ Form submit handler added');
+    } else {
+        console.error('❌ Auth form not found after rendering');
     }
     
     // Social auth buttons
@@ -370,9 +384,11 @@ function renderAuthUI() {
     socialBtns.forEach(btn => {
         btn.addEventListener('click', (e) => {
             const provider = e.currentTarget.dataset.provider;
+            console.log('🔗 Social auth clicked:', provider);
             handleSocialAuth(provider);
         });
     });
+    console.log(`✅ Added ${socialBtns.length} social auth handlers`);
     
     // Switch auth view
     const switchToSignIn = document.getElementById('switchToSignIn');
@@ -381,6 +397,7 @@ function renderAuthUI() {
     if (switchToSignIn) {
         switchToSignIn.addEventListener('click', (e) => {
             e.preventDefault();
+            console.log('🔄 Switching to sign in');
             authView = 'sign_in';
             renderAuthUI();
         });
@@ -389,6 +406,7 @@ function renderAuthUI() {
     if (switchToSignUp) {
         switchToSignUp.addEventListener('click', (e) => {
             e.preventDefault();
+            console.log('🔄 Switching to sign up');
             authView = 'sign_up';
             renderAuthUI();
         });
@@ -399,10 +417,13 @@ function renderAuthUI() {
     if (forgotPasswordLink) {
         forgotPasswordLink.addEventListener('click', (e) => {
             e.preventDefault();
+            console.log('🔄 Switching to forgot password');
             authView = 'forgot_password';
             renderForgotPasswordUI();
         });
     }
+    
+    console.log('🎨 renderAuthUI() completed successfully');
 }
 
 // Render forgot password UI
@@ -863,6 +884,15 @@ function openModal(modal) {
     document.body.style.overflow = '';
     
     try {
+        // Re-add content if it was cleared
+        if (modal.id === 'authModal') {
+            const authContainer = modal.querySelector('#auth-container');
+            if (authContainer && authContainer.innerHTML === '') {
+                console.log('Auth container is empty, rendering auth UI...');
+                renderAuthUI();
+            }
+        }
+        
         // Show the target modal
         modal.style.display = 'flex';
         modal.classList.add('active');
@@ -884,40 +914,25 @@ function openModal(modal) {
             });
         }
         
-        // Re-add content if it was cleared
-        if (modal.id === 'authModal') {
-            const authContainer = modal.querySelector('#auth-container');
-            if (authContainer && authContainer.innerHTML === '') {
-                renderAuthUI();
-            }
-        }
-        
-        // Add fresh overlay click handler by removing existing ones
-        const newModal = modal.cloneNode(true);
-        modal.parentNode.replaceChild(newModal, modal);
-        
-        // Update global reference
-        if (modal.id === 'authModal') {
-            authModal = newModal;
-        }
-        
-        // Add fresh event listener
-        newModal.addEventListener('click', (e) => {
-            if (e.target === newModal) {
-                closeModal(newModal);
+        // Add fresh overlay click handler (without replacing the entire modal)
+        // Remove existing listeners by cloning and replacing just the modal's event handlers
+        modal.onclick = null; // Clear existing onclick
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal(modal);
             }
         });
         
         // Close on escape key
         const escapeHandler = (e) => {
             if (e.key === 'Escape') {
-                closeModal(newModal);
+                closeModal(modal);
                 document.removeEventListener('keydown', escapeHandler);
             }
         };
         document.addEventListener('keydown', escapeHandler);
         
-        return newModal; // Return the new modal reference
+        return modal; // Return the same modal reference
         
     } catch (error) {
         console.error('Error opening modal:', error);
