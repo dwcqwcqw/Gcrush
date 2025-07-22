@@ -798,30 +798,36 @@ class GenerateMediaIntegrated {
             
             if (result.images && result.images.length > 0) {
                 console.log('🖼️ Processing images:', result.images.length);
+                
+                // Save each image to database instead of immediately showing
                 for (let i = 0; i < result.images.length; i++) {
                     const imageData = result.images[i];
                     console.log(`📸 Image ${i + 1}:`, imageData);
                     console.log(`🔗 Image ${i + 1} URL:`, imageData.url);
                     
-                    // 测试图片URL是否可访问
-                    console.log(`🌐 Testing image URL accessibility:`, imageData.url);
-                    
-                    const galleryResult = {
-                        type: 'image',
-                        url: imageData.url,
+                    // Save to database
+                    await this.saveImageToDatabase({
+                        image_url: imageData.url,
+                        filename: imageData.filename || `generated_${Date.now()}_${i + 1}.png`,
                         prompt: finalPrompt,
-                        negativePrompt: negativePrompt,
-                        timestamp: imageData.created_at,
-                        seed: imageData.seed
-                    };
-                    console.log(`📋 Gallery result ${i + 1}:`, galleryResult);
+                        character_name: this.getSelectedCharacterName(),
+                        user_id: authResult.user.id,
+                        seed: imageData.seed,
+                        generation_params: {
+                            status: 'completed',
+                            completed_at: new Date().toISOString(),
+                            batch_index: i
+                        }
+                    });
                     
-                    // 添加到画廊（新图片显示在第一个位置）
-                    this.showGenerationResult(galleryResult, true);
-                    
-                    // 预加载图片以测试可访问性
-                    this.preloadImage(imageData.url, i + 1);
+                    // Test image accessibility
+                    this.testImageAccessibility(imageData.url, i + 1);
                 }
+                
+                // Reload gallery from database to show all images including new ones
+                console.log('🔄 Reloading gallery from database...');
+                await this.loadUserGallery();
+                
             } else {
                 console.error('❌ No images found in result:', result);
                 alert('Generation completed but no images were returned. Please try again.');
@@ -1295,63 +1301,14 @@ class GenerateMediaIntegrated {
     removeLoadingPlaceholder() {
         const galleryContent = document.getElementById('gallery-content');
         if (!galleryContent) return;
-
+        
         const galleryGrid = galleryContent.querySelector('.gallery-grid');
-        if (!galleryGrid) return;
-
-        // Remove ALL loading placeholders
-        const loadingPlaceholders = galleryGrid.querySelectorAll('.loading-placeholder-item');
-        loadingPlaceholders.forEach(placeholder => placeholder.remove());
-        console.log(`✅ ${loadingPlaceholders.length} loading placeholder(s) removed`);
-    }
-
-    showGenerationResult(result, insertAtTop = false) {
-        console.log('🎨 Showing generation result:', result);
-        this.addToGallery(result, insertAtTop);
-        this.showSuccessMessage();
-    }
-
-    addToGallery(result, insertAtTop = false) {
-        const galleryContent = document.getElementById('gallery-content');
-        if (!galleryContent) return;
-
-        // Remove "no images" message if it exists
-        const noImagesMsg = galleryContent.querySelector('.no-images');
-        if (noImagesMsg) {
-            noImagesMsg.remove();
+        if (galleryGrid) {
+            // Remove all loading placeholder items
+            const loadingPlaceholders = galleryGrid.querySelectorAll('.loading-placeholder-item');
+            loadingPlaceholders.forEach(placeholder => placeholder.remove());
+            console.log(`✅ ${loadingPlaceholders.length} loading placeholder(s) removed`);
         }
-
-        // Create gallery grid if it doesn't exist
-        let galleryGrid = galleryContent.querySelector('.gallery-grid');
-        if (!galleryGrid) {
-            galleryGrid = document.createElement('div');
-            galleryGrid.className = 'gallery-grid';
-            galleryContent.appendChild(galleryGrid);
-        }
-
-        // Add new item to gallery
-        const galleryItem = document.createElement('div');
-        galleryItem.className = 'gallery-item';
-        
-        const media = document.createElement(result.type === 'video' ? 'video' : 'img');
-        media.src = result.url;
-        media.alt = 'Generated Media';
-        if (result.type === 'video') {
-            media.controls = true;
-        }
-        
-        // 只显示图片，不显示任何文字信息
-        galleryItem.appendChild(media);
-        
-        // 根据insertAtTop参数决定插入位置
-        if (insertAtTop) {
-            galleryGrid.insertBefore(galleryItem, galleryGrid.firstChild);
-        } else {
-            galleryGrid.appendChild(galleryItem);
-        }
-        
-        // Scroll to gallery
-        galleryContent.scrollIntoView({ behavior: 'smooth' });
     }
 
     showSuccessMessage() {
@@ -1383,77 +1340,7 @@ class GenerateMediaIntegrated {
             // 可以在这里添加重试逻辑或显示错误状态
         };
         img.src = url;
-    }
-
-    // 改进的画廊结果显示方法
-    showGenerationResult(result) {
-        console.log('🖼️ Adding result to gallery:', result);
-        
-        const galleryContent = document.getElementById('gallery-content');
-        if (!galleryContent) {
-            console.error('❌ Gallery content not found');
-            return;
         }
-
-        // 创建或获取gallery grid
-        let galleryGrid = galleryContent.querySelector('.gallery-grid');
-        if (!galleryGrid) {
-            galleryGrid = document.createElement('div');
-            galleryGrid.className = 'gallery-grid';
-            galleryContent.appendChild(galleryGrid);
-        }
-
-        // 移除"no images"消息
-        const noImagesMsg = galleryContent.querySelector('.no-images');
-        if (noImagesMsg) {
-            noImagesMsg.remove();
-        }
-
-        // 创建新的gallery item
-        const galleryItem = document.createElement('div');
-        galleryItem.className = 'gallery-item';
-        
-        // 创建图片元素
-        const img = document.createElement('img');
-        img.src = result.url;
-        img.alt = 'Generated Image';
-        img.style.width = '100%';
-        img.style.height = 'auto';
-        img.style.borderRadius = '10px';
-        img.style.cursor = 'pointer';
-        
-        // 添加加载状态处理
-        img.onload = () => {
-            console.log('✅ Gallery image loaded:', result.url);
-            img.style.opacity = '1';
-        };
-        
-        img.onerror = () => {
-            console.error('❌ Gallery image failed to load:', result.url);
-            img.style.display = 'none';
-            const errorMsg = document.createElement('div');
-            errorMsg.textContent = '❌ Image failed to load';
-            errorMsg.style.color = '#ff4444';
-            errorMsg.style.padding = '20px';
-            errorMsg.style.textAlign = 'center';
-            galleryItem.appendChild(errorMsg);
-        };
-        
-        img.style.opacity = '0.5'; // 初始加载状态
-        
-        // 点击图片放大查看
-        img.onclick = () => {
-            window.open(result.url, '_blank');
-        };
-        
-        // 只显示图片，不显示额外信息
-        galleryItem.appendChild(img);
-        
-        // 添加到gallery grid的开头（最新的在前面）
-        galleryGrid.insertBefore(galleryItem, galleryGrid.firstChild);
-        
-        console.log('✅ Gallery item added successfully');
-    }
 
     // Load user gallery from Supabase
     async loadUserGallery() {
@@ -2096,6 +1983,60 @@ class GenerateMediaIntegrated {
         
         // Add cache-busting parameter to force reload
         img.src = imageUrl + '?retry=' + Date.now();
+    }
+
+    // Save generated image to database
+    async saveImageToDatabase(imageData) {
+        if (!this.supabase) {
+            console.error('❌ Supabase client not available for saving image');
+            return;
+        }
+        
+        try {
+            console.log('💾 Saving generated image to database:', imageData.filename);
+            
+            const { data, error } = await this.supabase
+                .from('user_gallery')
+                .insert([imageData])
+                .select()
+                .single();
+            
+            if (error) {
+                console.error('❌ Error saving image to database:', error);
+                return;
+            }
+            
+            console.log('✅ Image saved to database with ID:', data.id);
+            return data.id;
+            
+        } catch (error) {
+            console.error('❌ Exception saving image to database:', error);
+        }
+    }
+
+    // Test image accessibility
+    testImageAccessibility(imageUrl, index) {
+        console.log(`🌐 Testing image ${index} accessibility:`, imageUrl);
+        
+        const img = new Image();
+        img.onload = () => {
+            console.log(`✅ Image ${index} is accessible:`, imageUrl);
+        };
+        img.onerror = (error) => {
+            console.error(`❌ Image ${index} is not accessible:`, imageUrl);
+            // The image will show error state when displayed in gallery
+        };
+        img.src = imageUrl;
+    }
+
+    // Get selected character name
+    getSelectedCharacterName() {
+        const currentState = this.getCurrentState();
+        if (currentState.selectedCharacter) {
+            const character = this.characters.find(c => c.id === currentState.selectedCharacter);
+            return character ? character.name : 'Unknown Character';
+        }
+        return 'No Character Selected';
     }
 }
 
