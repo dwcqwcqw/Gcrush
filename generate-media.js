@@ -1605,6 +1605,10 @@ class GenerateMediaIntegrated {
                         <img src="${imageUrl}" alt="Gallery Image" class="viewer-image">
                         <div class="image-viewer-info">
                             <span class="image-counter">${currentIndex + 1} / ${allImages.length}</span>
+                            <div class="navigation-hint">
+                                <span class="desktop-hint"><i class="fas fa-mouse"></i> Scroll or use ↑↓ keys</span>
+                                <span class="mobile-hint"><i class="fas fa-hand-paper"></i> Swipe up/down to navigate</span>
+                            </div>
                         </div>
                     </div>
                     
@@ -1707,6 +1711,32 @@ class GenerateMediaIntegrated {
         
         document.addEventListener('keydown', handleKeydown);
         
+        // Mouse wheel navigation
+        const handleWheel = (e) => {
+            e.preventDefault();
+            
+            // Debounce wheel events to prevent rapid scrolling
+            if (this.wheelTimeout) {
+                clearTimeout(this.wheelTimeout);
+            }
+            
+            this.wheelTimeout = setTimeout(() => {
+                if (e.deltaY > 0) {
+                    // Scroll down - next image
+                    if (currentIndex < allImages.length - 1) {
+                        updateImage(currentIndex + 1);
+                    }
+                } else if (e.deltaY < 0) {
+                    // Scroll up - previous image
+                    if (currentIndex > 0) {
+                        updateImage(currentIndex - 1);
+                    }
+                }
+            }, 100);
+        };
+        
+        viewerOverlay.addEventListener('wheel', handleWheel, { passive: false });
+        
         // Touch/swipe support for mobile
         let touchStartY = 0;
         let touchEndY = 0;
@@ -1748,6 +1778,10 @@ class GenerateMediaIntegrated {
         const originalRemove = viewerOverlay.remove;
         viewerOverlay.remove = function() {
             document.removeEventListener('keydown', handleKeydown);
+            viewerOverlay.removeEventListener('wheel', handleWheel);
+            if (this.wheelTimeout) {
+                clearTimeout(this.wheelTimeout);
+            }
             originalRemove.call(this);
         };
         
