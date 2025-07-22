@@ -852,36 +852,80 @@ function openModal(modal) {
         return;
     }
     
-    // Remove the blocking logic that's preventing the modal from working properly
+    // Clear any existing modal state first
+    const allModals = document.querySelectorAll('.modal-overlay');
+    allModals.forEach(m => {
+        m.style.display = 'none';
+        m.classList.remove('active');
+    });
+    
+    // Reset body overflow
+    document.body.style.overflow = '';
     
     try {
+        // Show the target modal
+        modal.style.display = 'flex';
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         
-        // Setup modal close handlers
+        console.log('✅ Modal opened successfully');
+        
+        // Setup modal close handlers (remove existing ones first)
         const closeBtn = modal.querySelector('.modal-close');
         if (closeBtn) {
-            closeBtn.addEventListener('click', () => closeModal(modal));
+            // Clone to remove all existing event listeners
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+            
+            newCloseBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeModal(modal);
+            });
         }
         
-        // Close on overlay click
-        modal.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                closeModal(modal);
+        // Re-add content if it was cleared
+        if (modal.id === 'authModal') {
+            const authContainer = modal.querySelector('#auth-container');
+            if (authContainer && authContainer.innerHTML === '') {
+                renderAuthUI();
+            }
+        }
+        
+        // Add fresh overlay click handler by removing existing ones
+        const newModal = modal.cloneNode(true);
+        modal.parentNode.replaceChild(newModal, modal);
+        
+        // Update global reference
+        if (modal.id === 'authModal') {
+            authModal = newModal;
+        }
+        
+        // Add fresh event listener
+        newModal.addEventListener('click', (e) => {
+            if (e.target === newModal) {
+                closeModal(newModal);
             }
         });
         
         // Close on escape key
         const escapeHandler = (e) => {
             if (e.key === 'Escape') {
-                closeModal(modal);
+                closeModal(newModal);
                 document.removeEventListener('keydown', escapeHandler);
             }
         };
         document.addEventListener('keydown', escapeHandler);
         
+        return newModal; // Return the new modal reference
+        
     } catch (error) {
         console.error('Error opening modal:', error);
+        
+        // Fallback: try simple modal show
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        return modal;
     }
 }
 
@@ -893,10 +937,24 @@ function closeModal(modal) {
     }
     
     try {
+        modal.style.display = 'none';
         modal.classList.remove('active');
         document.body.style.overflow = '';
+        
+        // Clear auth container if this is the auth modal
+        if (modal.id === 'authModal') {
+            const authContainer = modal.querySelector('#auth-container');
+            if (authContainer) {
+                authContainer.innerHTML = '';
+            }
+        }
+        
+        console.log('✅ Modal closed successfully');
     } catch (error) {
         console.error('Error closing modal:', error);
+        
+        // Fallback cleanup
+        document.body.style.overflow = '';
     }
 }
 
@@ -1443,7 +1501,7 @@ async function logout() {
         
         console.log('🗑️ Cleared auth keys:', keysToRemove);
         
-        // Step 3: Reset UI state immediately
+        // Step 3: Reset UI state immediately and fix button event handlers
         console.log('🎨 Resetting UI to logged-out state...');
         
         const currentLoginBtn = document.querySelector('.login-btn');
@@ -1455,10 +1513,57 @@ async function logout() {
         if (currentLoginBtn) {
             currentLoginBtn.style.display = 'inline-block';
             currentLoginBtn.style.visibility = 'visible';
+            
+            // Fix event listener issue - remove all existing listeners and add fresh ones
+            const newLoginBtn = currentLoginBtn.cloneNode(true);
+            currentLoginBtn.parentNode.replaceChild(newLoginBtn, currentLoginBtn);
+            
+            // Add fresh event listener
+            newLoginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔐 Login button clicked after logout');
+                
+                if (!supabase) {
+                    console.error('Supabase not initialized');
+                    showInlineError('Authentication system is not ready. Please refresh the page.');
+                    return;
+                }
+                
+                authView = 'sign_in';
+                renderAuthUI();
+                openModal(document.getElementById('authModal'));
+            });
+            
+            console.log('✅ Login button event listener refreshed');
         }
+        
         if (currentCreateBtn) {
             currentCreateBtn.style.display = 'inline-block';
             currentCreateBtn.style.visibility = 'visible';
+            
+            // Fix event listener issue for create button too
+            const newCreateBtn = currentCreateBtn.cloneNode(true);
+            currentCreateBtn.parentNode.replaceChild(newCreateBtn, currentCreateBtn);
+            
+            // Add fresh event listener
+            newCreateBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🔐 Create account button clicked after logout');
+                
+                if (!supabase) {
+                    console.error('Supabase not initialized');
+                    showInlineError('Authentication system is not ready. Please refresh the page.');
+                    return;
+                }
+                
+                authView = 'sign_up';
+                renderAuthUI();
+                openModal(document.getElementById('authModal'));
+            });
+            
+            console.log('✅ Create account button event listener refreshed');
         }
         
         // Hide user profile and premium button
@@ -1469,7 +1574,7 @@ async function logout() {
             premiumBtn.style.display = 'none';
         }
         
-        // Step 4: Close any open dropdowns or modals
+        // Step 4: Close any open dropdowns or modals and reset their states
         const profileDropdown = document.getElementById('profileDropdown');
         if (profileDropdown) {
             profileDropdown.remove();
@@ -1477,7 +1582,15 @@ async function logout() {
         
         const authModal = document.getElementById('authModal');
         if (authModal) {
-            closeModal(authModal);
+            authModal.style.display = 'none';
+            authModal.classList.remove('active');
+            document.body.style.overflow = '';
+            
+            // Clear any existing modal content to prevent stale state
+            const authContainer = document.getElementById('auth-container');
+            if (authContainer) {
+                authContainer.innerHTML = '';
+            }
         }
         
         // Step 5: Clear global Supabase state
