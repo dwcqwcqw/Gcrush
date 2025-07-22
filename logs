@@ -1,0 +1,594 @@
+ [SUPABASE-MANAGER] Initializing global Supabase client...
+ [SUPABASE-MANAGER] Global Supabase client ready
+ [SUPABASE-MANAGER] Global auth state change: Object
+ [SUPABASE-MANAGER] Global auth state change: Object
+ Loading environment configuration from Cloudflare Function...
+ Environment variables set by Cloudflare Function:
+ - RUNPOD_API_KEY length: 50
+ - RUNPOD_API_KEY starts with: rpa_YT0BFB...
+ - RUNPOD_TEXT_ENDPOINT_ID: 4cx6jtjdx6hdhr
+ Environment configuration loaded from Cloudflare Function: Object
+ 🚀 Inline Debug Script Started
+ Current URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ Environment: Object
+ ✅ Inline Debug Script Ready - Check console for detailed logs
+ Document still loading, waiting for DOMContentLoaded
+ 🎤 Voice Features initialized
+ 🎤 Voice Features module loaded
+ === CHAT DEBUG SCRIPT LOADED ===
+ 🎨 Generate Media JS loaded for independent page
+ 🎨 Generate Media JS setup complete for independent page
+ [AUTH-PROTECTION] Initializing auth state protection
+ 📄 DOM Content Loaded
+ 🎯 loginBtn: ✅ Found
+ 🎯 createBtn: ✅ Found
+ 🎯 authModal: ✅ Found
+ 🎯 authContainer: ✅ Found
+ 🎯 userProfile: ✅ Found
+ Character grid container (.character-grid) not found
+renderCharacterCards @ character-data-loader.js:344
+(anonymous) @ character-data-loader.js:475
+ [AUTH-DEBUG] 2025-07-22T06:50:31.868Z | DOM Content Loaded - Starting auth initialization
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at HTMLDocument.<anonymous> (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:1389:5)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ DOM Content Loaded - Starting auth initialization
+ 🚨 Global Error: 
+(anonymous) @ inline-debug.js:165
+script.js:8 Uncaught 
+(anonymous) @ script.js:8
+ Existing session found: baileyli@foxmail.com
+ 🎤 Voice features available, initializing...
+ 🚀 Window fully loaded
+ Final check: ensuring all character images are visible...
+ Found 0 images in final check
+ No images found! Checking if character cards exist...
+(anonymous) @ character-data-loader.js:486
+ Found 0 character cards
+ [AUTH-DEBUG] 2025-07-22T06:50:32.370Z | Starting enhanced initialization
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at HTMLDocument.<anonymous> (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:1396:5)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Starting enhanced initialization...
+ [AUTH-DEBUG] 2025-07-22T06:50:32.370Z | Starting auth system initialization
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at initializeAuth (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:91:5)
+    at enhancedInitialization (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:982:9)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Initializing auth system...
+ [AUTH-DEBUG] 2025-07-22T06:50:32.370Z | Starting Supabase initialization
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at initializeSupabase (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:39:5)
+    at initializeAuth (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:95:10)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ [AUTH-DEBUG] 2025-07-22T06:50:32.371Z | Using existing global Supabase client
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at initializeSupabase (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:43:9)
+    at initializeAuth (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:95:10)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Using global Supabase client from supabase-manager.js
+ Auth initialized: Object
+ [AUTH-DEBUG] 2025-07-22T06:50:32.371Z | Setting up auth state listener
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at setupAuthStateListener (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:127:5)
+    at initializeAuth (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:121:9)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ [AUTH-DEBUG] 2025-07-22T06:50:32.371Z | Starting session check on initialization
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at setupAuthStateListener (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:222:5)
+    at initializeAuth (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:121:9)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Setting up event listeners...
+ Auth buttons found, setting up listeners
+ Event listeners set up successfully
+ Normal initialization successful
+ Profile form listener added
+ Auth initialization complete - ready for user interaction
+ 🎨 Initializing Generate Media page...
+ 🎨 Initializing Generate Media for independent page...
+ 🔍 Checking DOM elements...
+ - Generate button exists: true
+ - Custom prompt exists: true
+ - Negative prompt exists: true
+ ✅ Generate button found, binding click event
+ 👥 Loading characters...
+ 🔍 Initializing Supabase for Gallery...
+ 🔍 Supabase availability check:
+ • window.supabase: true
+ • window.supabase.from: true
+ • window.supabase.auth: true
+ ✅ Using existing Supabase client from supabase-manager
+ ✅ Supabase client initialized for Gallery
+ 🔍 After initSupabase, this.supabase: true
+ ✅ Supabase available, loading user gallery...
+ 🔐 Starting fast authentication check...
+ 🔐 Quick check: localStorage session...
+ ✅ Valid session found in localStorage: baileyli@foxmail.com
+ ✅ User authenticated, loading gallery for: 99f24c0c-6e5c-4859-ae86-8e8bade07b98
+ 📚 Loading user gallery from Supabase...
+ [AUTH-DEBUG] 2025-07-22T06:50:32.375Z | Auth state change detected
+ [AUTH-DEBUG] Data: Object
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:130:9)
+    at https://unpkg.com/@supabase/supabase-js@2:1:45445
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Auth state changed: INITIAL_SESSION Object
+ [AUTH-DEBUG] 2025-07-22T06:50:32.376Z | Valid session found for event: INITIAL_SESSION
+ [AUTH-DEBUG] Data: Object
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:144:13)
+    at https://unpkg.com/@supabase/supabase-js@2:1:45445
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Auth event: INITIAL_SESSION, User: baileyli@foxmail.com
+ [AUTH-DEBUG] 2025-07-22T06:50:32.376Z | Closing auth modal
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:155:17)
+    at https://unpkg.com/@supabase/supabase-js@2:1:45445
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Closing modal: 
+ ✅ Modal closed successfully
+ [AUTH-DEBUG] 2025-07-22T06:50:32.376Z | Updating UI for logged in user
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:160:13)
+    at https://unpkg.com/@supabase/supabase-js@2:1:45445
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Updating UI for logged in user
+ User provider: email
+ [AUTH-DEBUG] 2025-07-22T06:50:32.376Z | Existing session found on initialization
+ [AUTH-DEBUG] Data: Object
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:237:13
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Existing session found on initialization
+ Session expires at: 7/22/2025, 3:40:29 PM
+ [AUTH-DEBUG] 2025-07-22T06:50:32.377Z | Remember me setting checked
+ [AUTH-DEBUG] Data: Object
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:259:13
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Remember me setting: true
+ [AUTH-DEBUG] 2025-07-22T06:50:32.377Z | Updating UI for existing session user
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:263:13
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Updating UI for logged in user
+ User provider: email
+ Logout button event listener attached
+ Second check: found 0 images
+ Checking mainChatSystem after 1 second...
+ window.mainChatSystem: MainChatSystem
+ mainChatSystem properties: Object
+ DOM Elements:
+ - messageInput: 
+ - sendButton: 
+ - chatMessages: 
+ - chatInterface: 
+ Adding direct click listener to sendButton
+ 🔍 Supabase check: Object
+ ⚠️ Supabase not available or createClient method missing
+(anonymous) @ inline-debug.js:78
+kuflobojizyttadwcbhe.supabase.co/rest/v1/profiles?select=username%2Cdisplay_name&id=eq.99f24c0c-6e5c-4859-ae86-8e8bade07b98:1  Failed to load resource: the server responded with a status of 400 ()
+ Logout button event listener attached
+ ✅ Characters loaded: 12
+ 📋 First character data: Object
+ Final fallback initialization check...
+ Buttons found but no handlers detected, running final setup...
+ Starting enhanced initialization...
+ [AUTH-DEBUG] 2025-07-22T06:50:34.865Z | Starting auth system initialization
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at initializeAuth (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:91:5)
+    at enhancedInitialization (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:982:9)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Initializing auth system...
+ [AUTH-DEBUG] 2025-07-22T06:50:34.865Z | Starting Supabase initialization
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at initializeSupabase (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:39:5)
+    at initializeAuth (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:95:10)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ [AUTH-DEBUG] 2025-07-22T06:50:34.865Z | Using existing global Supabase client
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at initializeSupabase (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:43:9)
+    at initializeAuth (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:95:10)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Using global Supabase client from supabase-manager.js
+ Auth initialized: Object
+ [AUTH-DEBUG] 2025-07-22T06:50:34.865Z | Setting up auth state listener
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at setupAuthStateListener (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:127:5)
+    at initializeAuth (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:121:9)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ [AUTH-DEBUG] 2025-07-22T06:50:34.865Z | Starting session check on initialization
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at setupAuthStateListener (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:222:5)
+    at initializeAuth (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:121:9)
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Setting up event listeners...
+ Auth buttons found, setting up listeners
+ Event listeners set up successfully
+ Normal initialization successful
+ [AUTH-DEBUG] 2025-07-22T06:50:34.867Z | Auth state change detected
+ [AUTH-DEBUG] Data: Object
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:130:9)
+    at https://unpkg.com/@supabase/supabase-js@2:1:45445
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Auth state changed: INITIAL_SESSION Object
+ [AUTH-DEBUG] 2025-07-22T06:50:34.867Z | Valid session found for event: INITIAL_SESSION
+ [AUTH-DEBUG] Data: Object
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:144:13)
+    at https://unpkg.com/@supabase/supabase-js@2:1:45445
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Auth event: INITIAL_SESSION, User: baileyli@foxmail.com
+ [AUTH-DEBUG] 2025-07-22T06:50:34.867Z | Closing auth modal
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:155:17)
+    at https://unpkg.com/@supabase/supabase-js@2:1:45445
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Closing modal: 
+ ✅ Modal closed successfully
+ [AUTH-DEBUG] 2025-07-22T06:50:34.867Z | Updating UI for logged in user
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:160:13)
+    at https://unpkg.com/@supabase/supabase-js@2:1:45445
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Updating UI for logged in user
+ User provider: email
+ 🖱️ Testing button interactions...
+ 🔐 Login button found, testing click handler...
+ Login button handler ready for testing
+ 🔐 Create button found, testing click handler...
+ Create button handler ready for testing
+ [AUTH-DEBUG] 2025-07-22T06:50:34.868Z | Existing session found on initialization
+ [AUTH-DEBUG] Data: Object
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:237:13
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Existing session found on initialization
+ Session expires at: 7/22/2025, 3:40:29 PM
+ [AUTH-DEBUG] 2025-07-22T06:50:34.869Z | Remember me setting checked
+ [AUTH-DEBUG] Data: Object
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:259:13
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Remember me setting: true
+ [AUTH-DEBUG] 2025-07-22T06:50:34.869Z | Updating UI for existing session user
+ [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+ [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+ [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:263:13
+ [AUTH-DEBUG] LocalStorage auth token: EXISTS
+ [AUTH-DEBUG] ==========================================
+ Updating UI for logged in user
+ User provider: email
+ ✅ Loaded 14 gallery items
+ 🎨 Displaying gallery items...
+ 📋 Creating gallery grid...
+ 🗑️ Cleared all existing items
+ 📸 Adding 14 gallery items
+ 📸 Adding item 1: gcrush-user-image_00001_.png
+ 📸 Adding item 2: gcrush-user-image_00001_.png
+ 📸 Adding item 3: loading_1753114192398.png
+ 📸 Adding item 4: gcrush-user-image_00001_.png
+ 📸 Adding item 5: gcrush-user-TestCharacter_00002_.png
+ 📸 Adding item 6: gcrush-user-image_00002_.png
+ 📸 Adding item 7: gcrush-user-image_00001_.png
+ 📸 Adding item 8: gcrush-user-image_00001_.png
+ 📸 Adding item 9: test-direct.png
+ 📸 Adding item 10: test-image.png
+ 📸 Adding item 11: gcrush-user-image_00002_.png
+ 📸 Adding item 12: test-direct.png
+ 📸 Adding item 13: test-image.png
+ 📸 Adding item 14: test-direct-save.png
+ ✅ Gallery display complete
+ 🔄 Starting loading state checker...
+ ⏰ Starting loading timeout checker...
+ ✅ Generate Media setup complete
+kuflobojizyttadwcbhe.supabase.co/rest/v1/profiles?select=username%2Cdisplay_name&id=eq.99f24c0c-6e5c-4859-ae86-8e8bade07b98:1  Failed to load resource: the server responded with a status of 400 ()
+ Logout button event listener attached
+21bad9ae.png:1  Failed to load resource: net::ERR_CONNECTION_RESET
+kuflobojizyttadwcbhe.supabase.co/rest/v1/profiles?select=username%2Cdisplay_name&id=eq.99f24c0c-6e5c-4859-ae86-8e8bade07b98:1  Failed to load resource: the server responded with a status of 400 ()
+ Logout button event listener attached
+kuflobojizyttadwcbhe.supabase.co/rest/v1/profiles?select=username%2Cdisplay_name&id=eq.99f24c0c-6e5c-4859-ae86-8e8bade07b98:1  Failed to load resource: the server responded with a status of 400 ()
+ 🖼️ Image count selected: 1
+ 📊 Debug Summary: Object
+ 💡 Use window.getDebugInfo() to get full debug report
+ 👤 Character selected: Object
+ 📝 Character prompt field: Gender/Age: (Male, White (American), mid-to-late 30s: 1.5);
+Skin: (Sun-kissed bronze tone, smooth with a natural sheen: 1.5);
+Face: (Strong masculine features, defined jawline, thick full beard: 1.5);
+Hair: (Short, dark brown, neatly trimmed with slight texture: 1.5);
+Eyes: (Deep-set, intense gaze, enhanced by ambient light: 1.5);
+Body: (Bear-like bulk—barrel-chested with pectorals like stacked slabs, arms thicker than most men's thighs, tree-trunk legs, glutes massive enough to strain against any surface: 1.5);
+Tattoos: (Right arm—gray floral/leaf motifs stretched over swollen biceps, ink warped by sheer muscle volume: 1.5);
+ 📝 Character system_prompt field: undefined
+ ✅ Set custom prompt to: Gender/Age: (Male, White (American), mid-to-late 30s: 1.5);
+Skin: (Sun-kissed bronze tone, smooth with a natural sheen: 1.5);
+Face: (Strong masculine features, defined jawline, thick full beard: 1.5);
+Hair: (Short, dark brown, neatly trimmed with slight texture: 1.5);
+Eyes: (Deep-set, intense gaze, enhanced by ambient light: 1.5);
+Body: (Bear-like bulk—barrel-chested with pectorals like stacked slabs, arms thicker than most men's thighs, tree-trunk legs, glutes massive enough to strain against any surface: 1.5);
+Tattoos: (Right arm—gray floral/leaf motifs stretched over swollen biceps, ink warped by sheer muscle volume: 1.5);
+ 👤 Character selected: 84fca70f-cb45-4335-9cb5-4f33240441da
+ 📸 Pose selected: leash
+Missionary.png:1  Failed to load resource: net::ERR_CONNECTION_RESET
+flaccid%20penis.png:1  Failed to load resource: net::ERR_CONNECTION_RESET
+ 🔐 Starting fast authentication check...
+ 🔐 Quick check: localStorage session...
+ ✅ Valid session found in localStorage: baileyli@foxmail.com
+ Logout button event listener attached
+ 🎯 Generate button clicked!
+ 🎯 Button click timestamp: 2025-07-22T06:50:52.597Z
+ 🎯 isGenerating state on click: false
+ 🎯 Button disabled state: false
+ 🎨 Starting media generation...
+ 🎯 generateMedia() called at: 2025-07-22T06:50:52.598Z
+ 🔄 Current isGenerating state at start: false
+ ✅ Not currently generating, proceeding...
+ 🔍 isGenerating state before starting: false
+ 🔍 Current state: Object
+ 🔍 Custom prompt: a flying dragon
+ 🔐 Checking user authentication...
+ 🔐 Starting fast authentication check...
+ 🔐 Quick check: localStorage session...
+ ✅ Valid session found in localStorage: baileyli@foxmail.com
+ 🔐 User authentication result: Object
+ ✅ User authenticated, proceeding with generation
+ 🔍 Current state: Object
+ 🔍 Media type: image
+ 🔍 Selected image count: 1
+ 📊 Creating 1 loading placeholder(s)
+ ✅ 1 loading placeholder(s) added at top of gallery
+ 🔒 Generate button disabled during generation
+ 📝 Final prompt: a flying dragon, in leash pose
+ 💾 Saving loading state to gallery...
+ ✅ Loading state saved with ID: 46b0736c-26da-4e36-906a-361b4369d7a5
+ 📤 Sending generation request: Object
+ 🔗 Making request to: /api/generate-image
+ ⏱️ Setting 4-minute timeout for frontend request...
+ 🔐 Starting fast authentication check...
+ 🔐 Quick check: localStorage session...
+ ✅ Valid session found in localStorage: baileyli@foxmail.com
+ 🔐 Starting fast authentication check...
+ 🔐 Quick check: localStorage session...
+ ✅ Valid session found in localStorage: baileyli@foxmail.com
+ 🔐 Starting fast authentication check...
+ 🔐 Quick check: localStorage session...
+ ✅ Valid session found in localStorage: baileyli@foxmail.com
+ 📡 API Response status: 200
+ 📡 API Response statusText: 
+ 📡 API Response url: https://60a1cca5.gcrush.pages.dev/api/generate-image
+ 📋 Response headers:
+   access-control-allow-origin: *
+   alt-svc: h3=":443"; ma=86400
+   cf-ray: 963101a2dc2a8579-HKG
+   content-encoding: br
+   content-type: application/json
+   date: Tue, 22 Jul 2025 06:51:07 GMT
+   nel: {"success_fraction":0,"report_to":"cf-nel","max_age":604800}
+generate-media.js:760   priority: u=1,i
+generate-media.js:760   report-to: {"endpoints":[{"url":"https:\/\/a.nel.cloudflare.com\/report\/v4?s=4FegrnfELuKdpa6D58p6NC4DZi8MuIeNwVicxDAB6KrubwIdB%2FdchUcDp0xmgV7qL6gDy32MtO90cz3X4olMbo%2B14YtsRdzGTY0U6I%2BeqxMyGhREdMuMrsLBiV04Ae%2BQsK8h8B57fsXxpjDOnx%2B1So6fUqBx4on4"}],"group":"cf-nel","max_age":604800}
+generate-media.js:760   server: cloudflare
+generate-media.js:760   server-timing: cfL4;desc="?proto=QUIC&rtt=266052&min_rtt=123792&rtt_var=75501&sent=138&recv=108&lost=1&retrans=1&sent_bytes=92485&recv_bytes=15200&delivery_rate=63330&cwnd=13200&unsent_bytes=0&cid=89a8c8bdd3d151c1&ts=37286&x=1", cfExtPri, cfHdrFlush;dur=0
+generate-media.js:760   vary: Accept-Encoding
+generate-media.js:776 ✅ Generation successful: Object
+generate-media.js:777 📋 Result structure check:
+generate-media.js:778 - result.success: true
+generate-media.js:779 - result.images exists: true
+generate-media.js:780 - result.images type: object
+generate-media.js:781 - result.images length: 1
+generate-media.js:1283 ✅ 1 loading placeholder(s) removed
+generate-media.js:787 🖼️ Processing images: 1
+generate-media.js:790 📸 Image 1: Object
+generate-media.js:791 🔗 Image 1 URL: https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/07-25/sync-36b9ee64-8bcd-46e1-b135-9cbc2947b9a0-e2/830700a5.png
+generate-media.js:794 🌐 Testing image URL accessibility: https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/07-25/sync-36b9ee64-8bcd-46e1-b135-9cbc2947b9a0-e2/830700a5.png
+generate-media.js:804 📋 Gallery result 1: Object
+generate-media.js:1368 🖼️ Adding result to gallery: Object
+generate-media.js:1433 ✅ Gallery item added successfully
+generate-media.js:1353 🔍 Preloading image 1: https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/07-25/sync-36b9ee64-8bcd-46e1-b135-9cbc2947b9a0-e2/830700a5.png
+generate-media.js:1336 ✅ Media generated successfully!
+generate-media.js:866 🔄 Generation state reset, ready for next request
+generate-media.js:867 🔍 Current isGenerating state: false
+generate-media.js:875 ✅ Generate button re-enabled
+830700a5.png:1  Failed to load resource: net::ERR_CONNECTION_RESET
+generate-media.js:1360 ❌ Image 1 failed to load: https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/07-25/sync-36b9ee64-8bcd-46e1-b135-9cbc2947b9a0-e2/830700a5.png
+img.onerror @ generate-media.js:1360
+generate-media.js:1410 ❌ Gallery image failed to load: https://pub-5a18b069cd06445889010bf8c29132d6.r2.dev/07-25/sync-36b9ee64-8bcd-46e1-b135-9cbc2947b9a0-e2/830700a5.png
+img.onerror @ generate-media.js:1410
+supabase-manager.js:43 [SUPABASE-MANAGER] Global auth state change: Object
+main-chat.js?v=3.0:66 User signed in: baileyli@foxmail.com
+auth-simple.js?v=3.0:12 [AUTH-DEBUG] 2025-07-22T06:51:09.331Z | Auth state change detected
+auth-simple.js?v=3.0:14 [AUTH-DEBUG] Data: Object
+auth-simple.js?v=3.0:16 [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+auth-simple.js?v=3.0:17 [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+auth-simple.js?v=3.0:18 [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:130:9)
+    at https://unpkg.com/@supabase/supabase-js@2:1:51707
+auth-simple.js?v=3.0:19 [AUTH-DEBUG] LocalStorage auth token: EXISTS
+auth-simple.js?v=3.0:20 [AUTH-DEBUG] ==========================================
+auth-simple.js?v=3.0:140 Auth state changed: SIGNED_IN Object
+auth-simple.js?v=3.0:12 [AUTH-DEBUG] 2025-07-22T06:51:09.331Z | Valid session found for event: SIGNED_IN
+auth-simple.js?v=3.0:14 [AUTH-DEBUG] Data: Object
+auth-simple.js?v=3.0:16 [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+auth-simple.js?v=3.0:17 [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+auth-simple.js?v=3.0:18 [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:144:13)
+    at https://unpkg.com/@supabase/supabase-js@2:1:51707
+auth-simple.js?v=3.0:19 [AUTH-DEBUG] LocalStorage auth token: EXISTS
+auth-simple.js?v=3.0:20 [AUTH-DEBUG] ==========================================
+auth-simple.js?v=3.0:151 Auth event: SIGNED_IN, User: baileyli@foxmail.com
+auth-simple.js?v=3.0:12 [AUTH-DEBUG] 2025-07-22T06:51:09.331Z | Closing auth modal
+auth-simple.js?v=3.0:16 [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+auth-simple.js?v=3.0:17 [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+auth-simple.js?v=3.0:18 [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:155:17)
+    at https://unpkg.com/@supabase/supabase-js@2:1:51707
+auth-simple.js?v=3.0:19 [AUTH-DEBUG] LocalStorage auth token: EXISTS
+auth-simple.js?v=3.0:20 [AUTH-DEBUG] ==========================================
+auth-simple.js?v=3.0:948 Closing modal: <div class=​"modal-overlay" id=​"authModal" style=​"display:​ none;​">​…​</div>​
+auth-simple.js?v=3.0:967 ✅ Modal closed successfully
+auth-simple.js?v=3.0:12 [AUTH-DEBUG] 2025-07-22T06:51:09.331Z | Updating UI for logged in user
+auth-simple.js?v=3.0:16 [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+auth-simple.js?v=3.0:17 [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+auth-simple.js?v=3.0:18 [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:160:13)
+    at https://unpkg.com/@supabase/supabase-js@2:1:51707
+auth-simple.js?v=3.0:19 [AUTH-DEBUG] LocalStorage auth token: EXISTS
+auth-simple.js?v=3.0:20 [AUTH-DEBUG] ==========================================
+auth-simple.js?v=3.0:1254 Updating UI for logged in user
+auth-simple.js?v=3.0:1280 User provider: email
+auth-simple.js?v=3.0:12 [AUTH-DEBUG] 2025-07-22T06:51:09.332Z | Auth state change detected
+auth-simple.js?v=3.0:14 [AUTH-DEBUG] Data: Object
+auth-simple.js?v=3.0:16 [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+auth-simple.js?v=3.0:17 [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+auth-simple.js?v=3.0:18 [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:130:9)
+    at https://unpkg.com/@supabase/supabase-js@2:1:51707
+auth-simple.js?v=3.0:19 [AUTH-DEBUG] LocalStorage auth token: EXISTS
+auth-simple.js?v=3.0:20 [AUTH-DEBUG] ==========================================
+auth-simple.js?v=3.0:140 Auth state changed: SIGNED_IN Object
+auth-simple.js?v=3.0:12 [AUTH-DEBUG] 2025-07-22T06:51:09.332Z | Valid session found for event: SIGNED_IN
+auth-simple.js?v=3.0:14 [AUTH-DEBUG] Data: Object
+auth-simple.js?v=3.0:16 [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+auth-simple.js?v=3.0:17 [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+auth-simple.js?v=3.0:18 [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:144:13)
+    at https://unpkg.com/@supabase/supabase-js@2:1:51707
+auth-simple.js?v=3.0:19 [AUTH-DEBUG] LocalStorage auth token: EXISTS
+auth-simple.js?v=3.0:20 [AUTH-DEBUG] ==========================================
+auth-simple.js?v=3.0:151 Auth event: SIGNED_IN, User: baileyli@foxmail.com
+auth-simple.js?v=3.0:12 [AUTH-DEBUG] 2025-07-22T06:51:09.332Z | Closing auth modal
+auth-simple.js?v=3.0:16 [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+auth-simple.js?v=3.0:17 [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+auth-simple.js?v=3.0:18 [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:155:17)
+    at https://unpkg.com/@supabase/supabase-js@2:1:51707
+auth-simple.js?v=3.0:19 [AUTH-DEBUG] LocalStorage auth token: EXISTS
+auth-simple.js?v=3.0:20 [AUTH-DEBUG] ==========================================
+auth-simple.js?v=3.0:948 Closing modal: <div class=​"modal-overlay" id=​"authModal" style=​"display:​ none;​">​…​</div>​
+auth-simple.js?v=3.0:967 ✅ Modal closed successfully
+auth-simple.js?v=3.0:12 [AUTH-DEBUG] 2025-07-22T06:51:09.332Z | Updating UI for logged in user
+auth-simple.js?v=3.0:16 [AUTH-DEBUG] URL: https://60a1cca5.gcrush.pages.dev/generate-media
+auth-simple.js?v=3.0:17 [AUTH-DEBUG] Referrer: https://60a1cca5.gcrush.pages.dev/
+auth-simple.js?v=3.0:18 [AUTH-DEBUG] Stack:     at authDebug (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:10:19)
+    at Object.callback (https://60a1cca5.gcrush.pages.dev/auth-simple.js?v=3.0:160:13)
+    at https://unpkg.com/@supabase/supabase-js@2:1:51707
+auth-simple.js?v=3.0:19 [AUTH-DEBUG] LocalStorage auth token: EXISTS
+auth-simple.js?v=3.0:20 [AUTH-DEBUG] ==========================================
+auth-simple.js?v=3.0:1254 Updating UI for logged in user
+auth-simple.js?v=3.0:1280 User provider: email
+generate-media.js:882 🔐 Starting fast authentication check...
+generate-media.js:886 🔐 Quick check: localStorage session...
+generate-media.js:896 ✅ Valid session found in localStorage: baileyli@foxmail.com
+generate-media.js:882 🔐 Starting fast authentication check...
+generate-media.js:886 🔐 Quick check: localStorage session...
+generate-media.js:896 ✅ Valid session found in localStorage: baileyli@foxmail.com
+generate-media.js:225 🎯 Generate button clicked!
+generate-media.js:226 🎯 Button click timestamp: 2025-07-22T06:51:33.873Z
+generate-media.js:227 🎯 isGenerating state on click: false
+generate-media.js:228 🎯 Button disabled state: false
+generate-media.js:602 🎨 Starting media generation...
+generate-media.js:603 🎯 generateMedia() called at: 2025-07-22T06:51:33.873Z
+generate-media.js:604 🔄 Current isGenerating state at start: false
+generate-media.js:626 ✅ Not currently generating, proceeding...
+generate-media.js:627 🔍 isGenerating state before starting: false
+generate-media.js:628 🔍 Current state: {selectedCharacter: '84fca70f-cb45-4335-9cb5-4f33240441da', selectedPose: 'leash', selectedBackground: null, selectedOutfit: null, selectedImageCount: 1}
+generate-media.js:629 🔍 Custom prompt: a flying dragon
+generate-media.js:632 🔐 Checking user authentication...
+generate-media.js:882 🔐 Starting fast authentication check...
+generate-media.js:886 🔐 Quick check: localStorage session...
+generate-media.js:896 ✅ Valid session found in localStorage: baileyli@foxmail.com
+generate-media.js:634 🔐 User authentication result: {authenticated: true, user: {…}, source: 'localStorage'}
+generate-media.js:667 ✅ User authenticated, proceeding with generation
+generate-media.js:1246 🔍 Current state: {selectedCharacter: '84fca70f-cb45-4335-9cb5-4f33240441da', selectedPose: 'leash', selectedBackground: null, selectedOutfit: null, selectedImageCount: 1}
+generate-media.js:1247 🔍 Media type: image
+generate-media.js:1248 🔍 Selected image count: 1
+generate-media.js:1249 📊 Creating 1 loading placeholder(s)
+generate-media.js:1270 ✅ 1 loading placeholder(s) added at top of gallery
+generate-media.js:680 🔒 Generate button disabled during generation
+generate-media.js:696 📝 Final prompt: a flying dragon, in leash pose
+generate-media.js:1799 💾 Saving loading state to gallery...
+generate-media.js:882 🔐 Starting fast authentication check...
+generate-media.js:886 🔐 Quick check: localStorage session...
+generate-media.js:896 ✅ Valid session found in localStorage: baileyli@foxmail.com
+generate-media.js:882 🔐 Starting fast authentication check...
+generate-media.js:886 🔐 Quick check: localStorage session...
+generate-media.js:896 ✅ Valid session found in localStorage: baileyli@foxmail.com
+generate-media.js:882 🔐 Starting fast authentication check...
+generate-media.js:886 🔐 Quick check: localStorage session...
+generate-media.js:896 ✅ Valid session found in localStorage: baileyli@foxmail.com

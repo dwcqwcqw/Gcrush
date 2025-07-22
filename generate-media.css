@@ -704,9 +704,30 @@
 }
 
 .error-placeholder .error-time {
-    font-size: 0.6rem;
-    color: #dc2626;
-    margin-top: 1px;
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin: 5px 0;
+}
+
+.retry-load-btn {
+    background: rgba(168, 85, 247, 0.8);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    margin-top: 10px;
+    transition: all 0.3s ease;
+}
+
+.retry-load-btn:hover {
+    background: rgba(168, 85, 247, 1);
+    transform: translateY(-1px);
+}
+
+.retry-load-btn:active {
+    transform: translateY(0);
 }
 
 /* Gallery item specific styling for errors */

@@ -226,6 +226,18 @@ class GenerateMediaIntegrated {
                 console.log('🎯 Button click timestamp:', new Date().toISOString());
                 console.log('🎯 isGenerating state on click:', this.isGenerating);
                 console.log('🎯 Button disabled state:', generateBtn.disabled);
+                console.log('🎯 Button style opacity:', generateBtn.style.opacity);
+                console.log('🎯 Button computed disabled:', generateBtn.getAttribute('disabled'));
+                
+                // 详细状态检查
+                if (this.isGenerating) {
+                    console.log('⚠️ Generation already in progress - blocked');
+                    console.log('🔍 Detailed state check:');
+                    console.log('  - this.isGenerating:', this.isGenerating);
+                    console.log('  - button.disabled:', generateBtn.disabled);
+                    console.log('  - button.style.cursor:', generateBtn.style.cursor);
+                    return;
+                }
                 
                 // 安全检查：如果按钮没有被禁用但isGenerating为true，强制重置
                 if (!generateBtn.disabled && this.isGenerating) {
@@ -233,6 +245,7 @@ class GenerateMediaIntegrated {
                     this.isGenerating = false;
                 }
                 
+                console.log('✅ Proceeding with generation...');
                 this.generateMedia();
             });
         } else {
@@ -851,11 +864,20 @@ class GenerateMediaIntegrated {
             if (shouldRetry) {
                 const retry = confirm(`${errorMessage}\n\nWould you like to try again?`);
                 if (retry) {
+                    // 先重置状态
+                    this.isGenerating = false;
+                    const generateBtn = document.getElementById('generate-btn');
+                    if (generateBtn) {
+                        generateBtn.disabled = false;
+                        generateBtn.style.opacity = '1';
+                        generateBtn.style.cursor = 'pointer';
+                    }
+                    
                     // 短暂延迟后重试
                     setTimeout(() => {
                         this.generateMedia();
                     }, 2000);
-                    return; // 不重置生成状态，让重试继续
+                    return; // 状态已重置，可以安全返回
                 }
             } else {
                 alert(`Failed to generate media: ${errorMessage}`);
@@ -1994,6 +2016,86 @@ class GenerateMediaIntegrated {
         } catch (error) {
             console.error('❌ Exception checking loading states:', error);
         }
+    }
+
+    // Handle image loading errors
+    handleImageLoadError(imageUrl) {
+        console.log('🔧 Handling image load error for:', imageUrl);
+        
+        // Find gallery items with this image URL
+        const galleryItems = document.querySelectorAll('.gallery-item img');
+        galleryItems.forEach(img => {
+            if (img.src === imageUrl) {
+                const galleryItem = img.closest('.gallery-item');
+                if (galleryItem) {
+                    // Replace with error state
+                    galleryItem.innerHTML = `
+                        <div class="error-placeholder">
+                            <div class="error-icon">❌</div>
+                            <p>Image Load Failed</p>
+                            <p class="error-time">Network connection error</p>
+                            <button class="retry-load-btn" onclick="window.generateMediaApp.retryImageLoad('${imageUrl}', this)">
+                                Retry
+                            </button>
+                        </div>
+                    `;
+                    galleryItem.classList.add('error-placeholder-item');
+                }
+            }
+        });
+    }
+
+    // Retry loading a specific image
+    retryImageLoad(imageUrl, buttonElement) {
+        console.log('🔄 Retrying image load for:', imageUrl);
+        
+        const galleryItem = buttonElement.closest('.gallery-item');
+        if (!galleryItem) return;
+        
+        // Show loading state
+        galleryItem.innerHTML = `
+            <div class="loading-placeholder">
+                <div class="loading-spinner"></div>
+                <p>Retrying...</p>
+            </div>
+        `;
+        
+        // Try to load the image again
+        const img = new Image();
+        img.onload = () => {
+            console.log('✅ Image loaded successfully on retry');
+            // Restore normal image display
+            galleryItem.innerHTML = `
+                <img src="${imageUrl}" alt="Generated Image" loading="lazy">
+                <div class="click-indicator">
+                    <i class="fas fa-expand"></i> View
+                </div>
+            `;
+            galleryItem.classList.remove('error-placeholder-item');
+            
+            // Re-add click event for image viewer
+            galleryItem.addEventListener('click', () => {
+                // Find the image data in userGallery
+                const imageData = this.userGallery.find(item => item.image_url === imageUrl);
+                if (imageData) {
+                    this.openImageViewer(imageUrl, imageData.id);
+                }
+            });
+        };
+        img.onerror = () => {
+            console.error('❌ Image still failed to load on retry');
+            // Show permanent error state
+            galleryItem.innerHTML = `
+                <div class="error-placeholder">
+                    <div class="error-icon">❌</div>
+                    <p>Image Unavailable</p>
+                    <p class="error-time">Server connection issue</p>
+                </div>
+            `;
+        };
+        
+        // Add cache-busting parameter to force reload
+        img.src = imageUrl + '?retry=' + Date.now();
     }
 }
 
